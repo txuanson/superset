@@ -237,3 +237,7 @@ from superset import views  # noqa
 module_datasource_map = app.config.get("DEFAULT_MODULE_DS_MAP")
 module_datasource_map.update(app.config.get("ADDITIONAL_MODULE_DS_MAP"))
 ConnectorRegistry.register_sources(module_datasource_map)
+
+
+# debug routes
+logging.debug(app.url_map)

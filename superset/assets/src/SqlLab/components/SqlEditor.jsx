@@ -44,6 +44,7 @@ import Timer from '../../components/Timer';
 import Hotkeys from '../../components/Hotkeys';
 import SqlEditorLeftBar from './SqlEditorLeftBar';
 import AceEditorWrapper from './AceEditorWrapper';
+import QueryAutoRefresh from './QueryAutoRefresh';
 import {
   STATE_BSSTYLE_MAP,
   SQL_EDITOR_VERTICAL_GUTTER_HEIGHT,
@@ -476,18 +477,21 @@ class SqlEditor extends React.PureComponent {
   }
   render() {
     return (
-      <Split
-        ref={this.sqlEditorRef}
-        className={this.props.hideLeftBar ? 'SqlEditor-expanded' : 'SqlEditor'}
-        sizes={[INITIAL_WEST_PERCENT, INITIAL_EAST_PERCENT]}
-        direction="horizontal"
-        minSize={SQL_EDITOR_MIN_SIZE}
-        gutterSize={SQL_EDITOR_HORIZONTAL_GUTTER_WIDTH}
-        snapOffset={0}
-      >
-        {this.leftBar()}
-        {this.queryPane()}
-      </Split>
+      <React.Fragment>
+        <QueryAutoRefresh queryEditorId={this.props.queryEditor.id} />
+        <Split
+          ref={this.sqlEditorRef}
+          className={this.props.hideLeftBar ? 'SqlEditor-expanded' : 'SqlEditor'}
+          sizes={[INITIAL_WEST_PERCENT, INITIAL_EAST_PERCENT]}
+          direction="horizontal"
+          minSize={SQL_EDITOR_MIN_SIZE}
+          gutterSize={SQL_EDITOR_HORIZONTAL_GUTTER_WIDTH}
+          snapOffset={0}
+        >
+          {this.leftBar()}
+          {this.queryPane()}
+        </Split>
+      </React.Fragment>
     );
   }
 }

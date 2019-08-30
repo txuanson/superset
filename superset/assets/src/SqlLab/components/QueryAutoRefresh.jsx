@@ -24,7 +24,8 @@ import { SupersetClient } from '@superset-ui/connection';
 
 import * as Actions from '../actions/sqlLab';
 
-const QUERY_UPDATE_FREQ = 2000;
+const QUERY_UPDATE_FREQ = 500;
+const QUERY_UPDATE_FREQ_MAX = 5000;
 const QUERY_UPDATE_BUFFER_MS = 5000;
 const MAX_QUERY_AGE_TO_POLL = 21600000;
 const QUERY_TIMEOUT_LIMIT = 10000;
@@ -37,55 +38,80 @@ class QueryAutoRefresh extends React.PureComponent {
     };
   }
   componentWillMount() {
-    this.startTimer();
+    console.log('queryautorefresh componentWillMount', this.props);
+    if(this.shouldCheckForQueries()) this.startTimer();
   }
   componentDidUpdate(prevProps) {
+    console.log('queryautorefresh componentDidUpdate', prevProps, this.props);
     if (prevProps.offline !== this.state.offline) {
       this.props.actions.setUserOffline(this.state.offline);
     }
+    if(this.shouldCheckForQueries()) this.startTimer();
   }
   componentWillUnmount() {
     this.stopTimer();
   }
   shouldCheckForQueries() {
     // if there are started or running queries, this method should return true
-    const { queries } = this.props;
+    const { queries, queryEditorId } = this.props;
     const now = new Date().getTime();
     const isQueryRunning = q => (
       ['running', 'started', 'pending', 'fetching'].indexOf(q.state) >= 0
     );
 
+    const editorQueries = Object.values(queries).filter(q => q.sqlEditorId === queryEditorId);
+    console.log('shouldCheckForQueries query: ', editorQueries);
+    // return query && isQueryRunning(query) && now - query.startDttm < MAX_QUERY_AGE_TO_POLL;
+
     return (
-      Object.values(queries).some(
+      editorQueries.some(
         q => isQueryRunning(q) &&
         now - q.startDttm < MAX_QUERY_AGE_TO_POLL,
       )
     );
   }
-  startTimer() {
+  startTimer(retry_count = 0) {
     if (!this.timer) {
-      this.timer = setInterval(this.stopwatch.bind(this), QUERY_UPDATE_FREQ);
+    //    const fn = (retry_count) => {
+    //     const delay = QUERY_UPDATE_FREQ*(retry_count*50); // increment by multiples of 50ms
+    //     console.log("**delay", delay);
+    //     return setTimeout(this.stopwatch.bind(this), delay)
+    //   }
+    //   this.timer = fn(QUERY_UPDATE_FREQ, 0)
+      // this.timer = setInterval(this.stopwatch.bind(this), QUERY_UPDATE_FREQ);
+
+      const delay = Math.min(QUERY_UPDATE_FREQ+(retry_count*50), QUERY_UPDATE_FREQ_MAX); // increment by multiples of 50ms to QUERY_UPDATE_FREQ_MAX
+      console.log("retry_count", retry_count, "**delay", delay);
+      this.timer = setTimeout(this.stopwatch.bind(this, retry_count), QUERY_UPDATE_FREQ);
     }
   }
   stopTimer() {
-    clearInterval(this.timer);
+    // clearInterval(this.timer);
+    if (this.timer) clearTimeout(this.timer);
     this.timer = null;
   }
-  stopwatch() {
+  stopwatch(retry_count = 0) {
+    console.log('polling async queries');
     // only poll /superset/queries/ if there are started or running queries
     if (this.shouldCheckForQueries()) {
+      console.log('shouldCheckForQueries');
       SupersetClient.get({
-        endpoint: `/superset/queries/${this.props.queriesLastUpdate - QUERY_UPDATE_BUFFER_MS}`,
+        endpoint: `/superset/queries/${this.props.queriesLastUpdate - QUERY_UPDATE_BUFFER_MS}`,   // TODO: new endpoint to fetch only current query
         timeout: QUERY_TIMEOUT_LIMIT,
       }).then(({ json }) => {
+        console.log('***** queries', json);
         if (Object.keys(json).length > 0) {
-          this.props.actions.refreshQueries(json);
+          this.props.actions.refreshQueries(json);  // TODO: refresh only single query for this editor? How does this work with Beto's server-side state?
         }
         this.setState({ offline: false });
       }).catch(() => {
         this.setState({ offline: true });
+      }).finally(() => {
+        this.stopTimer()
+        this.startTimer(++retry_count);
       });
     } else {
+      this.stopTimer();
       this.setState({ offline: false });
     }
   }

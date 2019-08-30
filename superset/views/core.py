@@ -2680,7 +2680,7 @@ class Superset(BaseSupersetView):
         return json_success(payload)
 
     @has_access
-    @expose("/csv/<client_id>")
+    @expose("/csv/<client_id>")     # client_id == query.id
     @event_logger.log_this
     def csv(self, client_id):
         """Download the query results as csv."""

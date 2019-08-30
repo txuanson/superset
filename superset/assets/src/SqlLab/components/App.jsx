@@ -51,6 +51,7 @@ class App extends React.PureComponent {
   }
   componentDidMount() {
     /* eslint-disable react/no-did-mount-set-state */
+    console.log('App componentdidmount');
     this.setState({ contentHeight: this.getHeight() });
     window.addEventListener('hashchange', this.onHashChanged.bind(this));
     window.addEventListener('resize', this.handleResize.bind(this));
@@ -104,7 +105,7 @@ class App extends React.PureComponent {
     } else {
       content = (
         <React.Fragment>
-          <QueryAutoRefresh />
+          {/* <QueryAutoRefresh /> */}
           <TabbedSqlEditors />
         </React.Fragment>
       );
