@@ -25,6 +25,18 @@ from superset.db_engine_specs.base import BaseEngineSpec, LimitMethod
 class ElasticSearchEngineSpec(BaseEngineSpec):
     engine = "es"
 
+    _time_grain_functions = {
+        None: "{col}",
+        "PT1S": "SECOND({col})",
+        "PT1M": "MINUTE({col})",
+        "PT1H": "HOUR({col})",
+        "P1D": "DAY({col})",
+        "P1W": "WEEK({col}",
+        "P1M": "MONTH({col})",
+        "P0.25Y": "QUARTER({col})",
+        "P1Y": "YEAR({col})",
+    }
+
     type_code_map: Dict[int, str] = {}  # loaded from get_datatype only if needed
 
     @classmethod
