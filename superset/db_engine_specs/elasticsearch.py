@@ -27,14 +27,9 @@ class ElasticSearchEngineSpec(BaseEngineSpec):
 
     _time_grain_functions = {
         None: "{col}",
-        "PT1S": "SECOND({col})",
-        "PT1M": "MINUTE({col})",
-        "PT1H": "HOUR({col})",
-        "P1D": "DAY({col})",
-        "P1W": "WEEK({col}",
-        "P1M": "MONTH({col})",
-        "P0.25Y": "QUARTER({col})",
-        "P1Y": "YEAR({col})",
+        "P1D": "CAST({col}] AS DATE)",
+        "P1M": "CAST(CONCAT(CONCAT(CONCAT(CAST(YEAR({col}) AS VARCHAR),'-'),CAST(MONTH({col}) AS VARCHAR)),'-01') AS DATE)",
+        "P1Y": "CAST(CONCAT(CAST(YEAR({col}) AS VARCHAR),'-01-01') AS DATE)",
     }
 
     type_code_map: Dict[int, str] = {}  # loaded from get_datatype only if needed
