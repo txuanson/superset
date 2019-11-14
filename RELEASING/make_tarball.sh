@@ -34,5 +34,7 @@ git archive \
     HEAD \
     -o ~/$VERSION/apache-superset-incubating.tar.gz
 
-gpg --armor --output apache-superset-incubating.tar.gz.asc --detach-sig apache-superset-incubating.tar.gz
-gpg --print-md SHA512 apache-superset-incubating.tar.gz > apache-superset-incubating.tar.gz.sha512
+
+gpg --local-user "Daniel Gaspar" --armor --output apache-superset-incubating.tar.gz.asc --detach-sig apache-superset-incubating.tar.gz
+gpg --local-user "Daniel Gaspar" --print-md SHA512 apache-superset-incubating.tar.gz > apache-superset-incubating.tar.gz.sha512
+cat

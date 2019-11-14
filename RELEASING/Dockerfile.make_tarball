@@ -15,5 +15,10 @@
 # limitations under the License.
 #
 FROM python:3.6-jessie
+
+RUN apt-get update -y
+RUN apt-get install -y gnupg2
+RUN gpg2 --armor --export-secret-keys "Daniel Gaspar" > /export-gpg-key.asc
+
 COPY make_tarball.sh /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
