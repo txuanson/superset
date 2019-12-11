@@ -23,7 +23,7 @@ from selenium.common.exceptions import WebDriverException
 
 from tests.test_app import app
 from superset import db
-from superset.models.core import Dashboard, Slice
+from superset.models.dashboard import Dashboard, Slice
 from superset.models.schedules import (
     DashboardEmailSchedule,
     EmailDeliveryType,

@@ -24,12 +24,14 @@ import pandas as pd
 from flask_appbuilder.security.sqla import models as ab_models
 from flask_testing import TestCase
 
+import superset.models.dashboard
 from tests.test_app import app  # isort:skip
 from superset import db, security_manager
 from superset.connectors.druid.models import DruidCluster, DruidDatasource
 from superset.connectors.sqla.models import SqlaTable
 from superset.models import core as models
 from superset.models.core import Database
+from superset.models.dashboard import Dashboard
 from superset.utils.core import get_example_database
 
 FAKE_DB_NAME = "fake_db_100"
@@ -91,7 +93,7 @@ class SupersetTestCase(TestCase):
         self.assertNotIn("User confirmation needed", resp)
 
     def get_slice(self, slice_name, session):
-        slc = session.query(models.Slice).filter_by(slice_name=slice_name).one()
+        slc = session.query(superset.models.dashboard.Slice).filter_by(slice_name=slice_name).one()
         session.expunge_all()
         return slc
 
@@ -264,4 +266,4 @@ class SupersetTestCase(TestCase):
 
     def get_dash_by_slug(self, dash_slug):
         sesh = db.session()
-        return sesh.query(models.Dashboard).filter_by(slug=dash_slug).first()
+        return sesh.query(Dashboard).filter_by(slug=dash_slug).first()

@@ -56,6 +56,7 @@ from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlalchemy.sql.type_api import Variant
 from sqlalchemy.types import TEXT, TypeDecorator
 
+from superset.models.dashboard import Dashboard
 from superset.exceptions import SupersetException, SupersetTimeoutException
 from superset.utils.dates import datetime_to_epoch, EPOCH
 
@@ -261,9 +262,9 @@ def decode_dashboards(o):
     from superset.connectors.sqla.models import SqlaTable, SqlMetric, TableColumn
 
     if "__Dashboard__" in o:
-        return models.Dashboard(**o["__Dashboard__"])
+        return Dashboard(**o["__Dashboard__"])
     elif "__Slice__" in o:
-        return models.Slice(**o["__Slice__"])
+        return superset.models.dashboard.Slice(**o["__Slice__"])
     elif "__TableColumn__" in o:
         return TableColumn(**o["__TableColumn__"])
     elif "__SqlaTable__" in o:

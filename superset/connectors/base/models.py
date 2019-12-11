@@ -24,7 +24,7 @@ from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import foreign, Query, relationship
 
 from superset.constants import NULL_STRING
-from superset.models.core import Slice
+from superset.models.dashboard import Slice
 from superset.models.helpers import AuditMixinNullable, ImportMixin, QueryResult
 from superset.utils import core as utils
 

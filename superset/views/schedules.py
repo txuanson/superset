@@ -28,7 +28,7 @@ from wtforms import BooleanField, StringField
 
 from superset import app, appbuilder, db, security_manager
 from superset.exceptions import SupersetException
-from superset.models.core import Dashboard, Slice
+from superset.models.dashboard import Dashboard, Slice
 from superset.models.schedules import (
     DashboardEmailSchedule,
     ScheduleType,

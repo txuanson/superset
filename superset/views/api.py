@@ -21,6 +21,7 @@ from flask_appbuilder import expose
 from flask_appbuilder.security.decorators import has_access_api
 
 import superset.models.core as models
+import superset.models.dashboard
 from superset import appbuilder, db, event_logger, security_manager
 from superset.common.query_context import QueryContext
 from superset.legacy import update_time_range
@@ -61,7 +62,7 @@ class Api(BaseSupersetView):
         form_data = {}
         slice_id = request.args.get("slice_id")
         if slice_id:
-            slc = db.session.query(models.Slice).filter_by(id=slice_id).one_or_none()
+            slc = db.session.query(superset.models.dashboard.Slice).filter_by(id=slice_id).one_or_none()
             if slc:
                 form_data = slc.form_data.copy()
 
