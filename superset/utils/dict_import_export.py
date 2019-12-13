@@ -14,7 +14,6 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-# pylint: disable=C,R,W
 import logging
 
 from superset.connectors.druid.models import DruidCluster
@@ -71,8 +70,11 @@ def export_to_dict(session, recursive, back_references, include_defaults):
     return data
 
 
-def import_from_dict(session, data, sync=[]):
+def import_from_dict(session, data, sync=None):
     """Imports databases and druid clusters from dictionary"""
+    if sync is None:
+        sync = []
+
     if isinstance(data, dict):
         logging.info("Importing %d %s", len(data.get(DATABASES_KEY, [])), DATABASES_KEY)
         for database in data.get(DATABASES_KEY, []):
