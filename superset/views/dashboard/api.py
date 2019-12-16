@@ -16,11 +16,9 @@
 # under the License.
 import json
 import re
-import json
 
 from flask import current_app, g, request
 from flask_appbuilder.api import expose, protect, safe
-from flask_appbuilder.models.decorators import renders
 from flask_appbuilder.models.sqla.interface import SQLAInterface
 from marshmallow import fields, post_load, pre_load, Schema, ValidationError
 from marshmallow.validate import Length
