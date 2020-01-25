@@ -147,6 +147,7 @@
     "redux-undo": "^1.0.0-beta9-9-7",
     "regenerator-runtime": "^0.13.3",
     "shortid": "^2.2.6",
+    "styled-components": "^5.0.0",
     "urijs": "^1.18.10",
     "use-query-params": "^0.4.5"
   },
