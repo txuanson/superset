@@ -14,26 +14,24 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-import json
 import logging
-import re
-from typing import Dict, List
 
-from flask import current_app, g, make_response
+from flask import g, make_response, request
 from flask_appbuilder.api import expose, protect, rison, safe
 from flask_appbuilder.models.sqla.interface import SQLAInterface
 from flask_babel import lazy_gettext as _, ngettext
-from marshmallow import fields, post_load, pre_load, Schema, ValidationError
-from marshmallow.validate import Length
 from sqlalchemy.exc import SQLAlchemyError
 
 from superset.constants import RouteMethod
-from superset.exceptions import SupersetException, SupersetSecurityException
+from superset.exceptions import SupersetSecurityException
 from superset.models.dashboard import Dashboard
-from superset.utils import core as utils
 from superset.views.base import check_ownership, generate_download_headers
-from superset.views.base_api import BaseOwnedModelRestApi
-from superset.views.base_schemas import BaseOwnedSchema, validate_owner
+from superset.views.base_api import BaseSupersetModelRestApi
+from superset.views.dashboard.schemas import (
+    DashboardPostSchema,
+    DashboardPutSchema,
+    get_export_ids_schema
+)
 
 from .mixin import DashboardMixin
 
@@ -41,95 +39,7 @@ logger = logging.getLogger(__name__)
 get_delete_ids_schema = {"type": "array", "items": {"type": "integer"}}
 
 
-class DashboardJSONMetadataSchema(Schema):
-    timed_refresh_immune_slices = fields.List(fields.Integer())
-    filter_scopes = fields.Dict()
-    expanded_slices = fields.Dict()
-    refresh_frequency = fields.Integer()
-    default_filters = fields.Str()
-    filter_immune_slice_fields = fields.Dict()
-    stagger_refresh = fields.Boolean()
-    stagger_time = fields.Integer()
-
-
-def validate_json(value):
-    try:
-        utils.validate_json(value)
-    except SupersetException:
-        raise ValidationError("JSON not valid")
-
-
-def validate_json_metadata(value):
-    if not value:
-        return
-    try:
-        value_obj = json.loads(value)
-    except json.decoder.JSONDecodeError:
-        raise ValidationError("JSON not valid")
-    errors = DashboardJSONMetadataSchema(strict=True).validate(value_obj, partial=False)
-    if errors:
-        raise ValidationError(errors)
-
-
-def validate_slug_uniqueness(value):
-    # slug is not required but must be unique
-    if value:
-        item = (
-            current_app.appbuilder.get_session.query(Dashboard.id)
-            .filter_by(slug=value)
-            .one_or_none()
-        )
-        if item:
-            raise ValidationError("Must be unique")
-
-
-class BaseDashboardSchema(BaseOwnedSchema):
-    @pre_load
-    def pre_load(self, data):  # pylint: disable=no-self-use
-        super().pre_load(data)
-        data["slug"] = data.get("slug")
-        data["owners"] = data.get("owners", [])
-        if data["slug"]:
-            data["slug"] = data["slug"].strip()
-            data["slug"] = data["slug"].replace(" ", "-")
-            data["slug"] = re.sub(r"[^\w\-]+", "", data["slug"])
-
-
-class DashboardPostSchema(BaseDashboardSchema):
-    __class_model__ = Dashboard
-
-    dashboard_title = fields.String(allow_none=True, validate=Length(0, 500))
-    slug = fields.String(
-        allow_none=True, validate=[Length(1, 255), validate_slug_uniqueness]
-    )
-    owners = fields.List(fields.Integer(validate=validate_owner))
-    position_json = fields.String(validate=validate_json)
-    css = fields.String()
-    json_metadata = fields.String(validate=validate_json_metadata)
-    published = fields.Boolean()
-
-
-class DashboardPutSchema(BaseDashboardSchema):
-    dashboard_title = fields.String(allow_none=True, validate=Length(0, 500))
-    slug = fields.String(allow_none=True, validate=Length(0, 255))
-    owners = fields.List(fields.Integer(validate=validate_owner))
-    position_json = fields.String(validate=validate_json)
-    css = fields.String()
-    json_metadata = fields.String(validate=validate_json_metadata)
-    published = fields.Boolean()
-
-    @post_load
-    def make_object(self, data: Dict, discard: List[str] = None) -> Dashboard:
-        self.instance = super().make_object(data, [])
-        for slc in self.instance.slices:
-            slc.owners = list(set(self.instance.owners) | set(slc.owners))
-        return self.instance
-
-
-get_export_ids_schema = {"type": "array", "items": {"type": "integer"}}
-
-
-class DashboardRestApi(DashboardMixin, BaseOwnedModelRestApi):
+class DashboardRestApi(DashboardMixin, BaseSupersetModelRestApi):
     datamodel = SQLAInterface(Dashboard)
     include_route_methods = RouteMethod.REST_MODEL_VIEW_CRUD_SET | {
         RouteMethod.EXPORT,
@@ -172,6 +82,62 @@ class DashboardRestApi(DashboardMixin, BaseOwnedModelRestApi):
         "owners": ("first_name", "asc"),
     }
     filter_rel_fields_field = {"owners": "first_name", "slices": "slice_name"}
+
+    @expose("/", methods=["POST"])
+    @protect()
+    @safe
+    def post(self):
+        """Creates a new owned Model
+        ---
+        post:
+          requestBody:
+            description: Model schema
+            required: true
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/{{self.__class__.__name__}}.post'
+          responses:
+            201:
+              description: Model added
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      result:
+                        $ref: '#/components/schemas/{{self.__class__.__name__}}.post'
+            400:
+              $ref: '#/components/responses/400'
+            401:
+              $ref: '#/components/responses/401'
+            422:
+              $ref: '#/components/responses/422'
+            500:
+              $ref: '#/components/responses/500'
+        """
+        from .commands.create import CreateDashboardCommand, InvalidDashboardError
+
+        if not request.is_json:
+            return self.response_400(message="Request is not JSON")
+        item = self.add_model_schema.load(request.json)
+        # This validates custom Schema with custom validations
+        if item.errors:
+            return self.response_422(message=item.errors)
+        try:
+            cmd = CreateDashboardCommand(item)
+            new_dashboard = cmd.run()
+            return self.response(
+                201,
+                id=new_dashboard.id,
+            )
+        except InvalidDashboardError:
+            return self.response_422(message=item.errors)
+        except Exception as e:
+            logger.error(f"Error creating model {self.__class__.__name__}: {e}")
+            return self.response_422(message=str(e))
 
     @expose("/", methods=["DELETE"])
     @protect()
