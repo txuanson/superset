@@ -83,3 +83,17 @@ apache-superset-*.tar.gz*
 
 # Translation binaries
 messages.mo
+
+# Configs (provided by Nimbus)
+.babelrc
+.eslintignore
+.eslintrc.js
+.flowconfig
+.prettierignore
+babel.config.js
+jest.config.js
+prettier.config.js
+tsconfig.eslint.json
+tsconfig.json
+tsconfig.options.json
+*.tsbuildinfo
