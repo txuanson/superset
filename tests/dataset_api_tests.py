@@ -22,7 +22,7 @@ from unittest.mock import patch
 import prison
 
 from superset import db, security_manager
-from superset.connectors.sqla.models import SqlaTable
+from superset.connectors.sqla.models import SqlaTable, TableColumn
 from superset.models.core import Database
 from superset.utils.core import get_example_database
 
@@ -30,6 +30,19 @@ from .base_tests import SupersetTestCase
 
 
 class DatasetApiTests(SupersetTestCase):
+
+    example_create_column_data = {
+        "column_name": "col_exp",
+        "verbose_name": "col verbose name",
+        "description": "col description",
+        "type": "VARCHAR",
+        "groupby": False,
+        "filterable": True,
+        "expression": "col expression",
+        "is_dttm": False,
+        "python_date_format": "epoch_s",
+    }
+
     @staticmethod
     def insert_dataset(
         table_name: str, schema: str, owners: List[int], database: Database
@@ -44,6 +57,44 @@ class DatasetApiTests(SupersetTestCase):
         db.session.add(table)
         db.session.commit()
         return table
+
+    @staticmethod
+    def insert_dataset_column(
+        table_id: int,
+        column_name: str,
+        verbose_name: str = "",
+        description: str = "",
+        type: str = "",
+        groupby: bool = True,
+        filterable: bool = True,
+        is_dttm: bool = True,
+        expression: str = "",
+        python_date_format: str = "",
+    ) -> TableColumn:
+        table = db.session.query(SqlaTable).get(table_id)
+        column = TableColumn(
+            table=table,
+            column_name=column_name,
+            verbose_name=verbose_name,
+            description=description,
+            type=type,
+            groupby=groupby,
+            filterable=filterable,
+            is_dttm=is_dttm,
+            expression=expression,
+            python_date_format=python_date_format,
+        )
+        db.session.add(column)
+        db.session.commit()
+        return column
+
+    def get_example_db_table(self, table_name: str = "birth_names"):
+        example_db = get_example_database()
+        return (
+            db.session.query(SqlaTable)
+            .filter_by(database=example_db, table_name=table_name)
+            .one()
+        )
 
     def test_get_dataset_list(self):
         """
@@ -441,5 +492,242 @@ class DatasetApiTests(SupersetTestCase):
         data = json.loads(rv.data.decode("utf-8"))
         self.assertEqual(rv.status_code, 422)
         self.assertEqual(data, {"message": "Dataset could not be deleted."})
+        db.session.delete(table)
+        db.session.commit()
+
+    def test_get_dataset_columns_list(self):
+        """
+            Dataset API: Test get dataset columns list
+        """
+        table = self.get_example_db_table()
+        self.login(username="admin")
+        uri = f"api/v1/dataset/{table.id}/column/"
+        rv = self.client.get(uri)
+        self.assertEqual(rv.status_code, 200)
+        response = json.loads(rv.data.decode("utf-8"))
+        self.assertEqual(response["count"], 8)
+        expected_columns = [
+            "column_name",
+            "filterable",
+            "groupby",
+            "is_dttm",
+            "type",
+            "verbose_name",
+        ]
+        self.assertEqual(sorted(list(response["result"][0].keys())), expected_columns)
+
+    def test_get_dataset_columns_list_gamma(self):
+        """
+            Dataset API: Test get dataset list gamma
+        """
+        table = self.get_example_db_table()
+        self.login(username="gamma")
+        uri = f"api/v1/dataset/{table.id}/column/"
+        rv = self.client.get(uri)
+        self.assertEqual(rv.status_code, 404)
+
+    def test_get_dataset_column_item(self):
+        """
+            Dataset API: Test get a dataset column
+        """
+        table = self.get_example_db_table()
+        self.login(username="admin")
+        column_id = 1
+        uri = f"api/v1/dataset/{table.id}/column/{column_id}"
+        rv = self.client.get(uri)
+        self.assertEqual(rv.status_code, 200)
+        response = json.loads(rv.data.decode("utf-8"))
+        expected_columns = [
+            "column_name",
+            "description",
+            "expression",
+            "filterable",
+            "groupby",
+            "is_dttm",
+            "python_date_format",
+            "type",
+            "verbose_name",
+        ]
+        self.assertEqual(sorted(list(response["result"].keys())), expected_columns)
+
+    def test_get_dataset_column_info(self):
+        """
+            Dataset API: Test get dataset column info
+        """
+        # self.login(username="admin")
+        # uri = "api/v1/dataset/_info"
+        # rv = self.client.get(uri)
+        # self.assertEqual(rv.status_code, 200)
+        pass
+
+    def test_create_dataset_column_item(self):
+        """
+            Dataset API: Test create dataset column item
+        """
+        table = self.get_example_db_table()
+        self.login(username="admin")
+        column_data = self.example_create_column_data
+        uri = f"api/v1/dataset/{table.id}/column/"
+        rv = self.client.post(uri, json=column_data)
+        self.assertEqual(rv.status_code, 201)
+        data = json.loads(rv.data.decode("utf-8"))
+        model = db.session.query(TableColumn).get(data.get("id"))
+        self.assertEqual(model.column_name, column_data["column_name"])
+        self.assertEqual(model.verbose_name, column_data["verbose_name"])
+        self.assertEqual(model.groupby, column_data["groupby"])
+        self.assertEqual(model.table_id, table.id)
+        db.session.delete(model)
+        db.session.commit()
+
+    def test_create_dataset_column_item_gamma(self):
+        """
+            Dataset API: Test create dataset column item gamma
+        """
+        self.login(username="gamma")
+        table = self.get_example_db_table()
+        column_data = {"column_name": "col_exp", "verbose_name": "col verbose name"}
+        uri = f"api/v1/dataset/{table.id}/column/"
+        rv = self.client.post(uri, json=column_data)
+        self.assertEqual(rv.status_code, 401)
+
+    def test_create_dataset_column_validate_uniqueness(self):
+        """
+            Dataset API: Test create table column validate uniqueness
+        """
+        table = self.get_example_db_table()
+        self.login(username="admin")
+        uri = f"api/v1/dataset/{table.id}/column/"
+        column_data = self.example_create_column_data
+        rv = self.client.post(uri, json=column_data)
+        self.assertEqual(rv.status_code, 201)
+        model_id = json.loads(rv.data.decode("utf-8"))["id"]
+
+        rv = self.client.post(uri, json=column_data)
+        self.assertEqual(rv.status_code, 422)
+        data = json.loads(rv.data.decode("utf-8"))
+        self.assertEqual(
+            data,
+            {"message": {"column_name": ["Dataset column col_exp already exists"]}},
+        )
+        model = db.session.query(TableColumn).get(model_id)
+        db.session.delete(model)
+        db.session.commit()
+
+    def test_create_dataset_column_validate_name(self):
+        """
+            Dataset API: Test create column validate name
+        """
+        table = self.get_example_db_table()
+        self.login(username="admin")
+        uri = f"api/v1/dataset/{table.id}/column/"
+        column_data = self.example_create_column_data.copy()
+        column_data["column_name"] = ""
+        rv = self.client.post(uri, json=column_data)
+        self.assertEqual(rv.status_code, 400)
+        data = json.loads(rv.data.decode("utf-8"))
+
+        expected_response = {
+            "message": {"column_name": ["Length must be between 1 and 255."]}
+        }
+        self.assertEqual(data, expected_response)
+
+    def test_create_dataset_column_validate_python_date_format(self):
+        """
+            Dataset API: Test create column validate python_date_format
+        """
+        table = self.get_example_db_table()
+        self.login(username="admin")
+        uri = f"api/v1/dataset/{table.id}/column/"
+        column_data = self.example_create_column_data.copy()
+        column_data["python_date_format"] = "wrong type"
+        rv = self.client.post(uri, json=column_data)
+        self.assertEqual(rv.status_code, 400)
+        data = json.loads(rv.data.decode("utf-8"))
+        expected_response = {
+            "message": {"python_date_format": ["Invalid date/timestamp format"]}
+        }
+        self.assertEqual(data, expected_response)
+
+    def test_update_dataset_column_item(self):
+        """
+            Dataset API: Test update dataset column item
+        """
+        table = self.get_example_db_table()
+        column = self.insert_dataset_column(table.id, "col_exp_base")
+        self.login(username="admin")
+        column_data = self.example_create_column_data.copy()
+        uri = f"api/v1/dataset/{table.id}/column/{column.id}"
+        rv = self.client.put(uri, json=column_data)
+        self.assertEqual(rv.status_code, 200)
+        model = db.session.query(TableColumn).get(column.id)
+        self.assertEqual(model.column_name, column_data["column_name"])
+        self.assertEqual(model.verbose_name, column_data["verbose_name"])
+        self.assertEqual(model.groupby, column_data["groupby"])
+        self.assertEqual(model.table_id, table.id)
+        db.session.delete(model)
+        db.session.commit()
+
+    def test_update_dataset_column_item_not_owned(self):
+        """
+            Dataset API: Test update dataset column item no owned
+        """
+        table = self.get_example_db_table()
+        column = self.insert_dataset_column(table.id, "col_exp_base")
+
+        self.login(username="alpha")
+        column_data = self.example_create_column_data.copy()
+        uri = f"api/v1/dataset/{table.id}/column/{column.id}"
+        rv = self.client.put(uri, json=column_data)
+        self.assertEqual(rv.status_code, 403)
+        model = db.session.query(TableColumn).get(column.id)
+        db.session.delete(model)
+        db.session.commit()
+
+    def test_update_dataset_column_item_gamma(self):
+        """
+            Dataset API: Test update dataset column item gamma
+        """
+        table = self.get_example_db_table()
+        column = self.insert_dataset_column(table.id, "col_exp_base")
+
+        self.login(username="gamma")
+        column_data = self.example_create_column_data.copy()
+        uri = f"api/v1/dataset/{table.id}/column/{column.id}"
+        rv = self.client.put(uri, json=column_data)
+        self.assertEqual(rv.status_code, 401)
+        model = db.session.query(TableColumn).get(column.id)
+        db.session.delete(model)
+        db.session.commit()
+
+    def test_delete_dataset_column_item(self):
+        """
+            Dataset API: Test delete dataset column item
+        """
+        table = self.get_example_db_table()
+        column = self.insert_dataset_column(table.id, "col_exp_base")
+
+        self.login(username="admin")
+        uri = f"api/v1/dataset/{table.id}/column/{column.id}"
+        rv = self.client.delete(uri)
+        self.assertEqual(rv.status_code, 200)
+        model = db.session.query(TableColumn).get(column.id)
+        self.assertIsNone(model)
+
+    def test_delete_dataset_column_item_not_owned(self):
+        """
+            Dataset API: Test delete dataset column item not owned
+        """
+        admin = self.get_user("admin")
+        table = self.insert_dataset(
+            "ab_permission", "", [admin.id], get_example_database()
+        )
+        column = self.insert_dataset_column(table.id, "col_exp_base")
+
+        self.login(username="alpha")
+        uri = f"api/v1/dataset/{table.id}/column/{column.id}"
+        rv = self.client.delete(uri)
+        self.assertEqual(rv.status_code, 403)
+        db.session.delete(column)
+        db.session.commit()
         db.session.delete(table)
         db.session.commit()
