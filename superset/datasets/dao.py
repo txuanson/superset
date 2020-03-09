@@ -19,6 +19,7 @@ from typing import Dict, Optional
 
 from flask import current_app
 from flask_appbuilder.models.sqla.interface import SQLAInterface
+from sqlalchemy import or_
 from sqlalchemy.exc import SQLAlchemyError
 
 from superset.commands.exceptions import (
@@ -26,7 +27,7 @@ from superset.commands.exceptions import (
     DeleteFailedError,
     UpdateFailedError,
 )
-from superset.connectors.sqla.models import SqlaTable
+from superset.connectors.sqla.models import SqlaTable, SqlMetric, TableColumn
 from superset.extensions import db
 from superset.models.core import Database
 from superset.views.base import DatasourceFilter
@@ -87,6 +88,9 @@ class DatasetDAO:
 
     @staticmethod
     def create(properties: Dict, commit=True) -> Optional[SqlaTable]:
+        """
+        Creates a Dataset model on the metadata DB
+        """
         model = SqlaTable()
         for key, value in properties.items():
             setattr(model, key, value)
@@ -100,7 +104,55 @@ class DatasetDAO:
         return model
 
     @staticmethod
+    def update_column(
+        model: TableColumn, properties: Dict, commit=True
+    ) -> Optional[TableColumn]:
+        for key, value in properties.items():
+            setattr(model, key, value)
+        try:
+            db.session.merge(model)
+            if commit:
+                db.session.commit()
+        except SQLAlchemyError as e:  # pragma: no cover
+            db.session.rollback()
+            raise UpdateFailedError(exception=e)
+        return model
+
+    @staticmethod
+    def create_column(properties: Dict, commit=True) -> Optional[TableColumn]:
+        """
+        Creates a Dataset model on the metadata DB
+        """
+        model = TableColumn()
+        for key, value in properties.items():
+            setattr(model, key, value)
+        try:
+            db.session.add(model)
+            if commit:
+                db.session.commit()
+        except SQLAlchemyError as e:  # pragma: no cover
+            db.session.rollback()
+            raise CreateFailedError(exception=e)
+        return model
+
+    @staticmethod
     def update(model: SqlaTable, properties: Dict, commit=True) -> Optional[SqlaTable]:
+        """
+        Updates a Dataset model on the metadata DB
+        """
+        if "columns" in properties:
+            new_columns = list()
+            for column in properties.get("columns", []):
+                if column.get("id"):
+                    column_obj = db.session.query(TableColumn).get(column.get("id"))
+                    column_obj = DatasetDAO.update_column(
+                        column_obj, column, commit=commit
+                    )
+                else:
+                    column_obj = DatasetDAO.create_column(column, commit=commit)
+                new_columns.append(column_obj)
+            properties["columns"] = new_columns
+
         for key, value in properties.items():
             setattr(model, key, value)
         try:
@@ -114,6 +166,9 @@ class DatasetDAO:
 
     @staticmethod
     def delete(model: SqlaTable, commit=True):
+        """
+        Deletes a Dataset model on the metadata DB
+        """
         try:
             db.session.delete(model)
             if commit:
@@ -123,3 +178,78 @@ class DatasetDAO:
             db.session.rollback()
             raise DeleteFailedError(exception=e)
         return model
+
+    @staticmethod
+    def update_metadata(model: SqlaTable, commit: bool = True) -> None:
+        """
+        Fetches the metadata for the table and merges it in
+        """
+        try:
+            table = model.get_sqla_table_object()
+        except Exception as e:
+            logger.exception(e)
+            from flask_babel import lazy_gettext as _
+
+            raise Exception(
+                _(
+                    "Table [{}] doesn't seem to exist in the specified database, "
+                    "couldn't fetch column information"
+                ).format(model.table_name)
+            )
+
+        metric = SqlMetric
+        metrics = []
+        any_date_col = None
+        db_engine_spec = model.database.db_engine_spec
+        db_dialect = model.database.get_dialect()
+        db_cols = (
+            db.session.query(TableColumn)
+            .filter(TableColumn.table == model)
+            .filter(or_(TableColumn.column_name == col.name for col in table.columns))
+        )
+        db_cols = {db_col.column_name: db_col for db_col in db_cols}
+
+        for col in table.columns:
+            # Map each column type
+            try:
+                data_type = db_engine_spec.column_datatype_to_string(
+                    col.type, db_dialect
+                )
+            except Exception as e:
+                data_type = "UNKNOWN"
+                logger.error("Unrecognized data type in {}.{}".format(table, col.name))
+                logger.exception(e)
+
+            db_col = db_cols.get(col.name, None)
+            # Infer flags
+            if not db_col:
+                db_col = TableColumn(column_name=col.name, type=data_type)
+                db_col.sum = db_col.is_num
+                db_col.avg = db_col.is_num
+                db_col.is_dttm = db_col.is_time
+                db_engine_spec.alter_new_orm_column(db_col)
+            else:
+                db_col.type = data_type
+            db_col.groupby = True
+            db_col.filterable = True
+            model.columns.append(db_col)
+            if not any_date_col and db_col.is_time:
+                any_date_col = col.name
+
+        metrics.append(
+            metric(
+                metric_name="count",
+                verbose_name="COUNT(*)",
+                metric_type="count",
+                expression="COUNT(*)",
+            )
+        )
+        if not model.main_dttm_col:
+            model.main_dttm_col = any_date_col
+        model.add_missing_metrics(metrics)
+        try:
+            db.session.merge(model)
+            if commit:
+                db.session.commit()
+        except SQLAlchemyError as e:
+            CreateFailedError(exception=e)

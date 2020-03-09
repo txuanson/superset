@@ -49,9 +49,10 @@ class UpdateDatasetCommand(BaseCommand):
     def run(self):
         self.validate()
         try:
+            # Updates SqlaTable (Dataset)
             dataset = DatasetDAO.update(self._model, self._properties)
         except UpdateFailedError as e:
-            logger.exception(e.exception)
+            logger.exception(e)
             raise DatasetUpdateFailedError()
         return dataset
 

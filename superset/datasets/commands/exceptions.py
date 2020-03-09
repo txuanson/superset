@@ -95,6 +95,10 @@ class DatasetUpdateFailedError(UpdateFailedError):
     message = _("Dataset could not be updated.")
 
 
+class DatasetMetricUpdateFailedError(DatasetUpdateFailedError):
+    message = _("Dataset metric could not be updated.")
+
+
 class DatasetDeleteFailedError(DeleteFailedError):
     message = _("Dataset could not be deleted.")
 

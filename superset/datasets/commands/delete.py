@@ -18,7 +18,9 @@ import logging
 from typing import Optional
 
 from flask_appbuilder.security.sqla.models import User
+from sqlalchemy.exc import SQLAlchemyError
 
+from superset import security_manager
 from superset.commands.base import BaseCommand
 from superset.commands.exceptions import DeleteFailedError
 from superset.connectors.sqla.models import SqlaTable
@@ -29,6 +31,7 @@ from superset.datasets.commands.exceptions import (
 )
 from superset.datasets.dao import DatasetDAO
 from superset.exceptions import SupersetSecurityException
+from superset.extensions import db
 from superset.views.base import check_ownership
 
 logger = logging.getLogger(__name__)
@@ -43,9 +46,14 @@ class DeleteDatasetCommand(BaseCommand):
     def run(self):
         self.validate()
         try:
-            dataset = DatasetDAO.delete(self._model)
-        except DeleteFailedError as e:
+            dataset = DatasetDAO.delete(self._model, commit=False)
+            security_manager.del_permission_view_menu(
+                "datasource_access", dataset.get_perm()
+            )
+            db.session.commit()
+        except (SQLAlchemyError, DeleteFailedError) as e:
             logger.exception(e.exception)
+            db.session.rollback()
             raise DatasetDeleteFailedError()
         return dataset
 

@@ -52,7 +52,7 @@ class DatasetRestApi(BaseSupersetModelRestApi):
     include_route_methods = RouteMethod.REST_MODEL_VIEW_CRUD_SET | {RouteMethod.RELATED}
 
     list_columns = [
-        "database_name",
+        "database.database_name",
         "changed_by.username",
         "changed_on",
         "table_name",
@@ -75,6 +75,8 @@ class DatasetRestApi(BaseSupersetModelRestApi):
         "template_params",
         "owners.id",
         "owners.username",
+        "columns",
+        "metrics",
     ]
     add_model_schema = DatasetPostSchema()
     edit_model_schema = DatasetPutSchema()
@@ -93,6 +95,8 @@ class DatasetRestApi(BaseSupersetModelRestApi):
         "is_sqllab_view",
         "template_params",
         "owners",
+        "columns",
+        "metrics",
     ]
     openapi_spec_tag = "Datasets"
 

@@ -70,7 +70,7 @@ class DatasetApiTests(SupersetTestCase):
         expected_columns = [
             "changed_by",
             "changed_on",
-            "database_name",
+            "database",
             "schema",
             "table_name",
         ]
@@ -117,6 +117,8 @@ class DatasetApiTests(SupersetTestCase):
         self.assertEqual(rv.status_code, 200)
         response = json.loads(rv.data.decode("utf-8"))
         expected_result = {
+            "columns": {},
+            "metrics": {},
             "cache_timeout": None,
             "database": {"database_name": "examples", "id": 1},
             "default_endpoint": None,

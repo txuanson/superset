@@ -19,7 +19,9 @@ from typing import Dict, List, Optional
 
 from flask_appbuilder.security.sqla.models import User
 from marshmallow import ValidationError
+from sqlalchemy.exc import SQLAlchemyError
 
+from superset import security_manager
 from superset.commands.base import BaseCommand
 from superset.commands.exceptions import CreateFailedError
 from superset.datasets.commands.base import populate_owners
@@ -31,6 +33,7 @@ from superset.datasets.commands.exceptions import (
     TableNotFoundValidationError,
 )
 from superset.datasets.dao import DatasetDAO
+from superset.extensions import db
 
 logger = logging.getLogger(__name__)
 
@@ -43,9 +46,27 @@ class CreateDatasetCommand(BaseCommand):
     def run(self):
         self.validate()
         try:
-            dataset = DatasetDAO.create(self._properties)
+            # Creates SqlaTable (Dataset)
+            dataset = DatasetDAO.create(self._properties, commit=False)
+            # Updates columns and metrics
+            DatasetDAO.update_metadata(dataset, commit=False)
+            # Add datasource access permission
+            security_manager.add_permission_view_menu(
+                "datasource_access", dataset.get_perm()
+            )
+            # Add schema access permission if exists
+            if dataset.schema:
+                security_manager.add_permission_view_menu(
+                    "schema_access", dataset.schema_perm
+                )
+            db.session.commit()
+        except SQLAlchemyError as e:
+            logger.exception(e)
+            db.session.rollback()
+            raise DatasetCreateFailedError()
         except CreateFailedError as e:
             logger.exception(e.exception)
+            db.session.rollback()
             raise DatasetCreateFailedError()
         return dataset
 
