@@ -17,7 +17,7 @@
  * under the License.
  */
 import React from 'react';
-import { hot } from 'react-hot-loader';
+import { hot } from 'react-hot-loader/root';
 import { createStore, applyMiddleware, compose } from 'redux';
 import { Provider } from 'react-redux';
 import thunk from 'redux-thunk';
@@ -60,4 +60,4 @@ const App = () => (
   </Provider>
 );
 
-export default hot(module)(App);
+export default hot(App);

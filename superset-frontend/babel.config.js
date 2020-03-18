@@ -16,30 +16,41 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+const packageConfig = require('./package.json');
+
 module.exports = {
   sourceMaps: true,
-  sourceType: 'unambiguous',
+  sourceType: 'module',
   retainLines: true,
   presets: [
-    '@babel/preset-react',
     [
       '@babel/preset-env',
       {
-        useBuiltIns: 'usage',
         corejs: 3,
+        useBuiltIns: 'usage',
         loose: true,
         shippedProposals: true,
         modules: false,
-        targets: false,
+        targets: packageConfig.browserslist,
       },
     ],
+    '@babel/preset-react',
   ],
   plugins: [
     'lodash',
     '@babel/plugin-syntax-dynamic-import',
     '@babel/plugin-proposal-class-properties',
-    'react-hot-loader/babel',
+    '@babel/plugin-proposal-optional-chaining',
     ['@babel/plugin-transform-runtime', { corejs: 3 }],
+    'react-hot-loader/babel',
+  ],
+  overrides: [
+    {
+      test: /\.tsx?/,
+      presets: [
+        ['@babel/preset-typescript', { isTSX: true, allExtensions: true }],
+      ],
+    },
   ],
   env: {
     // Setup a different config for tests as they run in node instead of a browser

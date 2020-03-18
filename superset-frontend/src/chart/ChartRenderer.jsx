@@ -233,7 +233,7 @@ class ChartRenderer extends React.Component {
         : snakeCaseVizType;
 
     return (
-      <>
+      <div>
         {this.renderTooltip()}
         <SuperChart
           disableErrorBoundary
@@ -251,7 +251,7 @@ class ChartRenderer extends React.Component {
           onRenderSuccess={this.handleRenderSuccess}
           onRenderFailure={this.handleRenderFailure}
         />
-      </>
+      </div>
     );
   }
 }

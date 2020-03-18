@@ -22,5 +22,9 @@
     "suppressImplicitAnyIndexErrors": true,
     "target": "es5"
   },
-  "include": ["./src/**/*", "./spec/**/*"]
+  "include": [
+    "./src/**/*",
+    "./spec/**/*",
+    "./node_modules/*superset-ui*/**/src/**/*"
+  ]
 }
