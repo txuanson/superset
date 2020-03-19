@@ -26,15 +26,18 @@ module.exports = {
     [
       '@babel/preset-env',
       {
-        corejs: 3,
         useBuiltIns: 'usage',
+        corejs: 3,
         loose: true,
-        shippedProposals: true,
         modules: false,
+        shippedProposals: true,
         targets: packageConfig.browserslist,
       },
     ],
-    '@babel/preset-react',
+    [
+      '@babel/preset-react',
+      { development: process.env.BABEL_ENV === 'development' },
+    ],
   ],
   plugins: [
     'lodash',
@@ -43,14 +46,6 @@ module.exports = {
     '@babel/plugin-proposal-optional-chaining',
     ['@babel/plugin-transform-runtime', { corejs: 3 }],
     'react-hot-loader/babel',
-  ],
-  overrides: [
-    {
-      test: /\.tsx?/,
-      presets: [
-        ['@babel/preset-typescript', { isTSX: true, allExtensions: true }],
-      ],
-    },
   ],
   env: {
     // Setup a different config for tests as they run in node instead of a browser
@@ -63,8 +58,8 @@ module.exports = {
             corejs: 3,
             loose: true,
             shippedProposals: true,
+            modules: false,
             targets: { node: 'current' },
-            modules: 'commonjs',
           },
         ],
       ],

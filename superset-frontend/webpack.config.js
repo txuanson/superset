@@ -18,7 +18,6 @@
  * under the License.
  */
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 const webpack = require('webpack');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer')
@@ -32,6 +31,7 @@ const TerserPlugin = require('terser-webpack-plugin');
 const WebpackAssetsManifest = require('webpack-assets-manifest');
 const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 const parsedArgs = require('yargs').argv;
+const packageConfig = require('./package.json');
 
 // input dir
 const APP_DIR = path.resolve(__dirname, './');
@@ -111,7 +111,7 @@ if (!isDevMode) {
 const PREAMBLE = [path.join(APP_DIR, '/src/preamble.js')];
 if (isDevMode) {
   // A Superset webpage normally includes two JS bundles in dev, `theme.js` and
-  // the main entry. only the main entry should have the dev server client,
+  // the main entrypoint. Only the main entry should have the dev server client,
   // otherwise the websocket client will initialize twice, creating two sockets.
   // Ref: https://github.com/gaearon/react-hot-loader/issues/141
   PREAMBLE.unshift(
@@ -128,13 +128,6 @@ const babelLoader = {
   options: {
     cacheDirectory: true,
     cacheCompression: false,
-  },
-};
-const threadLoader = {
-  loader: 'thread-loader',
-  options: {
-    // there should be 1 cpu for the fork-ts-checker-webpack-plugin
-    workers: os.cpus().length - 1,
   },
 };
 
@@ -189,7 +182,8 @@ const config = {
       {
         test: /\.tsx?$/,
         use: [
-          threadLoader,
+          'thread-loader',
+          babelLoader,
           {
             loader: 'ts-loader',
             options: {
@@ -206,7 +200,7 @@ const config = {
         // include source code for plugins, but exclude node_modules within them
         exclude: [/superset-ui.*\/node_modules\/.*/],
         include: [new RegExp(`${APP_DIR}/src`), /superset-ui.*\/src/],
-        use: [threadLoader, babelLoader],
+        use: [babelLoader],
       },
       {
         test: /\.css$/,
@@ -317,6 +311,24 @@ if (isDevMode) {
     ],
     contentBase: path.join(process.cwd(), '../static/assets'),
   };
+
+  // find all the symlinked plugins and use their source code for imports
+  let hasSymlink = false;
+  for (const [pkg, version] of Object.entries(packageConfig.dependencies)) {
+    const srcPath = `./node_modules/${pkg}/src`;
+    if (/superset-ui/.test(pkg) && fs.existsSync(srcPath)) {
+      console.log(
+        `[Superset Plugin] Use symlink source for ${pkg} @ ${version}`,
+      );
+      // only allow exact match so imports like `@superset-ui/plugin-name/lib`
+      // and `@superset-ui/plugin-name/esm` can still work.
+      config.resolve.alias[`${pkg}$`] = `${pkg}/src`;
+      hasSymlink = true;
+    }
+  }
+  if (hasSymlink) {
+    console.log(''); // pure cosmetic new line
+  }
 } else {
   config.optimization.minimizer = [
     new TerserPlugin({
