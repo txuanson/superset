@@ -58,7 +58,7 @@ module.exports = {
             corejs: 3,
             loose: true,
             shippedProposals: true,
-            modules: false,
+            modules: 'commonjs',
             targets: { node: 'current' },
           },
         ],
