@@ -50,4 +50,4 @@ const Application = () => (
   </Provider>
 );
 
-export default hot(module)(Application);
+export default hot(Application);
