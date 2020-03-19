@@ -147,6 +147,13 @@ const config = {
     showSavedQuery: [path.join(APP_DIR, '/src/showSavedQuery/index.jsx')],
   },
   output,
+  stats: 'minimal',
+  performance: {
+    assetFilter(assetFilename) {
+      // don't throw size limit warning on geojson and font files
+      return !/\.(map|geojson|woff2)$/.test(assetFilename);
+    },
+  },
   optimization: {
     splitChunks: {
       chunks: 'all',
