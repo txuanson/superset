@@ -65,12 +65,6 @@ global.sinon.useFakeXMLHttpRequest();
 
 global.window.XMLHttpRequest = global.XMLHttpRequest;
 global.window.location = { href: 'about:blank' };
-
-// To bypass "TypeError: Cannot redefine property: assign"
-Object.defineProperty(global.window, 'location', {
-  value: { ...global.window.location, assign: () => {} },
-});
-
 global.window.performance = { now: () => new Date().getTime() };
 global.$ = require('jquery')(global.window);
 
