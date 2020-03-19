@@ -39,6 +39,7 @@ module.exports = {
       },
       tsConfig: {
         jsx: 'react',
+        esModuleInterop: true,
       },
     },
   },
