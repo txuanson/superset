@@ -815,7 +815,7 @@ yarn && yarn build
 
 Then use `npm link` to create a symlink of the source code in `superset-frontend/node_modules`:
 
-```bashe
+```bash
 cd incubator-superset/superset-frontend
 npm link ../superset-ui-plugins/packages/superset-ui-[PLUGIN NAME]
 
