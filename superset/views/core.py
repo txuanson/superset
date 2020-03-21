@@ -2414,9 +2414,8 @@ class Superset(BaseSupersetView):
         )
         try:
             session.add(query)
-            session.flush()
+            session.commit()
             query_id = query.id
-            session.commit()  # shouldn't be necessary
         except SQLAlchemyError as e:
             logger.error(f"Errors saving query details {e}")
             session.rollback()
