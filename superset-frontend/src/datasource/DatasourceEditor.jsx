@@ -439,12 +439,12 @@ export class DatasourceEditor extends React.PureComponent {
           descr={t('Owners of the datasource')}
           control={
             <SelectAsyncControl
-              dataEndpoint="/users/api/read"
+              dataEndpoint="/api/v1/dataset/related/owners"
               multi
               mutator={data =>
-                data.pks.map((pk, i) => ({
-                  value: pk,
-                  label: `${data.result[i].first_name} ${data.result[i].last_name}`,
+                data.result.map((item) => ({
+                  value: item.value,
+                  label: item.text,
                 }))
               }
             />
