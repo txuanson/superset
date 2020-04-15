@@ -130,7 +130,7 @@ class SupersetAppInitializer:
             DruidColumnInlineView,
             Druid,
         )
-        from superset.datasets.api import DatasetRestApi
+        from superset.datasets.api import DatasetRestApi, DatasetColumnRestApi
         from superset.queries.api import QueryRestApi
         from superset.connectors.sqla.views import (
             TableColumnInlineView,
@@ -185,6 +185,7 @@ class SupersetAppInitializer:
         appbuilder.add_api(DashboardRestApi)
         appbuilder.add_api(DatabaseRestApi)
         appbuilder.add_api(DatasetRestApi)
+        appbuilder.add_api(DatasetColumnRestApi)
         appbuilder.add_api(QueryRestApi)
         #
         # Setup regular views

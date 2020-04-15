@@ -19,10 +19,23 @@ from typing import Any
 
 import yaml
 from flask import g, request, Response
-from flask_appbuilder.api import expose, protect, rison, safe
+from flask_appbuilder.api import (
+    API_FILTERS_RIS_KEY,
+    API_PERMISSIONS_RIS_KEY,
+    BaseApi,
+    expose,
+    get_info_schema,
+    get_item_schema,
+    get_list_schema,
+    merge_response_func,
+    permission_name,
+    protect,
+    rison,
+    safe,
+)
 from flask_appbuilder.models.sqla.interface import SQLAInterface
 
-from superset.connectors.sqla.models import SqlaTable
+from superset.connectors.sqla.models import SqlaTable, TableColumn
 from superset.constants import RouteMethod
 from superset.datasets.commands.create import CreateDatasetCommand
 from superset.datasets.commands.delete import DeleteDatasetCommand
@@ -37,9 +50,12 @@ from superset.datasets.commands.exceptions import (
 )
 from superset.datasets.commands.refresh import RefreshDatasetCommand
 from superset.datasets.commands.update import UpdateDatasetCommand
+from superset.datasets.dao import DatasetDAO
 from superset.datasets.schemas import (
     DatasetPostSchema,
     DatasetPutSchema,
+    DatasetColumnsPutSchema,
+    DatasetColumnsPostSchema,
     get_export_ids_schema,
 )
 from superset.views.base import DatasourceFilter, generate_download_headers
@@ -387,3 +403,197 @@ class DatasetRestApi(BaseSupersetModelRestApi):
         except DatasetRefreshFailedError as ex:
             logger.error(f"Error refreshing dataset {self.__class__.__name__}: {ex}")
             return self.response_422(message=str(ex))
+
+
+class DatasetColumnRestApi(BaseSupersetModelRestApi):
+    datamodel = SQLAInterface(TableColumn)
+
+    resource_name = "dataset"
+    allow_browser_login = True
+    class_permission_name = "TableModelView"
+    include_route_methods = RouteMethod.REST_MODEL_VIEW_CRUD_SET | {RouteMethod.RELATED}
+    openapi_spec_tag = "Datasets"
+
+    list_columns = [
+        "column_name",
+        "verbose_name",
+        "type",
+        "groupby",
+        "filterable",
+        "is_dttm",
+    ]
+
+    show_columns = [
+        "column_name",
+        "verbose_name",
+        "description",
+        "type",
+        "groupby",
+        "filterable",
+        "expression",
+        "is_dttm",
+        "python_date_format",
+    ]
+    add_columns = show_columns + ["table"]
+    edit_columns = show_columns + ["table"]
+
+    add_model_schema = DatasetColumnsPostSchema()
+    edit_model_schema = DatasetColumnsPutSchema()
+
+    # validators_columns = {
+    #     "column_name": validate_table_column_name,
+    #     "python_date_format": validate_python_date_format,
+    # }
+
+    @expose("/column/_info", methods=["GET"])
+    @protect()
+    @safe
+    @rison(get_info_schema)
+    @permission_name("info")
+    @merge_response_func(
+        BaseApi.merge_current_user_permissions, API_PERMISSIONS_RIS_KEY
+    )
+    @merge_response_func(
+        BaseSupersetModelRestApi.merge_search_filters, API_FILTERS_RIS_KEY
+    )
+    def info(self, **kwargs) -> Response:
+        """ CRUD REST meta data containing user permissions and filters
+        ---
+        get:
+          description: >-
+            CRUD REST meta data containing user permissions and filters for this
+            resource
+          parameters:
+          - $ref: '#/components/parameters/get_info_schema'
+          responses:
+            200:
+              description: Item from Model
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      filters:
+                        type: object
+                      permissions:
+                        type: array
+                        items:
+                          type: string
+            400:
+              $ref: '#/components/responses/400'
+            401:
+              $ref: '#/components/responses/401'
+            422:
+              $ref: '#/components/responses/422'
+            500:
+              $ref: '#/components/responses/500'
+        """
+        return self.info_headless(**kwargs)
+
+    @expose("/<pk>/column/", methods=["GET"])
+    @protect()
+    @safe
+    @rison(get_list_schema)
+    def get_list(self, pk: int, **kwargs):  # pylint: disable=arguments-differ
+        """Get list of columns from a dataset
+        ---
+        get:
+          description: >-
+            Query columns from a dataset, accepts filters, ordering and pagination
+          parameters:
+          - in: path
+            schema:
+              type: integer
+            name: pk
+            description: The dataset id
+            required: true
+          - $ref: '#/components/parameters/get_list_schema'
+          responses:
+            200:
+              description: Items from Model
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      ids:
+                        type: array
+                        items:
+                          type: string
+                      count:
+                        type: number
+                      result:
+                        type: array
+                        items:
+                          $ref:
+                            '#/components/schemas/{{self.__class__.__name__}}.get_list'
+            400:
+              $ref: '#/components/responses/400'
+            401:
+              $ref: '#/components/responses/401'
+            422:
+              $ref: '#/components/responses/422'
+            500:
+              $ref: '#/components/responses/500'
+        """
+        item = DatasetDAO.find_by_id(pk)
+        if not item:
+            return self.response_404()
+        filters = kwargs["rison"].get("filters", [])
+        filters.append({"col": "table", "opr": "rel_o_m", "value": pk})
+        kwargs["rison"]["filters"] = filters
+        return self.get_list_headless(**kwargs)
+
+    @expose("/<int:pk>/column/<column_id>", methods=["GET"])
+    @protect()
+    @safe
+    @rison(get_item_schema)
+    def get(
+        self, pk: int, column_id: int, **kwargs
+    ):  # pylint: disable=arguments-differ
+        """Get column from a dataset
+        ---
+        get:
+          description: >-
+            Get a column from a dataset
+          parameters:
+          - in: path
+            schema:
+              type: integer
+            name: pk
+            description: The dataset id
+            required: true
+          - in: path
+            schema:
+              type: integer
+            name: column_id
+          - $ref: '#/components/parameters/get_item_schema'
+          responses:
+            200:
+              description: Items from Model
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      ids:
+                        type: array
+                        items:
+                          type: string
+                      result:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/{{self.__class__.__name__}}.get'
+            400:
+              $ref: '#/components/responses/400'
+            401:
+              $ref: '#/components/responses/401'
+            422:
+              $ref: '#/components/responses/422'
+            500:
+              $ref: '#/components/responses/500'
+        """
+        item = DatasetDAO.find_by_id(pk)
+        if not item:
+            return self.response_404()
+        return self.get_headless(column_id, **kwargs)
