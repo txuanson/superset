@@ -231,6 +231,8 @@ describe('Advanced analytics', () => {
     cy.visitChartByName('Num Births Trend');
     cy.verifySliceSuccess({ waitAlias: '@postJson' });
 
+    cy.wait(10);
+
     cy.get('span')
       .contains('Advanced Analytics')
       .parent()
