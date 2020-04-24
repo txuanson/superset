@@ -274,6 +274,8 @@ describe('Annotations', () => {
     cy.visitChartByName('Num Births Trend');
     cy.verifySliceSuccess({ waitAlias: '@postJson' });
 
+    cy.wait(10);
+
     cy.get('[data-test=annotation_layers]').within(() => {
       cy.get('button').click();
     });
