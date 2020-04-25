@@ -368,7 +368,7 @@ describe('ListView with new UI filters', () => {
 
     act(() => {
       wrapper
-        .find('[data-test="filters-search"]')
+        .find('[data-test="search-input"]')
         .last()
         .props()
         .onBlur();
