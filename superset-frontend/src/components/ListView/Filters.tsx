@@ -144,7 +144,7 @@ interface UIFiltersProps {
 }
 
 const FilterWrapper = styled.div`
-  padding: 24px 16px 8px;
+  padding-left: 16px;
 `;
 
 function UIFilters({

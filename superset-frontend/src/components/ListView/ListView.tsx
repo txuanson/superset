@@ -17,7 +17,7 @@
  * under the License.
  */
 import { t } from '@superset-ui/translation';
-import React, { useState, FunctionComponent } from 'react';
+import React, { FunctionComponent, useState } from 'react';
 import { css } from '@emotion/core';
 import {
   Col,
@@ -32,12 +32,13 @@ import SelectComponent from 'react-select';
 import VirtualizedSelect from 'react-virtualized-select';
 import IndeterminateCheckbox from '../IndeterminateCheckbox';
 import TableCollection from './TableCollection';
+import CardCollection from './CardCollection';
 import Pagination from './Pagination';
 import { FilterMenu, FilterInputs } from './LegacyFilters';
 import FilterControls from './Filters';
 import ListCardViewToggle from './ListCardViewToggle';
 import { FetchDataConfig, Filters, SortColumn } from './types';
-import { ListViewError, useListViewState } from './utils';
+import { ListViewError, useListViewState, useStateWithQueryParam } from './utils';
 
 import './ListViewStyles.less';
 
@@ -129,9 +130,7 @@ const ListView: FunctionComponent<Props> = ({
       }
     });
   }
-
-  const [showCardView, setShowCardView] = useState(false);
-  const toggleCardView = () => setShowCardView(!showCardView)
+  const [collectionType, setCollectionType] = useStateWithQueryParam<'listview' | 'cardview'>('cType', 'listview')
 
   return (
     <div className={`superset-list-view ${className}`}>
@@ -175,8 +174,17 @@ const ListView: FunctionComponent<Props> = ({
               </Col>
             </Row>
             <hr />
-            <div css={css`display: inline;`}>
-              <ListCardViewToggle value={showCardView} onChange={toggleCardView} />
+            <div
+              css={css`
+                display: flex;
+                padding-top: 24px;
+                padding-bottom: 8px;
+              `}
+            >
+              <ListCardViewToggle
+                value={collectionType}
+                onChange={setCollectionType}
+              />
               <FilterControls
                 filters={filters}
                 internalFilters={internalFilters}
@@ -187,14 +195,24 @@ const ListView: FunctionComponent<Props> = ({
         )}
       </div>
       <div className="body">
-        <TableCollection
-          getTableProps={getTableProps}
-          getTableBodyProps={getTableBodyProps}
-          prepareRow={prepareRow}
-          headerGroups={headerGroups}
-          rows={rows}
-          loading={loading}
-        />
+        {collectionType === 'listview' && (
+          <TableCollection
+            getTableProps={getTableProps}
+            getTableBodyProps={getTableBodyProps}
+            prepareRow={prepareRow}
+            headerGroups={headerGroups}
+            rows={rows}
+            loading={loading}
+          />
+        )}
+        {collectionType === 'cardview' && (
+          <CardCollection
+            prepareRow={prepareRow}
+            rows={rows}
+            renderCard={() => <div />}
+            loading={loading}
+          />
+        )}
       </div>
       <div className="footer">
         <Row>

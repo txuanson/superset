@@ -31,6 +31,7 @@ import {
   NumberParam,
   StringParam,
   useQueryParams,
+  useQueryParam,
 } from 'use-query-params';
 
 import {
@@ -93,6 +94,23 @@ export function getDefaultFilterOperator(filter: Filter): string {
     return filter.operators[0].value;
   }
   return '';
+}
+
+export function useStateWithQueryParam<T = any>(
+  name: string,
+  defaultVal: T,
+): [T, (newVal: T) => void] {
+  const [queryParam = defaultVal, setQueryParam] = useQueryParam(
+    name,
+    JsonParam,
+  );
+  const [state, setState] = useState<T>(queryParam);
+  const changeState = (newState: T) => {
+    setQueryParam(newState);
+    setState(newState);
+  };
+
+  return [state, changeState];
 }
 interface UseListViewConfig {
   fetchData: (conf: FetchDataConfig) => any;
@@ -191,7 +209,7 @@ export function useListViewState({
   useEffect(() => {
     if (initialFilters.length) {
       setInternalFilters(
-        mergeCreateFilterValues(initialFilters, query.filters),
+        mergeCreateFilterValues(initialFilters, query.filters || []),
       );
     }
   }, [initialFilters]);

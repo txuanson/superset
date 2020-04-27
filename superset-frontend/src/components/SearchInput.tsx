@@ -20,6 +20,9 @@ import styled from '@superset-ui/style';
 import { css } from '@emotion/core';
 import React from 'react';
 
+import SearchIconUrl from 'images/icons/search.svg';
+import SearchCancelUrl from 'images/icons/cancel-x.svg';
+
 interface Props {
   onSubmit: () => void;
   onClear: () => void;
@@ -50,7 +53,7 @@ const SearchIcon = styled.span`
   text-align: center;
   cursor: pointer;
   background-position: 2px 2px;
-  background-image: url('/static/assets/images/icons/search.svg');
+  background-image: url(${SearchIconUrl});
   background-repeat: no-repeat;
 `;
 
@@ -65,7 +68,7 @@ const ClearIcon = styled.span`
   right: 2px;
   top: 1px;
   background-position: 2px 2px;
-  background-image: url('/static/assets/images/icons/cancel-x.svg');
+  background-image: url(${SearchCancelUrl});
   background-repeat: no-repeat;
 `;
 

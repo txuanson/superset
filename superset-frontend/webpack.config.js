@@ -310,6 +310,13 @@ const config = {
         loader: 'url-loader?limit=10000&mimetype=application/font-woff',
       },
       {
+        test: /\.svg(\?v=\d+\.\d+\.\d+)?$/,
+        issuer: {
+          test: /\.(j|t)sx?$/,
+        },
+        use: ['@svgr/webpack'],
+      },
+      {
         test: /\.(ttf|eot|svg)(\?v=[0-9]\.[0-9]\.[0-9])?$/,
         loader: 'file-loader',
       },

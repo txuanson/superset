@@ -17,21 +17,61 @@
  * under the License.
  */
 import React from 'react';
-import CardViewIcon from 'images/icons/cardview_icon.svg';
-import ListivewIcon from 'images/icons/listview_icon.svg';
-
-// import styled from '@superset-ui/style';
+import styled, { supersetTheme } from '@superset-ui/style';
+import { ReactComponent as CardViewImg } from 'images/icons/cardview_icon.svg';
+import { ReactComponent as ListivewImg } from 'images/icons/listview_icon.svg';
 
 interface Props {
-  value: boolean;
-  onChange: () => void
+  value: string;
+  onChange: (newVal: 'listview' | 'cardview') => any;
 }
 
-export default function ListCardViewtoggle({ value, onChange }: Props) {
+interface IconProps {
+  isSelected: boolean;
+  theme: typeof supersetTheme;
+}
+
+const Button = styled.button`
+  padding: 4px 8px;
+  margin: 0 4px;
+  background-color: ${(props: IconProps) =>
+    props.isSelected ? props.theme.colors.secondary.dark1 : 'transparent'};
+  border-radius: ${(props: IconProps) => props.theme.borderRadius};
+  border: none;
+`;
+
+const CardViewIcon = styled(CardViewImg)`
+  fill: ${(props: IconProps) =>
+    props.isSelected
+      ? props.theme.colors.secondary.light5
+      : props.theme.colors.secondary.dark3};
+`;
+
+const ListivewIcon = styled(ListivewImg)`
+  fill: ${(props: IconProps) =>
+    props.isSelected
+      ? props.theme.colors.secondary.light5
+      : props.theme.colors.secondary.dark3};
+`;
+
+export default function ListCardViewtoggle({
+  value = 'listview',
+  onChange,
+}: Props) {
   return (
-    <span>
-      <img src={CardViewIcon} />
-      <img src={ListivewIcon} />
-    </span>
+    <div>
+      <Button
+        isSelected={value === 'cardview'}
+        onClick={() => onChange('cardview')}
+      >
+        <CardViewIcon isSelected={value === 'cardview'} />
+      </Button>
+      <Button
+        isSelected={value === 'listview'}
+        onClick={() => onChange('listview')}
+      >
+        <ListivewIcon isSelected={value === 'listview'} />
+      </Button>
+    </div>
   );
 }
