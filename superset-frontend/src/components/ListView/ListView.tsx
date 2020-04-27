@@ -17,7 +17,8 @@
  * under the License.
  */
 import { t } from '@superset-ui/translation';
-import React, { FunctionComponent } from 'react';
+import React, { useState, FunctionComponent } from 'react';
+import { css } from '@emotion/core';
 import {
   Col,
   DropdownButton,
@@ -34,6 +35,7 @@ import TableCollection from './TableCollection';
 import Pagination from './Pagination';
 import { FilterMenu, FilterInputs } from './LegacyFilters';
 import FilterControls from './Filters';
+import ListCardViewToggle from './ListCardViewToggle';
 import { FetchDataConfig, Filters, SortColumn } from './types';
 import { ListViewError, useListViewState } from './utils';
 
@@ -128,6 +130,9 @@ const ListView: FunctionComponent<Props> = ({
     });
   }
 
+  const [showCardView, setShowCardView] = useState(false);
+  const toggleCardView = () => setShowCardView(!showCardView)
+
   return (
     <div className={`superset-list-view ${className}`}>
       <div className="header">
@@ -170,11 +175,14 @@ const ListView: FunctionComponent<Props> = ({
               </Col>
             </Row>
             <hr />
-            <FilterControls
-              filters={filters}
-              internalFilters={internalFilters}
-              updateFilterValue={applyFilterValue}
-            />
+            <div css={css`display: inline;`}>
+              <ListCardViewToggle value={showCardView} onChange={toggleCardView} />
+              <FilterControls
+                filters={filters}
+                internalFilters={internalFilters}
+                updateFilterValue={applyFilterValue}
+              />
+            </div>
           </>
         )}
       </div>
