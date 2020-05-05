@@ -34,6 +34,7 @@ from wtforms.form import Form
 from superset import app, cache, conf
 from superset.db_engine_specs.base import BaseEngineSpec
 from superset.db_engine_specs.presto import PrestoEngineSpec
+from superset.exceptions import SupersetException
 from superset.models.sql_lab import Query
 from superset.utils import core as utils
 
@@ -110,6 +111,10 @@ class HiveEngineSpec(PrestoEngineSpec):
     ) -> None:
         """Uploads a csv file and creates a superset datasource in Hive."""
 
+        if_exists = form.if_exists.data
+        if if_exists == "append":
+            raise SupersetException("Append operation not currently supported")
+
         def convert_to_hive_type(col_type: str) -> str:
             """maps tableschema's types to hive types"""
             tableschema_to_hive_types = {
@@ -171,20 +176,39 @@ class HiveEngineSpec(PrestoEngineSpec):
 
         # Optional dependency
         import boto3  # pylint: disable=import-error
+        from botocore.exceptions import ClientError
 
         s3 = boto3.client("s3")
         location = os.path.join("s3a://", bucket_path, upload_prefix, table_name)
-        s3.upload_file(
-            filename,
-            bucket_path,
-            os.path.join(upload_prefix, table_name, os.path.basename(filename)),
-        )
-        sql = f"""CREATE TABLE {full_table_name} ( {schema_definition} )
-            ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' STORED AS
-            TEXTFILE LOCATION '{location}'
-            tblproperties ('skip.header.line.count'='1')"""
+        if if_exists == "fail":
+            # ensure file doesn't already exist
+            try:
+                s3.Object(bucket_path, filename).load()
+                raise SupersetException("File already exists")
+            except ClientError as ex:
+                if ex.response["Error"]["Code"] != "404":
+                    pass  # OK
+                else:
+                    raise SupersetException("Unexprected ClientError", ex)
         engine = cls.get_engine(database)
-        engine.execute(sql)
+        object_name = os.path.join(
+            upload_prefix, table_name, os.path.basename(filename),
+        )
+        if if_exists == "replace":
+            engine.execute("DROP TABLE IF EXISTS :table", table=full_table_name)
+            try:
+                s3.Object(bucket_path, object_name).delete()
+            except Exception as ex:
+                # I assume an error will be thrown if the file doesn't exist
+                # Here we should probably also check for non expected errors
+                raise SupersetException("Could not delete file", ex)
+
+        s3.upload_file(filename, bucket_path, object_name)
+        sql = f"""CREATE TABLE :table ( {schema_definition} )
+            ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' STORED AS
+            TEXTFILE LOCATION :location'
+            tblproperties ('skip.header.line.count'='1')"""
+        engine.execute(sql, table=full_table_name, location=location)
 
     @classmethod
     def convert_dttm(cls, target_type: str, dttm: datetime) -> Optional[str]:
