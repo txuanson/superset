@@ -363,36 +363,60 @@ class ChartList extends React.PureComponent<Props, State> {
       });
   };
 
-  createFetchResource = (
-    resource: string,
-    postProcess?: (value: []) => any[],
-  ) => async () => {
+  fetchOwners = async (pageIndex = 0, pageSize = 20, filterValue = '') => {
+    const resource = '/api/v1/chart/related/owners';
+
     try {
-      const { json = {} } = await SupersetClient.get({
-        endpoint: resource,
+      const queryParams = JSON.stringify({
+        page: pageIndex,
+        page_size: pageSize,
+        ...(filterValue ? { filter: filterValue } : {}),
       });
-      return postProcess ? postProcess(json?.result) : json?.result;
+      const { json = {} } = await SupersetClient.get({
+        endpoint: `${resource}?q=${queryParams}`,
+      });
+
+      return json?.result?.map(
+        ({ text: label, value }: { text: string; value: any }) => ({
+          label,
+          value,
+        }),
+      );
     } catch (e) {
       this.props.addDangerToast(
-        t('An error occurred while fetching chart filters: %s', e.statusText),
+        t(
+          'An error occurred while fetching chart owner values: %s',
+          e.statusText,
+        ),
       );
     }
     return [];
   };
 
-  convertOwners = (owners: any[]) =>
-    owners.map(({ text: label, value }) => ({ label, value }));
+  fetchDatasets = async () => {
+    const resource = '/api/v1/chart/datasources';
+    try {
+      const { json = {} } = await SupersetClient.get({
+        endpoint: `${resource}`,
+      });
 
-  stringifyValues = (datasources: any[]) => {
-    return datasources.map(ds => ({ ...ds, value: JSON.stringify(ds.value) }));
+      return json?.result?.map((ds: { label: string; value: any }) => ({
+        ...ds,
+        value: JSON.stringify(ds.value),
+      }));
+    } catch (e) {
+      this.props.addDangerToast(
+        t(
+          'An error occurred while fetching chart dataset values: %s',
+          e.statusText,
+        ),
+      );
+    }
+    return [];
   };
 
   updateFilters = async () => {
     const { filterOperators } = this.state;
-    const fetchOwners = this.createFetchResource(
-      '/api/v1/chart/related/owners',
-      this.convertOwners,
-    );
 
     if (this.isNewUIEnabled) {
       this.setState({
@@ -403,7 +427,7 @@ class ChartList extends React.PureComponent<Props, State> {
             input: 'select',
             operator: 'rel_m_m',
             unfilteredLabel: 'All',
-            fetchSelects: fetchOwners,
+            fetchSelects: this.fetchOwners,
           },
           {
             Header: 'Viz Type',
@@ -421,10 +445,7 @@ class ChartList extends React.PureComponent<Props, State> {
             input: 'select',
             operator: 'eq',
             unfilteredLabel: 'All',
-            fetchSelects: this.createFetchResource(
-              '/api/v1/chart/datasources',
-              this.stringifyValues,
-            ),
+            fetchSelects: this.fetchDatasets,
           },
           {
             Header: 'Search',
@@ -445,7 +466,7 @@ class ChartList extends React.PureComponent<Props, State> {
       operator: string;
     }) => ({ label, value: operator });
 
-    const owners = await fetchOwners();
+    const owners = await this.fetchOwners(-1, -1);
     this.setState({
       filters: [
         {

@@ -16,11 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from '@superset-ui/style';
 import { withTheme } from 'emotion-theming';
+import { debounce } from 'lodash';
 
-import StyledSelect, { AsyncStyledSelect } from 'src/components/StyledSelect';
+import StyledSelect from 'src/components/StyledSelect';
 import SearchInput from 'src/components/SearchInput';
 import { Filter, Filters, FilterValue, InternalFilter } from './types';
 
@@ -32,6 +33,9 @@ interface SelectFilterProps extends BaseFilter {
   onSelect: (selected: any) => any;
   selects: Filter['selects'];
   emptyLabel?: string;
+}
+
+interface SelectFilterAsyncProps extends SelectFilterProps {
   fetchSelects?: Filter['fetchSelects'];
 }
 
@@ -52,7 +56,6 @@ function SelectFilter({
   emptyLabel = 'None',
   initialValue,
   onSelect,
-  fetchSelects,
 }: SelectFilterProps) {
   const clearFilterSelect = {
     label: emptyLabel,
@@ -69,6 +72,7 @@ function SelectFilter({
       ? clearFilterSelect.value
       : initialValue,
   );
+
   const onChange = (selected: { label: string; value: any } | null) => {
     if (selected === null) return;
     setValue(selected.value);
@@ -76,34 +80,108 @@ function SelectFilter({
       selected.value === CLEAR_SELECT_FILTER_VALUE ? undefined : selected.value,
     );
   };
-  const fetchAndFormatSelects = async () => {
-    if (!fetchSelects) return { options: [clearFilterSelect] };
-    const selectValues = await fetchSelects();
-    return { options: [clearFilterSelect, ...selectValues] };
+
+  return (
+    <FilterContainer>
+      <Title>{Header}:</Title>
+      <StyledSelect
+        data-test="filters-select"
+        value={value}
+        options={options}
+        onChange={onChange}
+        clearable={false}
+      />
+    </FilterContainer>
+  );
+}
+
+const DEFAULT_PAGE_SIZE = 20;
+function SelectFilterAsync({
+  Header,
+  emptyLabel = 'None',
+  initialValue,
+  onSelect,
+  fetchSelects,
+}: SelectFilterAsyncProps) {
+  const clearFilterSelect = {
+    label: emptyLabel,
+    value: CLEAR_SELECT_FILTER_VALUE,
+  };
+
+  const [options = [], setOptions] = useState<Filter['selects']>([
+    clearFilterSelect,
+  ]);
+  const [pageIndex, setPageIndex] = useState<number>(0);
+  const [filterValue, setFilterValue] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const fetchAndSaveSelects = async () => {
+    if (!fetchSelects) return;
+    const loadingTimeout = setTimeout(() => setLoading(true), 500);
+    const fetchedSelectValues = await fetchSelects(
+      pageIndex,
+      DEFAULT_PAGE_SIZE,
+      filterValue,
+    );
+    clearTimeout(loadingTimeout);
+    setPageIndex(pageIndex + 1);
+    setOptions([...options, ...fetchedSelectValues]);
+    setLoading(false);
+  };
+
+  const filterSelects = debounce(async (val: string) => {
+    if (filterValue === val) return;
+    setFilterValue(val);
+    if (!fetchSelects) return;
+    const loadingTimeout = setTimeout(() => setLoading(true), 500);
+    const fetchedSelectValues = await fetchSelects(0, DEFAULT_PAGE_SIZE, val);
+    clearTimeout(loadingTimeout);
+    setPageIndex(1);
+    const head =
+      clearFilterSelect.label.toLowerCase().indexOf(val.toLowerCase()) >= 0 ||
+      !val
+        ? [clearFilterSelect]
+        : [];
+    setOptions([...head, ...fetchedSelectValues]);
+    setLoading(false);
+  }, 250);
+
+  useEffect(() => {
+    fetchAndSaveSelects();
+  }, []);
+
+  const [value, setValue] = useState(
+    typeof initialValue === 'undefined'
+      ? clearFilterSelect.value
+      : initialValue,
+  );
+
+  const onChange = (selected: { label: string; value: any } | null) => {
+    if (selected === null) return;
+    setValue(selected.value);
+    onSelect(
+      selected.value === CLEAR_SELECT_FILTER_VALUE ? undefined : selected.value,
+    );
   };
 
   return (
     <FilterContainer>
       <Title>{Header}:</Title>
-      {fetchSelects ? (
-        <AsyncStyledSelect
-          data-test="filters-select"
-          value={value}
-          onChange={onChange}
-          loadOptions={fetchAndFormatSelects}
-          placeholder={initialValue || emptyLabel}
-          loadingPlaceholder="Loading..."
-          clearable={false}
-        />
-      ) : (
-        <StyledSelect
-          data-test="filters-select"
-          value={value}
-          options={options}
-          onChange={onChange}
-          clearable={false}
-        />
-      )}
+      <StyledSelect
+        data-test="filters-select"
+        value={value}
+        onChange={onChange}
+        options={options}
+        onMenuScrollToBottom={fetchAndSaveSelects}
+        onInputChange={val => {
+          filterSelects(val);
+          return val;
+        }}
+        filterOptions={() => options}
+        placeholder={initialValue || emptyLabel}
+        isLoading={loading}
+        clearable={false}
+      />
     </FilterContainer>
   );
 }
@@ -159,6 +237,20 @@ function UIFilters({
           const initialValue =
             internalFilters[index] && internalFilters[index].value;
           if (input === 'select') {
+            if (typeof fetchSelects === 'function') {
+              return (
+                <SelectFilterAsync
+                  key={Header}
+                  Header={Header}
+                  selects={selects}
+                  emptyLabel={unfilteredLabel}
+                  initialValue={initialValue}
+                  fetchSelects={fetchSelects}
+                  onSelect={(value: any) => updateFilterValue(index, value)}
+                />
+              );
+            }
+
             return (
               <SelectFilter
                 key={Header}
@@ -166,7 +258,6 @@ function UIFilters({
                 selects={selects}
                 emptyLabel={unfilteredLabel}
                 initialValue={initialValue}
-                fetchSelects={fetchSelects}
                 onSelect={(value: any) => updateFilterValue(index, value)}
               />
             );
