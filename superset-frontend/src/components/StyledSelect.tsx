@@ -53,6 +53,10 @@ const styles = css`
     .Select-input {
       padding-left: 0;
       padding-right: 8px;
+      
+      input:first-child {
+        padding-left: 8px;  
+      }
     }
     .Select-arrow-zone {
       width: auto;
