@@ -337,6 +337,7 @@ IMG_UPLOAD_URL = "/static/uploads/"
 
 CACHE_DEFAULT_TIMEOUT = 60 * 60 * 24
 CACHE_CONFIG: CacheConfig = {"CACHE_TYPE": "null"}
+CACHE_KEY_MUTATOR = lambda cache_key: None
 TABLE_NAMES_CACHE_CONFIG: CacheConfig = {"CACHE_TYPE": "null"}
 
 # CORS Options
@@ -863,3 +864,6 @@ elif importlib.util.find_spec("superset_config"):
     except Exception:
         logger.exception("Found but failed to import local superset_config")
         raise
+
+SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:postgres@localhost:5433/superset'
+

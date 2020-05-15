@@ -107,13 +107,20 @@ def run_migrations_online() -> None:
         connection=connection,
         target_metadata=target_metadata,
         # compare_type=True,
+        include_schemas=True,
         process_revision_directives=process_revision_directives,
         **kwargs
     )
 
     try:
-        with context.begin_transaction():
-            context.run_migrations()
+        for schema in ["schema1", "schema2"]:
+            connection.execute(f"set search_path to '{schema}'")
+            context.configure(
+                connection=connection,
+                target_metadata=target_metadata
+            )
+            with context.begin_transaction():
+                context.run_migrations()
     finally:
         connection.close()
 

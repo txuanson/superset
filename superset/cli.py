@@ -72,6 +72,21 @@ def init():
     appbuilder.add_permissions(update_perms=True)
     security_manager.sync_role_definitions()
 
+@superset.command()
+@with_appcontext
+def multi_init():
+    from superset.extensions import security_manager
+    """Inits the Superset application"""
+    for schema in ["schema1", "schema2"]:
+        db.engine.update_execution_options(schema_translate_map={None: schema})
+        utils.get_example_database()
+        role_admin = security_manager.add_role("Admin")
+        user = security_manager.add_user(
+            'admin', 'admin', 'admin', 'admin@superset.org', role_admin, "1"
+        )
+        appbuilder.add_permissions(update_perms=True)
+        security_manager.sync_role_definitions()
+
 
 @superset.command()
 @with_appcontext

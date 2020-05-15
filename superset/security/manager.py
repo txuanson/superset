@@ -159,6 +159,18 @@ class SupersetSecurityManager(SecurityManager):
 
     ACCESSIBLE_PERMS = {"can_userinfo"}
 
+    def create_db(self):
+        """
+        We want to be in control of our own user model, and don't want to
+        implicitly create schemas on startup unless we've directed FAB to do so
+        """
+        from flask_appbuilder.models.sqla import Base
+        from superset.extensions import db
+
+        for schema in ["schema1", "schema2"]:
+            db.engine.update_execution_options(schema_translate_map={None: schema})
+            Base.metadata.create_all(db.engine)
+
     def get_schema_perm(
         self, database: Union["Database", str], schema: Optional[str] = None
     ) -> Optional[str]:

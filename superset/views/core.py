@@ -2331,6 +2331,7 @@ class Superset(BaseSupersetView):
                 start_time=now_as_float(),
                 expand_data=expand_data,
                 log_params=log_params,
+                shard_id=g.shard_id
             )
         except Exception as ex:
             logger.exception(f"Query {query.id}: {ex}")

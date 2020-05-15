@@ -394,7 +394,6 @@ class BaseViz:
         """
         cache_dict = copy.copy(query_obj)
         cache_dict.update(extra)
-
         for k in ["from_dttm", "to_dttm"]:
             del cache_dict[k]
 
@@ -407,7 +406,9 @@ class BaseViz:
             else []
         )
         cache_dict["changed_on"] = self.datasource.changed_on
+        app.config["CACHE_KEY_MUTATOR"](cache_dict)
         json_data = self.json_dumps(cache_dict, sort_keys=True)
+        print(f"CACHE KEY:{json_data}")
         return hashlib.md5(json_data.encode("utf-8")).hexdigest()
 
     def get_payload(self, query_obj=None):
@@ -424,6 +425,7 @@ class BaseViz:
 
     def get_df_payload(self, query_obj=None, **kwargs):
         """Handles caching around the df payload retrieval"""
+        from flask import g
         if not query_obj:
             query_obj = self.query_obj()
         cache_key = self.cache_key(query_obj, **kwargs) if query_obj else None
