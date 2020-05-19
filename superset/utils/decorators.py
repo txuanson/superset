@@ -77,6 +77,7 @@ def etag_cache(max_age, check_perms=bool):
                     key_args = list(args)
                     key_kwargs = kwargs.copy()
                     key_kwargs.update(request.args)
+                    app.config["CACHE_KEY_MUTATOR"](key_kwargs)
                     cache_key = wrapper.make_cache_key(f, *key_args, **key_kwargs)
                     response = cache.get(cache_key)
                 except Exception:  # pylint: disable=broad-except
