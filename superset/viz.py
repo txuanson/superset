@@ -837,6 +837,23 @@ class WordCloudViz(BaseViz):
         d["groupby"] = [self.form_data.get("series")]
         return d
 
+class ObservableViz(BaseViz):
+
+    """Build an observable
+
+    Uses the awesome services of:
+    https://observablehq.com
+    """
+
+    viz_type = "observable"
+    verbose_name = _("Observable")
+    is_timeseries = False
+
+    def query_obj(self):
+        d = super().query_obj()
+        d["groupby"] = [self.form_data.get("series")]
+        return d
+
 
 class TreemapViz(BaseViz):
 

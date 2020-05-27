@@ -92,6 +92,7 @@
     "@superset-ui/legacy-preset-chart-nvd3": "^0.13.23",
     "@superset-ui/number-format": "^0.13.3",
     "@superset-ui/plugin-chart-word-cloud": "^0.13.21",
+    "@superset-ui/plugin-chart-observable": "^0.13.21",
     "@superset-ui/preset-chart-xy": "^0.13.11",
     "@superset-ui/query": "^0.13.21",
     "@superset-ui/style": "^0.13.11",

@@ -871,6 +871,17 @@ class WordCloudViz(BaseViz):
     verbose_name = _("Word Cloud")
     is_timeseries = False
 
+class ObservableViz(BaseViz):
+
+    """Build an observable
+
+    Uses the awesome services of:
+    https://observablehq.com
+    """
+
+    viz_type = "observable"
+    verbose_name = _("Observable")
+    is_timeseries = False
 
 class TreemapViz(BaseViz):
 
