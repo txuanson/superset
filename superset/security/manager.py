@@ -408,12 +408,12 @@ class SupersetSecurityManager(SecurityManager):
     def get_public_role(self) -> Optional[Any]:  # Optional[self.role_model]
         from superset import conf
 
-        if not conf.get("PUBLIC_ROLE_LIKE_GAMMA", False):
+        if not conf.get("AUTH_ROLE_PUBLIC", None):
             return None
 
         from superset import db
 
-        return db.session.query(self.role_model).filter_by(name="Public").first()
+        return db.session.query(self.role_model).filter_by(name=conf.get("AUTH_ROLE_PUBLIC")).first()
 
     def user_view_menu_names(self, permission_name: str) -> Set[str]:
         from superset import db
@@ -631,8 +631,8 @@ class SupersetSecurityManager(SecurityManager):
         self.set_role("granter", self._is_granter_pvm)
         self.set_role("sql_lab", self._is_sql_lab_pvm)
 
-        if conf.get("PUBLIC_ROLE_LIKE_GAMMA", False):
-            self.set_role("Public", self._is_gamma_pvm)
+        #if conf.get("PUBLIC_ROLE_LIKE_GAMMA", False):
+        #    self.set_role("Public", self._is_gamma_pvm)
 
         self.create_missing_perms()
 
