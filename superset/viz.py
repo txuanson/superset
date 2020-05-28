@@ -1355,6 +1355,182 @@ class NVD3TimeSeriesViz(NVD3Viz):
         return chart_data
 
 
+class ProphetViz(NVD3Viz):
+
+    """FB Prophet viz"""
+
+    viz_type = "prophet"
+    verbose_name = _("Time Series - Multiple Line Charts")
+
+    sort_series = False
+    is_timeseries = True
+    pivot_fill_value: Optional[int] = None
+
+    def to_series(self, df, classed="", title_suffix=""):
+        cols = []
+        for col in df.columns:
+            if col == "":
+                cols.append("N/A")
+            elif col is None:
+                cols.append("NULL")
+            else:
+                cols.append(col)
+        df.columns = cols
+        series = df.to_dict("series")
+
+        chart_data = []
+        for name in df.T.index.tolist():
+            ys = series[name]
+            if df[name].dtype.kind not in "biufc":
+                continue
+            if isinstance(name, list):
+                series_title = [str(title) for title in name]
+            elif isinstance(name, tuple):
+                series_title = tuple(str(title) for title in name)
+            else:
+                series_title = str(name)
+            if (
+                isinstance(series_title, (list, tuple))
+                and len(series_title) > 1
+                and len(self.metric_labels) == 1
+            ):
+                # Removing metric from series name if only one metric
+                series_title = series_title[1:]
+            if title_suffix:
+                if isinstance(series_title, str):
+                    series_title = (series_title, title_suffix)
+                elif isinstance(series_title, (list, tuple)):
+                    series_title = series_title + (title_suffix,)
+
+            values = []
+            non_nan_cnt = 0
+            for ds in df.index:
+                if ds in ys:
+                    d = {"x": ds, "y": ys[ds]}
+                    if not np.isnan(ys[ds]):
+                        non_nan_cnt += 1
+                else:
+                    d = {}
+                values.append(d)
+
+            if non_nan_cnt == 0:
+                continue
+
+            d = {"key": series_title, "values": values}
+            if classed:
+                d["classed"] = classed
+            chart_data.append(d)
+        return chart_data
+
+    def process_data(self, df: pd.DataFrame, aggregate: bool = False) -> VizData:
+        fd = self.form_data
+        if fd.get("granularity") == "all":
+            raise QueryObjectValidationError(
+                _("Pick a time granularity for your time series")
+            )
+
+        if df.empty:
+            return df
+
+        rule = fd.get("resample_rule")
+        method = fd.get("resample_method")
+
+        if rule and method:
+            df = getattr(df.resample(rule), method)()
+
+        if self.sort_series:
+            dfs = df.sum()
+            dfs.sort_values(ascending=False, inplace=True)
+            df = df[dfs.index]
+
+        df = self.apply_rolling(df)
+        if fd.get("contribution"):
+            dft = df.T
+            df = (dft / dft.sum()).T
+
+        return df
+
+    def run_extra_queries(self):
+        fd = self.form_data
+
+        time_compare = fd.get("time_compare") or []
+        # backwards compatibility
+        if not isinstance(time_compare, list):
+            time_compare = [time_compare]
+
+        for option in time_compare:
+            query_object = self.query_obj()
+            delta = utils.parse_past_timedelta(option)
+            query_object["inner_from_dttm"] = query_object["from_dttm"]
+            query_object["inner_to_dttm"] = query_object["to_dttm"]
+
+            if not query_object["from_dttm"] or not query_object["to_dttm"]:
+                raise QueryObjectValidationError(
+                    _(
+                        "`Since` and `Until` time bounds should be specified "
+                        "when using the `Time Shift` feature."
+                    )
+                )
+            query_object["from_dttm"] -= delta
+            query_object["to_dttm"] -= delta
+
+            df2 = self.get_df_payload(query_object, time_compare=option).get("df")
+            if df2 is not None and DTTM_ALIAS in df2:
+                label = "{} offset".format(option)
+                df2[DTTM_ALIAS] += delta
+                df2 = self.process_data(df2)
+                self._extra_chart_data.append((label, df2))
+
+    def get_data(self, df: pd.DataFrame) -> VizData:
+        fd = self.form_data
+        comparison_type = fd.get("comparison_type") or "values"
+        df = self.process_data(df)
+        if comparison_type == "values":
+            # Filter out series with all NaN
+            chart_data = self.to_series(df.dropna(axis=1, how="all"))
+
+            for i, (label, df2) in enumerate(self._extra_chart_data):
+                chart_data.extend(
+                    self.to_series(
+                        df2, classed="time-shift-{}".format(i), title_suffix=label
+                    )
+                )
+        else:
+            chart_data = []
+            for i, (label, df2) in enumerate(self._extra_chart_data):
+                # reindex df2 into the df2 index
+                combined_index = df.index.union(df2.index)
+                df2 = (
+                    df2.reindex(combined_index)
+                    .interpolate(method="time")
+                    .reindex(df.index)
+                )
+
+                if comparison_type == "absolute":
+                    diff = df - df2
+                elif comparison_type == "percentage":
+                    diff = (df - df2) / df2
+                elif comparison_type == "ratio":
+                    diff = df / df2
+                else:
+                    raise QueryObjectValidationError(
+                        "Invalid `comparison_type`: {0}".format(comparison_type)
+                    )
+
+                # remove leading/trailing NaNs from the time shift difference
+                diff = diff[diff.first_valid_index() : diff.last_valid_index()]
+
+                chart_data.extend(
+                    self.to_series(
+                        diff, classed="time-shift-{}".format(i), title_suffix=label
+                    )
+                )
+
+        if not self.sort_series:
+            chart_data = sorted(chart_data, key=lambda x: tuple(x["key"]))
+        return chart_data
+
+
 class MultiLineViz(NVD3Viz):
 
     """Pile on multiple line charts"""
