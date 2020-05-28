@@ -21,6 +21,7 @@ These objects represent the backend of all the visualizations that
 Superset can render.
 """
 import copy
+import dataclasses
 import hashlib
 import inspect
 import logging
@@ -33,7 +34,6 @@ from datetime import datetime, timedelta
 from itertools import product
 from typing import Any, Dict, List, Optional, Set, Tuple, TYPE_CHECKING
 
-import dataclasses
 import geohash
 import numpy as np
 import pandas as pd
@@ -1423,63 +1423,36 @@ class ProphetViz(NVD3Viz):
         return chart_data
 
     def process_data(self, df: pd.DataFrame, aggregate: bool = False) -> VizData:
+        from fbprophet import Prophet
+
         fd = self.form_data
-        if fd.get("granularity") == "all":
-            raise QueryObjectValidationError(
-                _("Pick a time granularity for your time series")
-            )
-
-        if df.empty:
-            return df
-
-        rule = fd.get("resample_rule")
-        method = fd.get("resample_method")
-
-        if rule and method:
-            df = getattr(df.resample(rule), method)()
-
-        if self.sort_series:
-            dfs = df.sum()
-            dfs.sort_values(ascending=False, inplace=True)
-            df = df[dfs.index]
-
-        df = self.apply_rolling(df)
-        if fd.get("contribution"):
-            dft = df.T
-            df = (dft / dft.sum()).T
-
-        return df
-
-    def run_extra_queries(self):
-        fd = self.form_data
-
-        time_compare = fd.get("time_compare") or []
-        # backwards compatibility
-        if not isinstance(time_compare, list):
-            time_compare = [time_compare]
-
-        for option in time_compare:
-            query_object = self.query_obj()
-            delta = utils.parse_past_timedelta(option)
-            query_object["inner_from_dttm"] = query_object["from_dttm"]
-            query_object["inner_to_dttm"] = query_object["to_dttm"]
-
-            if not query_object["from_dttm"] or not query_object["to_dttm"]:
-                raise QueryObjectValidationError(
-                    _(
-                        "`Since` and `Until` time bounds should be specified "
-                        "when using the `Time Shift` feature."
-                    )
-                )
-            query_object["from_dttm"] -= delta
-            query_object["to_dttm"] -= delta
-
-            df2 = self.get_df_payload(query_object, time_compare=option).get("df")
-            if df2 is not None and DTTM_ALIAS in df2:
-                label = "{} offset".format(option)
-                df2[DTTM_ALIAS] += delta
-                df2 = self.process_data(df2)
-                self._extra_chart_data.append((label, df2))
+        df.columns = ["ds", "y"]
+        time_grain = fd.get("time_grain_sqla") or fd.get("granularity")
+        freq_map = {
+            "PT1S": "S",
+            "PT1M": "min",
+            "PT5M": "5min",
+            "PT10M": "10min",
+            "PT15M": "15min",
+            "PT0.5H": "30min",
+            "PT1H": "H",
+            "P1D": "D",
+            "P1W": "W",
+            "P1M": "M",
+            "P0.25Y": "Q",
+            "P1Y": "A",
+            "1969-12-28T00:00:00Z/P1W": "W",
+            "1969-12-29T00:00:00Z/P1W": "W",
+            "P1W/1970-01-03T00:00:00Z": "W",
+            "P1W/1970-01-04T00:00:00Z": "W",
+        }
+        freq = freq_map.get(time_grain, "D")
+        periods = int(fd.get("periods", 10))
+        model = Prophet()
+        model.fit(df)
+        future = model.make_future_dataframe(periods=periods, freq=freq)
+        forecast = model.predict(future)[["ds", "yhat", "yhat_lower", "yhat_upper"]]
+        return forecast.join(df.set_index("ds"), on="ds").set_index(["ds"])
 
     def get_data(self, df: pd.DataFrame) -> VizData:
         fd = self.form_data
