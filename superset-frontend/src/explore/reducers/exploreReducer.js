@@ -164,6 +164,17 @@ export default function exploreReducer(state = {}, action) {
         },
       };
     },
+    [actions.SET_CONTROL_OPTIONS]() {
+      console.log('i hit exporeReducer*******')
+      /*return {
+        ...state,
+        controls: {
+          ...state.controls,
+          ...{[action.controlName]: { options: [{name: "bill"}], value: ["bill"]}}
+        } 
+      };*/
+      return state;
+    }
   };
   if (action.type in actionHandlers) {
     return actionHandlers[action.type]();

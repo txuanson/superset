@@ -20,6 +20,7 @@ import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 
 import * as actions from './chartAction';
+import * as exploreActions from '../explore/actions/exploreActions';
 import { logEvent } from '../logger/actions';
 import Chart from './Chart';
 
@@ -28,6 +29,7 @@ function mapDispatchToProps(dispatch) {
     actions: bindActionCreators(
       {
         ...actions,
+        ...{ setControlOptions: exploreActions.setControlOptions},
         logEvent,
       },
       dispatch,

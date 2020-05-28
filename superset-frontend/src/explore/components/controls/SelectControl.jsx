@@ -84,6 +84,13 @@ export default class SelectControl extends React.PureComponent {
     this.select = null; // pointer to the react-select instance
     this.getSelectRef = this.getSelectRef.bind(this);
     this.handleKeyDownForCreate = this.handleKeyDownForCreate.bind(this);
+    this.handleChangeOptions = this.handleChangeOptions.bind(this);
+  }
+  componentDidMount() {
+    document.addEventListener('change_select_options', this.handleChangeOptions);
+  }
+  componentWillUnmount() {
+    document.removeEventListener('change_select_options', this.handleChangeOptions);
   }
 
   UNSAFE_componentWillReceiveProps(nextProps) {
@@ -96,6 +103,11 @@ export default class SelectControl extends React.PureComponent {
     }
   }
 
+  handleChangeOptions({ detail: {name, options}}) {
+    if (this.props.name === name){
+       this.setState({options});
+    }
+  }
   onChange(opt) {
     let optionValue = null;
     if (opt) {

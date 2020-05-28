@@ -150,3 +150,8 @@ export const SLICE_UPDATED = 'SLICE_UPDATED';
 export function sliceUpdated(slice) {
   return { type: SLICE_UPDATED, slice };
 }
+
+export const SET_CONTROL_OPTIONS = 'SET_CONTROL_OPTIONS';
+export function setControlOptions(controlName, options) {
+  return { type: SET_CONTROL_OPTIONS, controlName, options};
+}
