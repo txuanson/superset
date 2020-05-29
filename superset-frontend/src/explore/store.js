@@ -77,7 +77,7 @@ export function applyDefaultFormData(inputFormData) {
     }
   });
 
-  return formData;
+  return { ...formData, queryFields: inputFormData.queryFields };
 }
 
 const defaultControls = { ...controls };
