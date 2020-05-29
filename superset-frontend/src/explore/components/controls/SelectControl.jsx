@@ -103,8 +103,9 @@ export default class SelectControl extends React.PureComponent {
     }
   }
 
-  handleChangeOptions({ detail: {name, options}}) {
-    if (this.props.name === name){
+  handleChangeOptions({ detail: {names, options}}) {
+    console.log('DETAILS', options)
+    if (names.includes(this.props.name)){
        this.setState({options});
     }
   }
