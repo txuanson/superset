@@ -1448,11 +1448,13 @@ class ProphetViz(NVD3Viz):
         }
         freq = freq_map.get(time_grain, "D")
         periods = int(fd.get("periods", 10))
-        model = Prophet()
+        model = Prophet(interval_width=0.90)
         model.fit(df)
         future = model.make_future_dataframe(periods=periods, freq=freq)
         forecast = model.predict(future)[["ds", "yhat", "yhat_lower", "yhat_upper"]]
-        return forecast.join(df.set_index("ds"), on="ds").set_index(["ds"])
+        joined = forecast.join(df.set_index("ds"), on="ds").set_index(["ds"])
+        joined.columns = ["Prediction", "Lower", "Upper", "Observation"]
+        return joined
 
     def get_data(self, df: pd.DataFrame) -> VizData:
         fd = self.form_data
