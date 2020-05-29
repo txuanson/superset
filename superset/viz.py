@@ -1425,6 +1425,16 @@ class ProphetViz(NVD3Viz):
     def process_data(self, df: pd.DataFrame, aggregate: bool = False) -> VizData:
         from fbprophet import Prophet
 
+        def _parse_seasonality(input_value):
+            if input_value is None:
+                return "auto"
+            if isinstance(input_value, bool):
+                return input
+            try:
+                return int(input_value)
+            except ValueError:
+                return input
+
         fd = self.form_data
         df.columns = ["ds", "y"]
         time_grain = fd.get("time_grain_sqla") or fd.get("granularity")
@@ -1448,7 +1458,17 @@ class ProphetViz(NVD3Viz):
         }
         freq = freq_map.get(time_grain, "D")
         periods = int(fd.get("periods", 10))
-        model = Prophet(interval_width=0.90)
+        interval = float(fd.get("interval", 0.8))
+        yearly_seasonality = _parse_seasonality(fd.get("seasonality_yearly"))
+        weekly_seasonality = _parse_seasonality(fd.get("seasonality_weekly"))
+        daily_seasonality = _parse_seasonality(fd.get("seasonality_daily"))
+        model = Prophet(
+            interval_width=interval,
+            yearly_seasonality=yearly_seasonality,
+            weekly_seasonality=weekly_seasonality,
+            daily_seasonality=daily_seasonality,
+        )
+
         model.fit(df)
         future = model.make_future_dataframe(periods=periods, freq=freq)
         forecast = model.predict(future)[["ds", "yhat", "yhat_lower", "yhat_upper"]]
