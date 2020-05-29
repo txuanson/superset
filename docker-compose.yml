@@ -28,6 +28,7 @@ x-superset-volumes: &superset-volumes
   - ./docker/pythonpath_dev:/app/pythonpath
   - ./superset:/app/superset
   - ./superset-frontend:/app/superset-frontend
+  - ../superset-ui:/app/superset-ui
   - node_modules:/app/superset-frontend/node_modules
   - superset_home:/app/superset_home
 
@@ -72,7 +73,7 @@ services:
     volumes: *superset-volumes
 
   superset-node:
-    image: node:12-jessie
+    image: node:10-jessie
     container_name: superset_node
     command: ["bash", "-c", "cd /app/superset-frontend && npm install --global webpack webpack-cli && npm ci && npm link /app/superset-ui/plugins/legacy-preset-chart-nvd3 && npm run dev"]
     env_file: docker/.env
