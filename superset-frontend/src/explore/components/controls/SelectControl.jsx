@@ -84,6 +84,15 @@ export default class SelectControl extends React.PureComponent {
     this.select = null; // pointer to the react-select instance
     this.getSelectRef = this.getSelectRef.bind(this);
     this.handleKeyDownForCreate = this.handleKeyDownForCreate.bind(this);
+    this.handleCellNamesUpdate = this.handleCellNamesUpdate.bind(this);
+  }
+
+  componentDidMount() {
+    window.addEventListener('cellNameUpdate', this.handleCellNamesUpdate);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('cellNameUpdate', null);
   }
 
   UNSAFE_componentWillReceiveProps(nextProps) {
@@ -169,6 +178,17 @@ export default class SelectControl extends React.PureComponent {
       options = options.filter(o => !this.isMetaSelectAllOption(o));
     }
     return options;
+  }
+
+  handleCellNamesUpdate(list) {
+    if (['displayed_cells', 'data_injection_cell'].includes(this.props.name)) {
+      const theList = window.cellNames.map(item => ({
+        name: item,
+      }));
+      this.setState({
+        options: theList,
+      });
+    }
   }
 
   handleKeyDownForCreate(event) {
