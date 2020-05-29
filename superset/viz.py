@@ -1429,11 +1429,11 @@ class ProphetViz(NVD3Viz):
             if input_value is None:
                 return "auto"
             if isinstance(input_value, bool):
-                return input
+                return input_value
             try:
                 return int(input_value)
             except ValueError:
-                return input
+                return input_value
 
         fd = self.form_data
         df.columns = ["ds", "y"]
