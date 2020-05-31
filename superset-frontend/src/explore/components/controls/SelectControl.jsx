@@ -17,6 +17,7 @@
  * under the License.
  */
 import React from 'react';
+import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import { t } from '@superset-ui/translation';
 import { Select, CreatableSelect, OnPasteSelect } from 'src/components/Select';
@@ -75,7 +76,7 @@ const defaultProps = {
   allowAll: false,
 };
 
-export default class SelectControl extends React.PureComponent {
+class SelectControl extends React.PureComponent {
   constructor(props) {
     super(props);
     this.state = { options: this.getOptions(props) };
@@ -84,15 +85,6 @@ export default class SelectControl extends React.PureComponent {
     this.select = null; // pointer to the react-select instance
     this.getSelectRef = this.getSelectRef.bind(this);
     this.handleKeyDownForCreate = this.handleKeyDownForCreate.bind(this);
-    this.handleCellNamesUpdate = this.handleCellNamesUpdate.bind(this);
-  }
-
-  componentDidMount() {
-    window.addEventListener('cellNameUpdate', this.handleCellNamesUpdate);
-  }
-
-  componentWillUnmount() {
-    window.removeEventListener('cellNameUpdate', null);
   }
 
   UNSAFE_componentWillReceiveProps(nextProps) {
@@ -180,17 +172,6 @@ export default class SelectControl extends React.PureComponent {
     return options;
   }
 
-  handleCellNamesUpdate(list) {
-    if (['displayed_cells', 'data_injection_cell'].includes(this.props.name)) {
-      const theList = window.cellNames.map(item => ({
-        name: item,
-      }));
-      this.setState({
-        options: theList,
-      });
-    }
-  }
-
   handleKeyDownForCreate(event) {
     const key = event.key;
     if (key === 'Tab' || (this.props.commaChoosesOption && key === ',')) {
@@ -265,3 +246,5 @@ export default class SelectControl extends React.PureComponent {
 
 SelectControl.propTypes = propTypes;
 SelectControl.defaultProps = defaultProps;
+
+export default SelectControl;

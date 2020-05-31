@@ -150,3 +150,6 @@ export const SLICE_UPDATED = 'SLICE_UPDATED';
 export function sliceUpdated(slice) {
   return { type: SLICE_UPDATED, slice };
 }
+
+export const OVERWRITE_SELECT_CONTROL_OPTIONS =
+  'OVERWRITE_SELECT_CONTROL_OPTIONS';

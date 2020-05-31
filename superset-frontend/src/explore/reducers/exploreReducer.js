@@ -164,6 +164,12 @@ export default function exploreReducer(state = {}, action) {
         },
       };
     },
+    [actions.OVERWRITE_SELECT_CONTROL_OPTIONS]() {
+      return {
+        ...state,
+        selectControlOptions: action.selectControlOptions,
+      };
+    },
   };
   if (action.type in actionHandlers) {
     return actionHandlers[action.type]();
