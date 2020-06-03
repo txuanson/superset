@@ -119,7 +119,7 @@ def get_query(query_id, session):
 
 
 @contextmanager
-def session_scope(nullpool, shard_id=None):
+def session_scope(nullpool, tenant_id=None):
     """Provide a transactional scope around a series of operations."""
     database_uri = app.config["SQLALCHEMY_DATABASE_URI"]
     if "sqlite" in database_uri:
@@ -128,12 +128,14 @@ def session_scope(nullpool, shard_id=None):
             in a future version of Superset."
         )
     if nullpool:
+        print(f"!!!!!!!! SCOPE:{tenant_id}")
         engine = sqlalchemy.create_engine(database_uri, poolclass=NullPool)
-        engine.update_execution_options(schema_translate_map={None: shard_id})
+        engine.update_execution_options(schema_translate_map={None: tenant_id})
         session_class = sessionmaker()
         session_class.configure(bind=engine)
         session = session_class()
     else:
+        print(f"!!!!!!!! SCOPE ELSE:{tenant_id}")
         session = db.session()
         session.commit()  # HACK
 
@@ -164,10 +166,10 @@ def get_sql_results(  # pylint: disable=too-many-arguments
     start_time=None,
     expand_data=False,
     log_params=None,
-    shard_id=None,
+    tenant_id=None,
 ):
     """Executes the sql query returns the results."""
-    with session_scope(not ctask.request.called_directly, shard_id=shard_id) as session:
+    with session_scope(not ctask.request.called_directly, tenant_id=tenant_id) as session:
 
         try:
             return execute_sql_statements(

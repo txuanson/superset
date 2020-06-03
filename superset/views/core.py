@@ -2331,7 +2331,7 @@ class Superset(BaseSupersetView):
                 start_time=now_as_float(),
                 expand_data=expand_data,
                 log_params=log_params,
-                shard_id=g.shard_id
+                tenant_id=g.tenant_id
             )
         except Exception as ex:
             logger.exception(f"Query {query.id}: {ex}")
@@ -2387,6 +2387,7 @@ class Superset(BaseSupersetView):
                     user_name=g.user.username if g.user else None,
                     expand_data=expand_data,
                     log_params=log_params,
+                    tenant_id=g.tenant_id,
                 )
 
             payload = json.dumps(
