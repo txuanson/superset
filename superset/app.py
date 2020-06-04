@@ -592,6 +592,8 @@ class SupersetAppInitializer:
 
         with self.flask_app.app_context():
             pessimistic_connection_handling(db.engine)
+            from superset.request_context import tenant_switch
+            tenant_switch(db.engine)
         migrate.init_app(self.flask_app, db=db, directory=APP_DIR + "/migrations")
 
     def configure_wtf(self):

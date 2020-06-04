@@ -2377,6 +2377,7 @@ class Superset(BaseSupersetView):
                 is_feature_enabled("SQLLAB_BACKEND_PERSISTENCE")
                 and not query.select_as_cta
             )
+            from superset.request_context import tenant_id_proxy
             with utils.timeout(seconds=timeout, error_message=timeout_msg):
                 # pylint: disable=no-value-for-parameter
                 data = sql_lab.get_sql_results(
@@ -2387,7 +2388,7 @@ class Superset(BaseSupersetView):
                     user_name=g.user.username if g.user else None,
                     expand_data=expand_data,
                     log_params=log_params,
-                    tenant_id=g.tenant_id,
+                    tenant_id=tenant_id_proxy,
                 )
 
             payload = json.dumps(

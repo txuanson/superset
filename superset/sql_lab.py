@@ -26,6 +26,7 @@ import msgpack
 import pyarrow as pa
 import simplejson as json
 import sqlalchemy
+from flask import g
 from celery.exceptions import SoftTimeLimitExceeded
 from contextlib2 import contextmanager
 from flask_babel import lazy_gettext as _
@@ -128,14 +129,14 @@ def session_scope(nullpool, tenant_id=None):
             in a future version of Superset."
         )
     if nullpool:
-        print(f"!!!!!!!! SCOPE:{tenant_id}")
+        print(f"!!!!!!!! {tenant_id}")
         engine = sqlalchemy.create_engine(database_uri, poolclass=NullPool)
         engine.update_execution_options(schema_translate_map={None: tenant_id})
         session_class = sessionmaker()
         session_class.configure(bind=engine)
         session = session_class()
     else:
-        print(f"!!!!!!!! SCOPE ELSE:{tenant_id}")
+        print(f"----------------------  sync {tenant_id}")
         session = db.session()
         session.commit()  # HACK
 
@@ -147,6 +148,9 @@ def session_scope(nullpool, tenant_id=None):
         logger.exception(ex)
         raise
     finally:
+        if nullpool:
+            print(f"!!!!!!!! OFFF")
+            engine.update_execution_options(schema_translate_map={None: None})
         session.close()
 
 
@@ -170,7 +174,6 @@ def get_sql_results(  # pylint: disable=too-many-arguments
 ):
     """Executes the sql query returns the results."""
     with session_scope(not ctask.request.called_directly, tenant_id=tenant_id) as session:
-
         try:
             return execute_sql_statements(
                 query_id,
