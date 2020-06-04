@@ -14,9 +14,6 @@ def get_tenant_id():
     if hasattr(g, "tenant_id"):
         return g.tenant_id
     return None
-    # if request:
-    #     return request.host.split('.')[0]
-    # return None
 
 
 tenant_id_proxy = LocalProxy(get_tenant_id)
@@ -26,11 +23,10 @@ def before_request():
     subdomain = request.host.split(".")[0]
     g.tenant_id = subdomain
 
-    #print(f"BEFORE {g.tenant_id} {tenant_id_proxy}")
-
 
 def after_request(response):
-    db.engine.update_execution_options(schema_translate_map={None: tenant_id_proxy})
+    db.engine.execute("set search_path to 'public'")
+    # db.engine.update_execution_options(schema_translate_map={None: None})
     #db.engine.update_execution_options(schema_translate_map={None: tenant_id_proxy})
     return response
 
@@ -61,19 +57,31 @@ def tenant_switch(metadata_engine):
         print(f"STS:{stmt} {metadata_engine.get_execution_options()}")
         return stmt, params
 
-    # @event.listens_for(metadata_engine, "before_cursor_execute", retval=True)
-    # def before_cursor_switch(conn, cursor, stmt,
-    #                     params, context, executemany):
-    #     if not hasattr(g, "tenant_id"):
-    #         return stmt, params
-    #     if g.tenant_id is not None:
-    #         return f"set search_path to '{g.tenant_id}'; {stmt};", params
-    #     return stmt, params
+    @event.listens_for(metadata_engine, "engine_connect")
+    def set_schema_translate_map(connection, branch):
+        print("ENGINE CONNECT")
+
+    @event.listens_for(Query, "before_compile")
+    def before_compile(query: Query):
+        print(f"BEFORE COMPILE")
+        return query
+
+    @event.listens_for(metadata_engine, "before_cursor_execute", retval=True)
+    def before_cursor_switch(conn, cursor, stmt,
+                        params, context, executemany):
+        if stmt == "set search_path to 'public'":
+            return stmt, params
+        if not hasattr(g, "tenant_id"):
+            return stmt, params
+        if g.tenant_id is not None:
+            return f"set search_path to '{g.tenant_id}'; {stmt};", params
+        return stmt, params
 
 
 def before_first_request(error=None):
-    db.engine.update_execution_options(schema_translate_map={None: tenant_id_proxy})
-    # db.engine.update_execution_options(schema_translate_map={None: None})
+    # db.engine.update_execution_options(schema_translate_map={None: tenant_id_proxy})
+    db.engine.update_execution_options(schema_translate_map={None: None})
+    pass
 
 # SQLAlchemy dialect
 # subclassing
