@@ -166,6 +166,8 @@ Contents
     misc
     faq
 
+.. openapi:: openapi.yml
+
 
 Indices and tables
 ------------------
