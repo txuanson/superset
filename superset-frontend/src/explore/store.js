@@ -67,17 +67,20 @@ export function applyDefaultFormData(inputFormData) {
   const controlsState = getAllControlsState(vizType, datasourceType, null, {
     ...inputFormData,
   });
-  const formData = {};
+  const controlFormData = getFormDataFromControls(controlsState);
 
+  const formData = {};
   Object.keys(controlsState).forEach(controlName => {
     if (inputFormData[controlName] === undefined) {
-      formData[controlName] = controlsState[controlName].value;
+      formData[controlName] = controlFormData[controlName];
     } else {
       formData[controlName] = inputFormData[controlName];
     }
   });
 
-  return { ...formData, queryFields: inputFormData.queryFields };
+  // always use dynamically generated queryFields
+  formData.queryFields = controlFormData.queryFields;
+  return formData;
 }
 
 const defaultControls = { ...controls };
