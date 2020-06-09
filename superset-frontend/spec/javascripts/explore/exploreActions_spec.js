@@ -36,4 +36,12 @@ describe('reducers', () => {
     );
     expect(newState.controls.show_legend.value).toBe(true);
   });
+  /// test control options overide for Observable
+  it('Observable vis control action can overwrite controls', () => {
+    const newState = exploreReducer(
+      defaultState,
+      { type: 'OVERWRITE_SELECT_CONTROL_OPTIONS', selectControlOptions: [{test:'testName'}] },
+    );
+    expect(newState.selectControlOptions).toEqual([{test:'testName'}]);
+  })
 });
