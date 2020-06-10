@@ -20,7 +20,7 @@ import React from 'react';
 import { hot } from 'react-hot-loader/root';
 import thunk from 'redux-thunk';
 import { createStore, applyMiddleware, compose, combineReducers } from 'redux';
-import { Provider } from 'react-redux';
+import { Provider as ReduxProvider } from 'react-redux';
 import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
 import { QueryParamProvider } from 'use-query-params';
 import { ThemeProvider } from 'emotion-theming';
@@ -40,6 +40,7 @@ import setupApp from '../setup/setupApp';
 import setupPlugins from '../setup/setupPlugins';
 import Welcome from './Welcome';
 import ToastPresenter from '../messageToasts/containers/ToastPresenter';
+import DynamicPluginProvider from 'src/components/DynamicPlugins/DynamicPluginProvider';
 
 setupApp();
 setupPlugins();
@@ -60,40 +61,42 @@ const store = createStore(
 );
 
 const App = () => (
-  <Provider store={store}>
+  <ReduxProvider store={store}>
     <ThemeProvider theme={supersetTheme}>
       <FlashProvider common={common}>
-        <Router>
-          <QueryParamProvider ReactRouterRoute={Route}>
-            <Menu data={menu} />
-            <Switch>
-              <Route path="/superset/welcome/">
-                <ErrorBoundary>
-                  <Welcome user={user} />
-                </ErrorBoundary>
-              </Route>
-              <Route path="/dashboard/list/">
-                <ErrorBoundary>
-                  <DashboardList user={user} />
-                </ErrorBoundary>
-              </Route>
-              <Route path="/chart/list/">
-                <ErrorBoundary>
-                  <ChartList user={user} />
-                </ErrorBoundary>
-              </Route>
-              <Route path="/tablemodelview/list/">
-                <ErrorBoundary>
-                  <DatasetList user={user} />
-                </ErrorBoundary>
-              </Route>
-            </Switch>
-            <ToastPresenter />
-          </QueryParamProvider>
-        </Router>
+        <DynamicPluginProvider>
+          <Router>
+            <QueryParamProvider ReactRouterRoute={Route}>
+              <Menu data={menu} />
+              <Switch>
+                <Route path="/superset/welcome/">
+                  <ErrorBoundary>
+                    <Welcome user={user} />
+                  </ErrorBoundary>
+                </Route>
+                <Route path="/dashboard/list/">
+                  <ErrorBoundary>
+                    <DashboardList user={user} />
+                  </ErrorBoundary>
+                </Route>
+                <Route path="/chart/list/">
+                  <ErrorBoundary>
+                    <ChartList user={user} />
+                  </ErrorBoundary>
+                </Route>
+                <Route path="/tablemodelview/list/">
+                  <ErrorBoundary>
+                    <DatasetList user={user} />
+                  </ErrorBoundary>
+                </Route>
+              </Switch>
+              <ToastPresenter />
+            </QueryParamProvider>
+          </Router>
+        </DynamicPluginProvider>
       </FlashProvider>
     </ThemeProvider>
-  </Provider>
+  </ReduxProvider>
 );
 
 export default hot(App);

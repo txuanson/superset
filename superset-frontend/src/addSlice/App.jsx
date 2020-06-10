@@ -22,6 +22,7 @@ import { ThemeProvider } from 'emotion-theming';
 import { supersetTheme } from '@superset-ui/style';
 import setupApp from '../setup/setupApp';
 import setupPlugins from '../setup/setupPlugins';
+import DynamicPluginProvider from '../components/DynamicPlugins/DynamicPluginProvider';
 import AddSliceContainer from './AddSliceContainer';
 
 setupApp();
@@ -34,7 +35,9 @@ const bootstrapData = JSON.parse(
 
 const App = () => (
   <ThemeProvider theme={supersetTheme}>
-    <AddSliceContainer datasources={bootstrapData.datasources} />
+    <DynamicPluginProvider>
+      <AddSliceContainer datasources={bootstrapData.datasources} />
+    </DynamicPluginProvider>
   </ThemeProvider>
 );
 
