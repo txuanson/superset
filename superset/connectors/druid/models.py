@@ -126,6 +126,13 @@ class DruidCluster(Model, AuditMixinNullable, ImportMixin):
     """ORM object referencing the Druid clusters"""
 
     __tablename__ = "clusters"
+
+    # consolidating with Database perms
+    # also note that we're planning on deprecating the native Druid
+    # connector in favor of the SQLAlchemy one
+    class_permission_name = "Database"
+    previous_class_permission_name = "DruidCluster"
+
     type = "druid"
 
     id = Column(Integer, primary_key=True)
@@ -312,6 +319,9 @@ class DruidColumn(Model, BaseColumn):
     __tablename__ = "columns"
     __table_args__ = (UniqueConstraint("column_name", "datasource_id"),)
 
+    class_permission_name = "Datasource"
+    previous_class_permission_name = "DruidColumn"
+
     datasource_id = Column(Integer, ForeignKey("datasources.id"))
     # Setting enable_typechecks=False disables polymorphic inheritance.
     datasource = relationship(
@@ -399,6 +409,10 @@ class DruidMetric(Model, BaseMetric):
 
     __tablename__ = "metrics"
     __table_args__ = (UniqueConstraint("metric_name", "datasource_id"),)
+
+    class_permission_name = "Datasource"
+    previous_class_permission_name = "DruidMetric"
+
     datasource_id = Column(Integer, ForeignKey("datasources.id"))
 
     # Setting enable_typechecks=False disables polymorphic inheritance.
@@ -477,6 +491,9 @@ class DruidDatasource(Model, BaseDatasource):
 
     __tablename__ = "datasources"
     __table_args__ = (UniqueConstraint("datasource_name", "cluster_id"),)
+
+    class_permission_name = "Datasource"
+    previous_class_permission_name = "DruidDatasource"
 
     type = "druid"
     query_language = "json"

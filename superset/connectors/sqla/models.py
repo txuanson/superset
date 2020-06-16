@@ -152,6 +152,10 @@ class TableColumn(Model, BaseColumn):
 
     __tablename__ = "table_columns"
     __table_args__ = (UniqueConstraint("table_id", "column_name"),)
+
+    class_permission_name = "Datasource"
+    previous_class_permission_name = "TableColumn"
+
     table_id = Column(Integer, ForeignKey("tables.id"))
     table = relationship(
         "SqlaTable",
@@ -347,6 +351,10 @@ class SqlMetric(Model, BaseMetric):
 
     __tablename__ = "sql_metrics"
     __table_args__ = (UniqueConstraint("table_id", "metric_name"),)
+
+    class_permission_name = "Datasource"
+    previous_class_permission_name = "SqlMetric"
+
     table_id = Column(Integer, ForeignKey("tables.id"))
     table = relationship(
         "SqlaTable",
@@ -455,6 +463,9 @@ class SqlaTable(  # pylint: disable=too-many-public-methods,too-many-instance-at
 
     __tablename__ = "tables"
     __table_args__ = (UniqueConstraint("database_id", "table_name"),)
+
+    class_permission_name = "Datasource"
+    previous_class_permission_name = "SqlaTable"
 
     table_name = Column(String(250), nullable=False)
     main_dttm_col = Column(String(250))
@@ -1513,6 +1524,7 @@ class RowLevelSecurityFilter(Model, AuditMixinNullable):
     """
 
     __tablename__ = "row_level_security_filters"
+
     id = Column(Integer, primary_key=True)
     filter_type = Column(
         Enum(*[filter_type.value for filter_type in utils.RowLevelSecurityFilterType])

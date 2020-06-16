@@ -104,6 +104,9 @@ class Database(
     """An ORM object that stores Database related information"""
 
     __tablename__ = "dbs"
+
+    class_permission_name = "Database"
+
     type = "table"
     __table_args__ = (UniqueConstraint("database_name"),)
 
