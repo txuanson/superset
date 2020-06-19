@@ -1,0 +1,130 @@
+# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.
+version: v1.15.0
+ignore: {}
+# patches apply the minimum changes required to fix a vulnerability
+patch:
+  SNYK-JS-LODASH-567746:
+    - lodash:
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/control-utils > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/core > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/legacy-preset-chart-deckgl > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/legacy-preset-chart-nvd3 > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/preset-chart-xy > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - redux > lodash:
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@vx/responsive > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - dnd-core > lodash:
+        patched: '2020-06-19T00:33:50.191Z'
+    - react-checkbox-tree > lodash:
+        patched: '2020-06-19T00:33:50.191Z'
+    - react-color > lodash:
+        patched: '2020-06-19T00:33:50.191Z'
+    - react-dnd > lodash:
+        patched: '2020-06-19T00:33:50.191Z'
+    - react-dnd-html5-backend > lodash:
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@data-ui/sparkline > @vx/responsive > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/chart > @vx/responsive > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/chart-composition > @vx/responsive > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/legacy-plugin-chart-histogram > @vx/responsive > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/superset-ui > @superset-ui/core > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/legacy-plugin-chart-country-map > @superset-ui/control-utils > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/superset-ui > @superset-ui/control-utils > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/plugin-chart-word-cloud > encodable > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/preset-chart-xy > encodable > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@types/redux-localstorage > redux > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - dnd-core > redux > lodash:
+        patched: '2020-06-19T00:33:50.191Z'
+    - react-dnd > dnd-core > lodash:
+        patched: '2020-06-19T00:33:50.191Z'
+    - react-color > reactcss > lodash:
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/legacy-plugin-chart-event-flow > @data-ui/event-flow > @vx/responsive > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/superset-ui > @superset-ui/chart > @vx/responsive > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/superset-ui > @superset-ui/chart-composition > @vx/responsive > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/legacy-plugin-chart-histogram > @data-ui/histogram > @vx/responsive > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/legacy-preset-chart-big-number > @data-ui/xy-chart > @vx/responsive > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/legacy-preset-chart-nvd3 > @data-ui/xy-chart > @vx/responsive > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/preset-chart-xy > @data-ui/xy-chart > @vx/responsive > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/legacy-plugin-chart-sankey-loop > d3-sankey-diagram > graphlib > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/legacy-preset-chart-big-number > @data-ui/xy-chart > @vx/text > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/legacy-preset-chart-nvd3 > @data-ui/xy-chart > @vx/text > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/preset-chart-xy > @data-ui/xy-chart > @vx/text > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/preset-chart-xy > @vx/axis > @vx/text > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - react-dnd > dnd-core > redux > lodash:
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/legacy-plugin-chart-histogram > @data-ui/histogram > @vx/axis > @vx/text > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/legacy-preset-chart-big-number > @data-ui/xy-chart > @vx/axis > @vx/text > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/legacy-preset-chart-nvd3 > @data-ui/xy-chart > @vx/axis > @vx/text > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/preset-chart-xy > @data-ui/xy-chart > @vx/axis > @vx/text > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@emotion/core > @emotion/css > babel-plugin-emotion > @babel/helper-module-imports > @babel/types > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - react-select > @emotion/css > babel-plugin-emotion > @babel/helper-module-imports > @babel/types > lodash:
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/style > @emotion/styled > babel-plugin-emotion > @babel/helper-module-imports > @babel/types > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/legacy-plugin-chart-histogram > @data-ui/histogram > @vx/axis > @vx/text > babel-plugin-lodash > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/legacy-preset-chart-big-number > @data-ui/xy-chart > @vx/axis > @vx/text > babel-plugin-lodash > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/legacy-preset-chart-nvd3 > @data-ui/xy-chart > @vx/axis > @vx/text > babel-plugin-lodash > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/preset-chart-xy > @data-ui/xy-chart > @vx/axis > @vx/text > babel-plugin-lodash > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/style > @emotion/core > @emotion/css > babel-plugin-emotion > @babel/helper-module-imports > @babel/types > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - react-select > @emotion/core > @emotion/css > babel-plugin-emotion > @babel/helper-module-imports > @babel/types > lodash:
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/superset-ui > @superset-ui/style > @emotion/styled > babel-plugin-emotion > @babel/helper-module-imports > @babel/types > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/legacy-plugin-chart-histogram > @data-ui/histogram > @vx/axis > @vx/text > babel-plugin-lodash > @babel/types > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/legacy-preset-chart-big-number > @data-ui/xy-chart > @vx/axis > @vx/text > babel-plugin-lodash > @babel/types > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/legacy-preset-chart-nvd3 > @data-ui/xy-chart > @vx/axis > @vx/text > babel-plugin-lodash > @babel/types > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/preset-chart-xy > @data-ui/xy-chart > @vx/axis > @vx/text > babel-plugin-lodash > @babel/types > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/superset-ui > @superset-ui/style > @emotion/core > @emotion/css > babel-plugin-emotion > @babel/helper-module-imports > @babel/types > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/legacy-plugin-chart-histogram > @data-ui/histogram > @vx/axis > @vx/text > babel-plugin-lodash > @babel/helper-module-imports > @babel/types > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/legacy-preset-chart-big-number > @data-ui/xy-chart > @vx/axis > @vx/text > babel-plugin-lodash > @babel/helper-module-imports > @babel/types > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/legacy-preset-chart-nvd3 > @data-ui/xy-chart > @vx/axis > @vx/text > babel-plugin-lodash > @babel/helper-module-imports > @babel/types > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
+    - '@superset-ui/preset-chart-xy > @data-ui/xy-chart > @vx/axis > @vx/text > babel-plugin-lodash > @babel/helper-module-imports > @babel/types > lodash':
+        patched: '2020-06-19T00:33:50.191Z'
