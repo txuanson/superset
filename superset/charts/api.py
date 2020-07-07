@@ -80,6 +80,7 @@ class ChartRestApi(BaseSupersetModelRestApi):
         "data",
         "viz_types",
         "datasources",
+        "trans_update",
     }
     class_permission_name = "SliceModelView"
     show_columns = [
@@ -569,3 +570,18 @@ class ChartRestApi(BaseSupersetModelRestApi):
             for ds in datasources
         ]
         return self.response(200, count=len(result), result=result)
+
+    @expose("/trans_update", methods=["GET"])
+    @protect()
+    @safe
+    @statsd_metrics
+    def trans_update(self) -> Response:
+        import random
+        from superset.models.slice import Slice
+        session = self.appbuilder.get_session
+        slices = session.query(Slice).all()
+
+        for slice in slices:
+            slice.slice_name = f"{g.tenant_id}_{random.randint(0, 1000)}_chart"
+        session.commit()
+        return self.response(200, message="OK")
