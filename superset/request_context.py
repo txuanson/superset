@@ -32,15 +32,15 @@ def after_request(response):
 
 
 def tenant_switch(metadata_engine):
-    @event.listens_for(metadata_engine, "commit")
-    def checkout(*args):
-        print("CONN")
-
-    @event.listens_for(metadata_engine, 'set_connection_execution_options')
-    def receive_set_connection_execution_options(conn, opts):
-        #print(f"------ {conn.get_execution_options()}")
-        #conn.execution_options(schema_translate_map={None: tenant_id_proxy})
-        print(f"SET CONN OPT")
+    # @event.listens_for(metadata_engine, "commit")
+    # def checkout(*args):
+    #     print("CONN")
+    #
+    # @event.listens_for(metadata_engine, 'set_connection_execution_options')
+    # def receive_set_connection_execution_options(conn, opts):
+    #     #print(f"------ {conn.get_execution_options()}")
+    #     #conn.execution_options(schema_translate_map={None: tenant_id_proxy})
+    #     print(f"SET CONN OPT")
 
     # @event.listens_for(metadata_engine, 'set_engine_execution_options')
     # def receive_set_connection_execution_options(conn, opts):
@@ -51,20 +51,20 @@ def tenant_switch(metadata_engine):
     #     print(f"AFTER EXECUTE")
     #
 
-    @event.listens_for(metadata_engine, "before_cursor_execute", retval=True)
-    def before_cursor_switch(conn, cursor, stmt,
-                             params, context, executemany):
-        print(f"STS:{stmt} {metadata_engine.get_execution_options()}")
-        return stmt, params
-
-    @event.listens_for(metadata_engine, "engine_connect")
-    def set_schema_translate_map(connection, branch):
-        print("ENGINE CONNECT")
-
-    @event.listens_for(Query, "before_compile")
-    def before_compile(query: Query):
-        print(f"BEFORE COMPILE")
-        return query
+    # @event.listens_for(metadata_engine, "before_cursor_execute", retval=True)
+    # def before_cursor_switch(conn, cursor, stmt,
+    #                          params, context, executemany):
+    #     print(f"STS:{stmt} {metadata_engine.get_execution_options()}")
+    #     return stmt, params
+    #
+    # @event.listens_for(metadata_engine, "engine_connect")
+    # def set_schema_translate_map(connection, branch):
+    #     print("ENGINE CONNECT")
+    #
+    # @event.listens_for(Query, "before_compile")
+    # def before_compile(query: Query):
+    #     print(f"BEFORE COMPILE")
+    #     return query
 
     @event.listens_for(metadata_engine, "before_cursor_execute", retval=True)
     def before_cursor_switch(conn, cursor, stmt,
