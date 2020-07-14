@@ -111,6 +111,8 @@ class DatasetRestApi(BaseSupersetModelRestApi):
         "owners.last_name",
         "columns",
         "metrics",
+        "url",
+        "type",
     ]
     add_model_schema = DatasetPostSchema()
     edit_model_schema = DatasetPutSchema()

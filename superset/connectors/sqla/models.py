@@ -392,7 +392,6 @@ class SqlaTable(  # pylint: disable=too-many-public-methods,too-many-instance-at
 
     """An ORM object for SqlAlchemy table references"""
 
-    type = "table"
     query_language = "sql"
     is_rls_supported = True
     metric_class = SqlMetric
@@ -467,6 +466,10 @@ class SqlaTable(  # pylint: disable=too-many-public-methods,too-many-instance-at
 
     def __repr__(self) -> str:
         return self.name
+
+    @property
+    def type(self) -> str:
+        return "table"
 
     @property
     def changed_by_name(self) -> str:
