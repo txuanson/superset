@@ -138,6 +138,10 @@ class BaseDatasource(
         raise NotImplementedError()
 
     @property
+    def datasource_type(self) -> str:
+        return self.type
+
+    @property
     def uid(self) -> str:
         """Unique id across datasource types"""
         return f"{self.id}__{self.type}"
