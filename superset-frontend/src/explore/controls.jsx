@@ -67,7 +67,7 @@ import {
   validateNonEmpty,
 } from '@superset-ui/validator';
 
-import { ColumnOption } from '@superset-ui/control-utils';
+import { ColumnOption } from '@superset-ui/chart-controls';
 import {
   formatSelectOptionsForRange,
   formatSelectOptions,
@@ -204,9 +204,9 @@ export const controls = {
     label: t('Datasource'),
     default: null,
     description: null,
-    mapStateToProps: (state, control, actions) => ({
-      datasource: state.datasource,
-      onDatasourceSave: actions ? actions.setDatasource : () => {},
+    mapStateToProps: ({ datasource }) => ({
+      datasource,
+      isEditable: !!datasource,
     }),
   },
 
@@ -316,7 +316,6 @@ export const controls = {
         'filter below is applied against this column or ' +
         'expression',
     ),
-    default: control => control.default,
     clearable: false,
     optionRenderer: c => <ColumnOption column={c} showType />,
     valueRenderer: c => <ColumnOption column={c} />,

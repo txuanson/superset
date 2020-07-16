@@ -33,7 +33,9 @@ from typing import Any, Callable, Dict, List, Optional, Type, TYPE_CHECKING
 from cachelib.base import BaseCache
 from celery.schedules import crontab
 from dateutil import tz
+from flask import Blueprint
 from flask_appbuilder.security.manager import AUTH_DB
+from pandas.io.parsers import STR_NA_VALUES
 
 from superset.jinja_context import (  # pylint: disable=unused-import
     BaseTemplateProcessor,
@@ -192,7 +194,7 @@ PROXY_FIX_CONFIG = {"x_for": 1, "x_proto": 1, "x_host": 1, "x_port": 1, "x_prefi
 APP_NAME = "Superset"
 
 # Uncomment to setup an App icon
-APP_ICON = "/static/assets/images/superset-logo@2x.png"
+APP_ICON = "/static/assets/images/superset-logo-horiz.png"
 APP_ICON_WIDTH = 126
 
 # Uncomment to specify where clicking the logo would take the user
@@ -200,7 +202,7 @@ APP_ICON_WIDTH = 126
 LOGO_TARGET_PATH = None
 
 # Enables SWAGGER UI for superset openapi spec
-# ex: http://localhost:8080/swaggerview/v1
+# ex: http://localhost:8080/swagger/v1
 FAB_API_SWAGGER_UI = True
 
 # Druid query timezone
@@ -305,7 +307,7 @@ DEFAULT_FEATURE_FLAGS: Dict[str, bool] = {
     "SIP_38_VIZ_REARCHITECTURE": False,
     "TAGGING_SYSTEM": False,
     "SQLLAB_BACKEND_PERSISTENCE": False,
-    "LIST_VIEWS_NEW_UI": False,
+    "LIST_VIEWS_SIP34_FILTER_UI": False,
 }
 
 # This is merely a default.
@@ -364,8 +366,9 @@ CORS_OPTIONS: Dict[Any, Any] = {}
 SUPERSET_WEBSERVER_DOMAINS = None
 
 # Allowed format types for upload on Database view
-# TODO: Add processing of other spreadsheet formats (xls, xlsx etc)
-ALLOWED_EXTENSIONS = {"csv", "tsv"}
+EXCEL_EXTENSIONS = {"xlsx", "xls"}
+CSV_EXTENSIONS = {"csv", "tsv"}
+ALLOWED_EXTENSIONS = {*EXCEL_EXTENSIONS, *CSV_EXTENSIONS}
 
 # CSV Options: key/value pairs that will be passed as argument to DataFrame.to_csv
 # method.
@@ -378,8 +381,8 @@ CSV_EXPORT = {"encoding": "utf-8"}
 # List of time grains to disable in the application (see list of builtin
 # time grains in superset/db_engine_specs.builtin_time_grains).
 # For example: to disable 1 second time grain:
-# TIME_GRAIN_BLACKLIST = ['PT1S']
-TIME_GRAIN_BLACKLIST: List[str] = []
+# TIME_GRAIN_DENYLIST = ['PT1S']
+TIME_GRAIN_DENYLIST: List[str] = []
 
 # Additional time grains to be supported using similar definitions as in
 # superset/db_engine_specs.builtin_time_grains.
@@ -399,17 +402,17 @@ TIME_GRAIN_ADDON_EXPRESSIONS: Dict[str, Dict[str, str]] = {}
 
 # ---------------------------------------------------
 # List of viz_types not allowed in your environment
-# For example: Blacklist pivot table and treemap:
-#  VIZ_TYPE_BLACKLIST = ['pivot_table', 'treemap']
+# For example: Disable pivot table and treemap:
+#  VIZ_TYPE_DENYLIST = ['pivot_table', 'treemap']
 # ---------------------------------------------------
 
-VIZ_TYPE_BLACKLIST: List[str] = []
+VIZ_TYPE_DENYLIST: List[str] = []
 
 # ---------------------------------------------------
 # List of data sources not to be refreshed in druid cluster
 # ---------------------------------------------------
 
-DRUID_DATA_SOURCE_BLACKLIST: List[str] = []
+DRUID_DATA_SOURCE_DENYLIST: List[str] = []
 
 # --------------------------------------------------
 # Modules, datasources and middleware to be registered
@@ -421,7 +424,7 @@ DEFAULT_MODULE_DS_MAP = OrderedDict(
     ]
 )
 ADDITIONAL_MODULE_DS_MAP: Dict[str, List[str]] = {}
-ADDITIONAL_MIDDLEWARE: List[Callable] = []
+ADDITIONAL_MIDDLEWARE: List[Callable[..., Any]] = []
 
 # 1) https://docs.python-guide.org/writing/logging/
 # 2) https://docs.python.org/2/library/logging.config.html
@@ -620,11 +623,14 @@ ALLOWED_USER_CSV_SCHEMA_FUNC: Callable[
     UPLOADED_CSV_HIVE_NAMESPACE
 ] if UPLOADED_CSV_HIVE_NAMESPACE else []
 
+# Values that should be treated as nulls for the csv uploads.
+CSV_DEFAULT_NA_NAMES = list(STR_NA_VALUES)
+
 # A dictionary of items that gets merged into the Jinja context for
 # SQL Lab. The existing context gets updated with this dictionary,
 # meaning values for existing keys get overwritten by the content of this
 # dictionary.
-JINJA_CONTEXT_ADDONS: Dict[str, Callable] = {}
+JINJA_CONTEXT_ADDONS: Dict[str, Callable[..., Any]] = {}
 
 # A dictionary of macro template processors that gets merged into global
 # template processors. The existing template processors get updated with this
@@ -684,7 +690,7 @@ PERMISSION_INSTRUCTIONS_LINK = ""
 
 # Integrate external Blueprints to the app by passing them to your
 # configuration. These blueprints will get integrated in the app
-BLUEPRINTS: List[Callable] = []
+BLUEPRINTS: List[Blueprint] = []
 
 # Provide a callable that receives a tracking_url and returns another
 # URL. This is used to translate internal Hadoop job tracker URL
@@ -729,12 +735,17 @@ DB_CONNECTION_MUTATOR = None
 #        return f"-- [SQL LAB] {username} {dttm}\n{sql}"
 SQL_QUERY_MUTATOR = None
 
-# When not using gunicorn, (nginx for instance), you may want to disable
-# using flask-compress
-ENABLE_FLASK_COMPRESS = True
-
 # Enable / disable scheduled email reports
 ENABLE_SCHEDULED_EMAIL_REPORTS = False
+
+# Enable / disable Alerts, where users can define custom SQL that
+# will send emails with screenshots of charts or dashboards periodically
+# if it meets the criteria
+ENABLE_ALERTS = False
+
+# Slack API token for the superset reports
+SLACK_API_TOKEN = None
+SLACK_PROXY = None
 
 # If enabled, certail features are run in debug mode
 # Current list:
@@ -794,7 +805,8 @@ DOCUMENTATION_URL = None
 DOCUMENTATION_TEXT = "Documentation"
 DOCUMENTATION_ICON = None  # Recommended size: 16x16
 
-# Enables the replacement react views for all the FAB views: list, edit, show.
+# Enables the replacement react views for all the FAB views (list, edit, show) with
+# designs introduced in SIP-34: https://github.com/apache/incubator-superset/issues/8976
 # This is a work in progress so not all features available in FAB have been implemented
 ENABLE_REACT_CRUD_VIEWS = False
 
@@ -871,6 +883,14 @@ SIP_15_TOAST_MESSAGE = (
     'class="alert-link">here</a>.'
 )
 
+
+# SQLA table mutator, every time we fetch the metadata for a certain table
+# (superset.connectors.sqla.models.SqlaTable), we call this hook
+# to allow mutating the object with this callback.
+# This can be used to set any properties of the object based on naming
+# conventions and such. You can find examples in the tests.
+SQLA_TABLE_MUTATOR = lambda table: table
+
 if CONFIG_PATH_ENV_VAR in os.environ:
     # Explicitly import config module that is not necessarily in pythonpath; useful
     # for case where app is being executed via pex.
@@ -885,7 +905,7 @@ if CONFIG_PATH_ENV_VAR in os.environ:
         print(f"Loaded your LOCAL configuration at [{cfg_path}]")
     except Exception:
         logger.exception(
-            f"Failed to import config for {CONFIG_PATH_ENV_VAR}={cfg_path}"
+            "Failed to import config for %s=%s", CONFIG_PATH_ENV_VAR, cfg_path
         )
         raise
 elif importlib.util.find_spec("superset_config"):

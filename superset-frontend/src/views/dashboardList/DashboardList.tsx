@@ -18,13 +18,13 @@
  */
 import { SupersetClient } from '@superset-ui/connection';
 import { t } from '@superset-ui/translation';
-import moment from 'moment';
 import PropTypes from 'prop-types';
 import React from 'react';
 import rison from 'rison';
 // @ts-ignore
 import { Panel } from 'react-bootstrap';
 import ConfirmStatusChange from 'src/components/ConfirmStatusChange';
+import SubMenu from 'src/components/Menu/SubMenu';
 import ListView from 'src/components/ListView/ListView';
 import ExpandableList from 'src/components/ExpandableList';
 import {
@@ -59,7 +59,7 @@ interface Dashboard {
   changed_by: string;
   changed_by_name: string;
   changed_by_url: string;
-  changed_on: string;
+  changed_on_delta_humanized: string;
   dashboard_title: string;
   published: boolean;
   url: string;
@@ -76,7 +76,7 @@ class DashboardList extends React.PureComponent<Props, State> {
     filterOperators: {},
     filters: [],
     lastFetchDataConfig: null,
-    loading: false,
+    loading: true,
     permissions: [],
     dashboardToEdit: null,
   };
@@ -118,11 +118,11 @@ class DashboardList extends React.PureComponent<Props, State> {
     return this.hasPerm('can_mulexport');
   }
 
-  get isNewUIEnabled() {
-    return isFeatureEnabled(FeatureFlag.LIST_VIEWS_NEW_UI);
+  get isSIP34FilterUIEnabled() {
+    return isFeatureEnabled(FeatureFlag.LIST_VIEWS_SIP34_FILTER_UI);
   }
 
-  initialSort = [{ id: 'changed_on', desc: true }];
+  initialSort = [{ id: 'changed_on_delta_humanized', desc: true }];
 
   columns = [
     {
@@ -133,7 +133,6 @@ class DashboardList extends React.PureComponent<Props, State> {
       }: any) => <a href={url}>{dashboardTitle}</a>,
       Header: t('Title'),
       accessor: 'dashboard_title',
-      sortable: true,
     },
     {
       Cell: ({
@@ -151,6 +150,7 @@ class DashboardList extends React.PureComponent<Props, State> {
       ),
       Header: t('Owners'),
       accessor: 'owners',
+      disableSortBy: true,
     },
     {
       Cell: ({
@@ -163,7 +163,6 @@ class DashboardList extends React.PureComponent<Props, State> {
       }: any) => <a href={changedByUrl}>{changedByName}</a>,
       Header: t('Creator'),
       accessor: 'changed_by_fk',
-      sortable: true,
     },
     {
       Cell: ({
@@ -177,21 +176,20 @@ class DashboardList extends React.PureComponent<Props, State> {
       ),
       Header: t('Published'),
       accessor: 'published',
-      sortable: true,
     },
     {
       Cell: ({
         row: {
-          original: { changed_on: changedOn },
+          original: { changed_on_delta_humanized: changedOn },
         },
-      }: any) => <span className="no-wrap">{moment(changedOn).fromNow()}</span>,
+      }: any) => <span className="no-wrap">{changedOn}</span>,
       Header: t('Modified'),
-      accessor: 'changed_on',
-      sortable: true,
+      accessor: 'changed_on_delta_humanized',
     },
     {
       accessor: 'slug',
       hidden: true,
+      disableSortBy: true,
     },
     {
       Cell: ({ row: { state, original } }: any) => {
@@ -253,6 +251,7 @@ class DashboardList extends React.PureComponent<Props, State> {
       },
       Header: t('Actions'),
       id: 'actions',
+      disableSortBy: true,
     },
   ];
 
@@ -343,7 +342,7 @@ class DashboardList extends React.PureComponent<Props, State> {
   handleBulkDashboardExport = (dashboards: Dashboard[]) => {
     return window.location.assign(
       `/api/v1/dashboard/export/?q=${rison.encode(
-        dashboards.map(({ id }) => id).join(','),
+        dashboards.map(({ id }) => id),
       )}`,
     );
   };
@@ -427,7 +426,7 @@ class DashboardList extends React.PureComponent<Props, State> {
   updateFilters = async () => {
     const { filterOperators } = this.state;
 
-    if (this.isNewUIEnabled) {
+    if (this.isSIP34FilterUIEnabled) {
       return this.setState({
         filters: [
           {
@@ -437,6 +436,7 @@ class DashboardList extends React.PureComponent<Props, State> {
             operator: 'rel_m_m',
             unfilteredLabel: 'All',
             fetchSelects: this.fetchOwners,
+            paginate: true,
           },
           {
             Header: 'Published',
@@ -507,71 +507,67 @@ class DashboardList extends React.PureComponent<Props, State> {
       dashboardToEdit,
     } = this.state;
     return (
-      <div className="container welcome">
-        <Panel>
-          <Panel.Body>
-            <ConfirmStatusChange
-              title={t('Please confirm')}
-              description={t(
-                'Are you sure you want to delete the selected dashboards?',
-              )}
-              onConfirm={this.handleBulkDashboardDelete}
-            >
-              {confirmDelete => {
-                const bulkActions = [];
-                if (this.canDelete) {
-                  bulkActions.push({
-                    key: 'delete',
-                    name: (
-                      <>
-                        <i className="fa fa-trash" /> Delete
-                      </>
-                    ),
-                    onSelect: confirmDelete,
-                  });
-                }
-                if (this.canExport) {
-                  bulkActions.push({
-                    key: 'export',
-                    name: (
-                      <>
-                        <i className="fa fa-database" /> Export
-                      </>
-                    ),
-                    onSelect: this.handleBulkDashboardExport,
-                  });
-                }
-                return (
+      <>
+        <SubMenu name={t('Dashboards')} />
+        <ConfirmStatusChange
+          title={t('Please confirm')}
+          description={t(
+            'Are you sure you want to delete the selected dashboards?',
+          )}
+          onConfirm={this.handleBulkDashboardDelete}
+        >
+          {confirmDelete => {
+            const bulkActions = [];
+            if (this.canDelete) {
+              bulkActions.push({
+                key: 'delete',
+                name: (
                   <>
-                    {dashboardToEdit && (
-                      <PropertiesModal
-                        show
-                        dashboardId={dashboardToEdit.id}
-                        onHide={() => this.setState({ dashboardToEdit: null })}
-                        onDashboardSave={this.handleDashboardEdit}
-                      />
-                    )}
-                    <ListView
-                      className="dashboard-list-view"
-                      title={'Dashboards'}
-                      columns={this.columns}
-                      data={dashboards}
-                      count={dashboardCount}
-                      pageSize={PAGE_SIZE}
-                      fetchData={this.fetchData}
-                      loading={loading}
-                      initialSort={this.initialSort}
-                      filters={filters}
-                      bulkActions={bulkActions}
-                      useNewUIFilters={this.isNewUIEnabled}
-                    />
+                    <i className="fa fa-trash" /> {t('Delete')}
                   </>
-                );
-              }}
-            </ConfirmStatusChange>
-          </Panel.Body>
-        </Panel>
-      </div>
+                ),
+                onSelect: confirmDelete,
+              });
+            }
+            if (this.canExport) {
+              bulkActions.push({
+                key: 'export',
+                name: (
+                  <>
+                    <i className="fa fa-database" /> {t('Export')}
+                  </>
+                ),
+                onSelect: this.handleBulkDashboardExport,
+              });
+            }
+            return (
+              <>
+                {dashboardToEdit && (
+                  <PropertiesModal
+                    show
+                    dashboardId={dashboardToEdit.id}
+                    onHide={() => this.setState({ dashboardToEdit: null })}
+                    onDashboardSave={this.handleDashboardEdit}
+                  />
+                )}
+                <ListView
+                  className="dashboard-list-view"
+                  columns={this.columns}
+                  data={dashboards}
+                  count={dashboardCount}
+                  pageSize={PAGE_SIZE}
+                  fetchData={this.fetchData}
+                  loading={loading}
+                  initialSort={this.initialSort}
+                  filters={filters}
+                  bulkActions={bulkActions}
+                  isSIP34FilterUIEnabled={this.isSIP34FilterUIEnabled}
+                />
+              </>
+            );
+          }}
+        </ConfirmStatusChange>
+      </>
     );
   }
 }

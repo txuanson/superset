@@ -52,11 +52,15 @@ class BaseSupersetSchema(Schema):
         self,
         data: Union[Mapping[str, Any], Iterable[Mapping[str, Any]]],
         many: Optional[bool] = None,
-        partial: Optional[Union[bool, Sequence[str], Set[str]]] = None,
+        partial: Union[bool, Sequence[str], Set[str], None] = None,
         instance: Optional[Model] = None,
         **kwargs: Any,
     ) -> Any:
         self.instance = instance
+        if many is None:
+            many = False
+        if partial is None:
+            partial = False
         return super().load(data, many=many, partial=partial, **kwargs)
 
     @post_load
@@ -88,7 +92,9 @@ class BaseOwnedSchema(BaseSupersetSchema):
     owners_field_name = "owners"
 
     @post_load
-    def make_object(self, data: Dict, discard: Optional[List[str]] = None) -> Model:
+    def make_object(
+        self, data: Dict[str, Any], discard: Optional[List[str]] = None
+    ) -> Model:
         discard = discard or []
         discard.append(self.owners_field_name)
         instance = super().make_object(data, discard)

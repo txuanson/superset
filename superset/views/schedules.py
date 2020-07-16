@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 import enum
-from typing import Type
+from typing import Type, Union
 
 import simplejson as json
 from croniter import croniter
@@ -55,7 +55,7 @@ class EmailScheduleView(
         raise NotImplementedError()
 
     @property
-    def schedule_type_model(self) -> Type:
+    def schedule_type_model(self) -> Type[Union[Dashboard, Slice]]:
         raise NotImplementedError()
 
     page_size = 20
@@ -90,6 +90,11 @@ class EmailScheduleView(
             description="List of recipients to send test email to. "
             "If empty, we send it to the original recipients",
         ),
+        "test_slack_channel": StringField(
+            "Test Slack Channel",
+            default=None,
+            description="A slack channel to send a test message to.",
+        ),
     }
 
     edit_form_extra_fields = add_form_extra_fields
@@ -99,8 +104,16 @@ class EmailScheduleView(
             test_email_recipients = form.test_email_recipients.data.strip()
         else:
             test_email_recipients = None
+
+        test_slack_channel = (
+            form.test_slack_channel.data.strip()
+            if form.test_slack_channel.data
+            else None
+        )
+
         self._extra_data["test_email"] = form.test_email.data
         self._extra_data["test_email_recipients"] = test_email_recipients
+        self._extra_data["test_slack_channel"] = test_slack_channel
 
     def pre_add(self, item: "EmailScheduleView") -> None:
         try:
@@ -120,8 +133,9 @@ class EmailScheduleView(
         # Schedule a test mail if the user requested for it.
         if self._extra_data["test_email"]:
             recipients = self._extra_data["test_email_recipients"] or item.recipients
+            slack_channel = self._extra_data["test_slack_channel"] or item.slack_channel
             args = (self.schedule_type, item.id)
-            kwargs = dict(recipients=recipients)
+            kwargs = dict(recipients=recipients, slack_channel=slack_channel)
             schedule_email_report.apply_async(args=args, kwargs=kwargs)
 
         # Notify the user that schedule changes will be activate only in the
@@ -154,9 +168,7 @@ class EmailScheduleView(
                     info[col] = info[col].username
 
             info["user"] = schedule.user.username
-            info[self.schedule_type] = getattr(  # type: ignore
-                schedule, self.schedule_type
-            ).id
+            info[self.schedule_type] = getattr(schedule, self.schedule_type).id
             schedules.append(info)
 
         return json_success(json.dumps(schedules, default=json_iso_dttm_ser))
@@ -189,10 +201,12 @@ class DashboardEmailScheduleView(
         "active",
         "crontab",
         "recipients",
+        "slack_channel",
         "deliver_as_group",
         "delivery_type",
         "test_email",
         "test_email_recipients",
+        "test_slack_channel",
     ]
 
     edit_columns = add_columns
@@ -213,6 +227,7 @@ class DashboardEmailScheduleView(
         "active": _("Active"),
         "crontab": _("Crontab"),
         "recipients": _("Recipients"),
+        "slack_channel": _("Slack Channel"),
         "deliver_as_group": _("Deliver As Group"),
         "delivery_type": _("Delivery Type"),
     }
@@ -247,11 +262,13 @@ class SliceEmailScheduleView(EmailScheduleView):  # pylint: disable=too-many-anc
         "active",
         "crontab",
         "recipients",
+        "slack_channel",
         "deliver_as_group",
         "delivery_type",
         "email_format",
         "test_email",
         "test_email_recipients",
+        "test_slack_channel",
     ]
 
     edit_columns = add_columns
@@ -273,6 +290,7 @@ class SliceEmailScheduleView(EmailScheduleView):  # pylint: disable=too-many-anc
         "active": _("Active"),
         "crontab": _("Crontab"),
         "recipients": _("Recipients"),
+        "slack_channel": _("Slack Channel"),
         "deliver_as_group": _("Deliver As Group"),
         "delivery_type": _("Delivery Type"),
         "email_format": _("Email Format"),

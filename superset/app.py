@@ -80,7 +80,7 @@ class SupersetAppInitializer:
 
         self.flask_app = app
         self.config = app.config
-        self.manifest: dict = {}
+        self.manifest: Dict[Any, Any] = {}
 
     def pre_init(self) -> None:
         """
@@ -95,7 +95,6 @@ class SupersetAppInitializer:
         """
         Called after any other init tasks
         """
-        pass
 
     def configure_celery(self) -> None:
         celery_app.config_from_object(self.config["CELERY_CONFIG"])
@@ -145,14 +144,12 @@ class SupersetAppInitializer:
             AnnotationModelView,
         )
         from superset.views.api import Api
-        from superset.views.core import (
-            AccessRequestsModelView,
-            KV,
-            R,
-            Superset,
-            CssTemplateModelView,
-            CssTemplateAsyncModelView,
-        )
+        from superset.views.core import Superset
+        from superset.views.redirects import R
+        from superset.views.key_value import KV
+        from superset.views.access_requests import AccessRequestsModelView
+        from superset.views.css_templates import CssTemplateAsyncModelView
+        from superset.views.css_templates import CssTemplateModelView
         from superset.charts.api import ChartRestApi
         from superset.views.chart.views import SliceModelView, SliceAsync
         from superset.dashboards.api import DashboardRestApi
@@ -161,14 +158,22 @@ class SupersetAppInitializer:
             Dashboard,
             DashboardModelViewAsync,
         )
-        from superset.views.database.api import DatabaseRestApi
-        from superset.views.database.views import DatabaseView, CsvToDatabaseView
+        from superset.databases.api import DatabaseRestApi
+        from superset.views.database.views import (
+            DatabaseView,
+            CsvToDatabaseView,
+            ExcelToDatabaseView,
+        )
         from superset.views.datasource import Datasource
         from superset.views.log.api import LogRestApi
         from superset.views.log.views import LogModelView
         from superset.views.schedules import (
             DashboardEmailScheduleView,
             SliceEmailScheduleView,
+        )
+        from superset.views.alerts import (
+            AlertModelView,
+            AlertLogModelView,
         )
         from superset.views.sql_lab import (
             QueryView,
@@ -268,6 +273,7 @@ class SupersetAppInitializer:
         appbuilder.add_view_no_menu(Api)
         appbuilder.add_view_no_menu(CssTemplateAsyncModelView)
         appbuilder.add_view_no_menu(CsvToDatabaseView)
+        appbuilder.add_view_no_menu(ExcelToDatabaseView)
         appbuilder.add_view_no_menu(Dashboard)
         appbuilder.add_view_no_menu(DashboardModelViewAsync)
         appbuilder.add_view_no_menu(Datasource)
@@ -327,15 +333,35 @@ class SupersetAppInitializer:
             category="SQL Lab",
             category_label=__("SQL Lab"),
         )
-        appbuilder.add_link(
-            "Upload a CSV",
-            label=__("Upload a CSV"),
-            href="/csvtodatabaseview/form",
-            icon="fa-upload",
-            category="Sources",
-            category_label=__("Sources"),
-            category_icon="fa-wrench",
-        )
+        if self.config["CSV_EXTENSIONS"].intersection(
+            self.config["ALLOWED_EXTENSIONS"]
+        ):
+            appbuilder.add_link(
+                "Upload a CSV",
+                label=__("Upload a CSV"),
+                href="/csvtodatabaseview/form",
+                icon="fa-upload",
+                category="Sources",
+                category_label=__("Sources"),
+                category_icon="fa-wrench",
+            )
+        try:
+            import xlrd  # pylint: disable=unused-import
+
+            if self.config["EXCEL_EXTENSIONS"].intersection(
+                self.config["ALLOWED_EXTENSIONS"]
+            ):
+                appbuilder.add_link(
+                    "Upload Excel",
+                    label=__("Upload Excel"),
+                    href="/exceltodatabaseview/form",
+                    icon="fa-upload",
+                    category="Sources",
+                    category_label=__("Sources"),
+                    category_icon="fa-wrench",
+                )
+        except ImportError:
+            pass
 
         #
         # Conditionally setup log views
@@ -372,6 +398,17 @@ class SupersetAppInitializer:
                 category_label=__("Manage"),
                 icon="fa-search",
             )
+
+        if self.config["ENABLE_ALERTS"]:
+            appbuilder.add_view(
+                AlertModelView,
+                "Alerts",
+                label=__("Alerts"),
+                category="Manage",
+                category_label=__("Manage"),
+                icon="fa-exclamation-triangle",
+            )
+            appbuilder.add_view_no_menu(AlertLogModelView)
 
         #
         # Conditionally add Access Request Model View
@@ -542,7 +579,7 @@ class SupersetAppInitializer:
                     self.app = app
 
                 def __call__(
-                    self, environ: Dict[str, Any], start_response: Callable
+                    self, environ: Dict[str, Any], start_response: Callable[..., Any]
                 ) -> Any:
                     # Setting wsgi.input_terminated tells werkzeug.wsgi to ignore
                     # content-length and read the stream till the end.
@@ -566,8 +603,7 @@ class SupersetAppInitializer:
             )
 
         # Flask-Compress
-        if self.config["ENABLE_FLASK_COMPRESS"]:
-            Compress(self.flask_app)
+        Compress(self.flask_app)
 
         if self.config["TALISMAN_ENABLED"]:
             talisman.init_app(self.flask_app, **self.config["TALISMAN_CONFIG"])
@@ -595,7 +631,7 @@ class SupersetAppInitializer:
     def register_blueprints(self) -> None:
         for bp in self.config["BLUEPRINTS"]:
             try:
-                logger.info(f"Registering blueprint: '{bp.name}'")
+                logger.info("Registering blueprint: %s", bp.name)
                 self.flask_app.register_blueprint(bp)
             except Exception:  # pylint: disable=broad-except
                 logger.exception("blueprint registration failed")
