@@ -31,6 +31,7 @@ const propTypes = {
   canDownload: PropTypes.oneOfType([PropTypes.string, PropTypes.bool])
     .isRequired,
   chartStatus: PropTypes.string,
+  chartHeight: PropTypes.string.isRequired,
   latestQueryFormData: PropTypes.object,
   queryResponse: PropTypes.object,
   slice: PropTypes.object,
@@ -39,6 +40,7 @@ const propTypes = {
 export default function ExploreActionButtons({
   actions,
   canDownload,
+  chartHeight,
   chartStatus,
   latestQueryFormData,
   queryResponse,
@@ -47,8 +49,16 @@ export default function ExploreActionButtons({
   const exportToCSVClasses = cx('btn btn-default btn-sm', {
     'disabled disabledButton': !canDownload,
   });
-  const doExportCSV = exportChart.bind(this, latestQueryFormData, 'csv');
-  const doExportChart = exportChart.bind(this, latestQueryFormData, 'json');
+  const doExportCSV = exportChart.bind(this, {
+    formData: latestQueryFormData,
+    resultType: 'results',
+    resultFormat: 'csv',
+  });
+  const doExportChart = exportChart.bind(this, {
+    formData: latestQueryFormData,
+    resultType: 'results',
+    resultFormat: 'json',
+  });
 
   return (
     <div className="btn-group results" role="group">
@@ -87,6 +97,7 @@ export default function ExploreActionButtons({
         </a>
       )}
       <DisplayQueryButton
+        chartHeight={chartHeight}
         queryResponse={queryResponse}
         latestQueryFormData={latestQueryFormData}
         chartStatus={chartStatus}

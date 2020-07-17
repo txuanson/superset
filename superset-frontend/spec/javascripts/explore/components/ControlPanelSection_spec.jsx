@@ -19,9 +19,7 @@
 import React from 'react';
 import { shallow } from 'enzyme';
 import { Panel } from 'react-bootstrap';
-
-import InfoTooltipWithTrigger from 'src/components/InfoTooltipWithTrigger';
-
+import { InfoTooltipWithTrigger } from '@superset-ui/chart-controls';
 import ControlPanelSection from 'src/explore/components/ControlPanelSection';
 
 const defaultProps = {

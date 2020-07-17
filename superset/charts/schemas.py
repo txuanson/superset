@@ -14,22 +14,37 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-from typing import Any, Dict, Union
+from typing import Any, Dict
 
-from marshmallow import fields, post_load, Schema, validate, ValidationError
-from marshmallow.validate import Length
+from flask_babel import gettext as _
+from marshmallow import fields, post_load, Schema, validate
+from marshmallow.validate import Length, Range
 
 from superset.common.query_context import QueryContext
-from superset.exceptions import SupersetException
-from superset.utils import core as utils
+from superset.utils import schema as utils
+from superset.utils.core import FilterOperator
 
 #
 # RISON/JSON schemas for query parameters
 #
 get_delete_ids_schema = {"type": "array", "items": {"type": "integer"}}
+
+width_height_schema = {
+    "type": "array",
+    "items": [{"type": "integer"}, {"type": "integer"}],
+}
 thumbnail_query_schema = {
     "type": "object",
     "properties": {"force": {"type": "boolean"}},
+}
+
+screenshot_query_schema = {
+    "type": "object",
+    "properties": {
+        "force": {"type": "boolean"},
+        "window_size": width_height_schema,
+        "thumb_size": width_height_schema,
+    },
 }
 
 #
@@ -84,14 +99,6 @@ openapi_spec_methods_override = {
         "get": {"description": "Get a list of all possible owners for a chart."}
     },
 }
-""" Overrides GET methods OpenApi descriptions """
-
-
-def validate_json(value: Union[bytes, bytearray, str]) -> None:
-    try:
-        utils.validate_json(value)
-    except SupersetException:
-        raise ValidationError("JSON not valid")
 
 
 class ChartPostSchema(Schema):
@@ -110,7 +117,7 @@ class ChartPostSchema(Schema):
     )
     owners = fields.List(fields.Integer(description=owners_description))
     params = fields.String(
-        description=params_description, allow_none=True, validate=validate_json
+        description=params_description, allow_none=True, validate=utils.validate_json
     )
     cache_timeout = fields.Integer(
         description=cache_timeout_description, allow_none=True
@@ -156,6 +163,27 @@ class ChartPutSchema(Schema):
         allow_none=True,
     )
     dashboards = fields.List(fields.Integer(description=dashboards_description))
+
+
+class ChartGetDatasourceObjectDataResponseSchema(Schema):
+    datasource_id = fields.Integer(description="The datasource identifier")
+    datasource_type = fields.Integer(description="The datasource type")
+
+
+class ChartGetDatasourceObjectResponseSchema(Schema):
+    label = fields.String(description="The name of the datasource")
+    value = fields.Nested(ChartGetDatasourceObjectDataResponseSchema)
+
+
+class ChartGetDatasourceResponseSchema(Schema):
+    count = fields.Integer(description="The total number of datasources")
+    result = fields.Nested(ChartGetDatasourceObjectResponseSchema)
+
+
+class ChartCacheScreenshotResponseSchema(Schema):
+    cache_key = fields.String(description="The cache key")
+    chart_url = fields.String(description="The url to render the chart")
+    image_url = fields.String(description="The url to fetch the screenshot")
 
 
 class ChartDataColumnSchema(Schema):
@@ -233,8 +261,7 @@ class ChartDataAggregateConfigField(fields.Dict):
 
 
 class ChartDataPostProcessingOperationOptionsSchema(Schema):
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
+    pass
 
 
 class ChartDataAggregateOptionsSchema(ChartDataPostProcessingOperationOptionsSchema):
@@ -356,7 +383,7 @@ class ChartDataSelectOptionsSchema(ChartDataPostProcessingOperationOptionsSchema
         "referenced here.",
         example=["country", "gender", "age"],
     )
-    exclude = fields.List(
+    exclude = fields.List(  # type: ignore
         fields.String(),
         description="Columns to exclude from selection.",
         example=["my_temp_column"],
@@ -383,6 +410,19 @@ class ChartDataSortOptionsSchema(ChartDataPostProcessingOperationOptionsSchema):
     aggregates = ChartDataAggregateConfigField()
 
 
+class ChartDataContributionOptionsSchema(ChartDataPostProcessingOperationOptionsSchema):
+    """
+    Contribution operation config.
+    """
+
+    orientation = fields.String(
+        description="Should cell values be calculated across the row or column.",
+        required=True,
+        validate=validate.OneOf(choices=("row", "column",)),
+        example="row",
+    )
+
+
 class ChartDataPivotOptionsSchema(ChartDataPostProcessingOperationOptionsSchema):
     """
     Pivot operation config.
@@ -402,8 +442,6 @@ class ChartDataPivotOptionsSchema(ChartDataPostProcessingOperationOptionsSchema)
         fields.String(
             allow_none=False, description="Columns to group by on the table columns",
         ),
-        minLength=1,
-        required=True,
     )
     metric_fill_value = fields.Number(
         description="Value to replace missing values with in aggregate calculations.",
@@ -490,6 +528,7 @@ class ChartDataPostProcessingOperationSchema(Schema):
         validate=validate.OneOf(
             choices=(
                 "aggregate",
+                "contribution",
                 "cum",
                 "geodetic_parse",
                 "geohash_decode",
@@ -527,8 +566,8 @@ class ChartDataFilterSchema(Schema):
     )
     op = fields.String(  # pylint: disable=invalid-name
         description="The comparison operator.",
-        validate=validate.OneOf(
-            choices=[filter_op.value for filter_op in utils.FilterOperator]
+        validate=utils.OneOfCaseInsensitive(
+            choices=[filter_op.value for filter_op in FilterOperator]
         ),
         required=True,
         example="IN",
@@ -595,10 +634,12 @@ class ChartDataExtrasSchema(Schema):
             ),
         ),
         example="P1D",
+        allow_none=True,
     )
     druid_time_origin = fields.String(
         description="Starting point for time grain counting on legacy Druid "
         "datasources. Used to change e.g. Monday/Sunday first-day-of-week.",
+        allow_none=True,
     )
 
 
@@ -625,7 +666,7 @@ class ChartDataQueryObjectSchema(Schema):
         "`ChartDataAdhocMetricSchema` for the structure of ad-hoc metrics.",
     )
     post_processing = fields.List(
-        fields.Nested(ChartDataPostProcessingOperationSchema),
+        fields.Nested(ChartDataPostProcessingOperationSchema, allow_none=True),
         description="Post processing operations to be applied to the result set. "
         "Operations are applied to the result set in sequential order.",
     )
@@ -661,8 +702,20 @@ class ChartDataQueryObjectSchema(Schema):
     timeseries_limit = fields.Integer(
         description="Maximum row count for timeseries queries. Default: `0`",
     )
+    timeseries_limit_metric = fields.Raw(
+        description="Metric used to limit timeseries queries by.", allow_none=True,
+    )
     row_limit = fields.Integer(
         description='Maximum row count. Default: `config["ROW_LIMIT"]`',
+        validate=[
+            Range(min=1, error=_("`row_limit` must be greater than or equal to 1"))
+        ],
+    )
+    row_offset = fields.Integer(
+        description="Number of rows to skip. Default: `0`",
+        validate=[
+            Range(min=0, error=_("`row_offset` must be greater than or equal to 0"))
+        ],
     )
     order_desc = fields.Boolean(
         description="Reverse order. Default: `false`", required=False
@@ -711,14 +764,22 @@ class ChartDataQueryContextSchema(Schema):
         description="Should the queries be forced to load from the source. "
         "Default: `false`",
     )
+    result_type = fields.String(
+        description="Type of results to return",
+        validate=validate.OneOf(choices=("full", "query", "results", "samples")),
+    )
+    result_format = fields.String(
+        description="Format of result payload",
+        validate=validate.OneOf(choices=("json", "csv")),
+    )
 
-    # pylint: disable=no-self-use
+    # pylint: disable=no-self-use,unused-argument
     @post_load
-    def make_query_context(self, data: Dict[str, Any]) -> QueryContext:
+    def make_query_context(self, data: Dict[str, Any], **kwargs: Any) -> QueryContext:
         query_context = QueryContext(**data)
         return query_context
 
-    # pylint: enable=no-self-use
+    # pylint: enable=no-self-use,unused-argument
 
 
 class ChartDataResponseResult(Schema):
@@ -772,7 +833,7 @@ class ChartDataResponseSchema(Schema):
     )
 
 
-CHART_DATA_SCHEMAS = (
+CHART_SCHEMAS = (
     ChartDataQueryContextSchema,
     ChartDataResponseSchema,
     # TODO: These should optimally be included in the QueryContext schema as an `anyOf`
@@ -780,6 +841,7 @@ CHART_DATA_SCHEMAS = (
     #  by Marshmallow<3, this is not currently possible.
     ChartDataAdhocMetricSchema,
     ChartDataAggregateOptionsSchema,
+    ChartDataContributionOptionsSchema,
     ChartDataPivotOptionsSchema,
     ChartDataRollingOptionsSchema,
     ChartDataSelectOptionsSchema,
@@ -787,4 +849,6 @@ CHART_DATA_SCHEMAS = (
     ChartDataGeohashDecodeOptionsSchema,
     ChartDataGeohashEncodeOptionsSchema,
     ChartDataGeodeticParseOptionsSchema,
+    ChartGetDatasourceResponseSchema,
+    ChartCacheScreenshotResponseSchema,
 )

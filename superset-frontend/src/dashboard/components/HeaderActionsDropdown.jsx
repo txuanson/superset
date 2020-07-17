@@ -28,12 +28,14 @@ import SaveModal from './SaveModal';
 import injectCustomCss from '../util/injectCustomCss';
 import { SAVE_TYPE_NEWDASHBOARD } from '../util/constants';
 import URLShortLinkModal from '../../components/URLShortLinkModal';
+import downloadAsImage from '../../utils/downloadAsImage';
 import getDashboardUrl from '../util/getDashboardUrl';
 import { getActiveFilters } from '../util/activeDashboardFilters';
 
 const propTypes = {
   addSuccessToast: PropTypes.func.isRequired,
   addDangerToast: PropTypes.func.isRequired,
+  dashboardInfo: PropTypes.object.isRequired,
   dashboardId: PropTypes.number.isRequired,
   dashboardTitle: PropTypes.string.isRequired,
   hasUnsavedChanges: PropTypes.bool.isRequired,
@@ -44,6 +46,7 @@ const propTypes = {
   updateCss: PropTypes.func.isRequired,
   forceRefreshAllCharts: PropTypes.func.isRequired,
   refreshFrequency: PropTypes.number.isRequired,
+  shouldPersistRefreshFrequency: PropTypes.bool.isRequired,
   setRefreshFrequency: PropTypes.func.isRequired,
   startPeriodicRender: PropTypes.func.isRequired,
   editMode: PropTypes.bool.isRequired,
@@ -54,11 +57,15 @@ const propTypes = {
   expandedSlices: PropTypes.object.isRequired,
   onSave: PropTypes.func.isRequired,
   showPropertiesModal: PropTypes.func.isRequired,
+  refreshLimit: PropTypes.number,
+  refreshWarning: PropTypes.string,
 };
 
 const defaultProps = {
   colorNamespace: undefined,
   colorScheme: undefined,
+  refreshLimit: 0,
+  refreshWarning: null,
 };
 
 class HeaderActionsDropdown extends React.PureComponent {
@@ -113,8 +120,10 @@ class HeaderActionsDropdown extends React.PureComponent {
     const {
       dashboardTitle,
       dashboardId,
+      dashboardInfo,
       forceRefreshAllCharts,
       refreshFrequency,
+      shouldPersistRefreshFrequency,
       editMode,
       customCss,
       colorNamespace,
@@ -126,6 +135,8 @@ class HeaderActionsDropdown extends React.PureComponent {
       userCanEdit,
       userCanSave,
       isLoading,
+      refreshLimit,
+      refreshWarning,
     } = this.props;
 
     const emailTitle = t('Superset Dashboard');
@@ -146,10 +157,12 @@ class HeaderActionsDropdown extends React.PureComponent {
             addDangerToast={this.props.addDangerToast}
             dashboardId={dashboardId}
             dashboardTitle={dashboardTitle}
+            dashboardInfo={dashboardInfo}
             saveType={SAVE_TYPE_NEWDASHBOARD}
             layout={layout}
             expandedSlices={expandedSlices}
             refreshFrequency={refreshFrequency}
+            shouldPersistRefreshFrequency={shouldPersistRefreshFrequency}
             customCss={customCss}
             colorNamespace={colorNamespace}
             colorScheme={colorScheme}
@@ -179,6 +192,8 @@ class HeaderActionsDropdown extends React.PureComponent {
 
         <RefreshIntervalModal
           refreshFrequency={refreshFrequency}
+          refreshLimit={refreshLimit}
+          refreshWarning={refreshWarning}
           onChange={this.changeRefreshInterval}
           editMode={editMode}
           triggerNode={
@@ -216,6 +231,12 @@ class HeaderActionsDropdown extends React.PureComponent {
             templates={this.state.cssTemplates}
             onChange={this.changeCss}
           />
+        )}
+
+        {!editMode && (
+          <MenuItem onClick={downloadAsImage('.dashboard', dashboardTitle)}>
+            {t('Download as image')}
+          </MenuItem>
         )}
       </DropdownButton>
     );

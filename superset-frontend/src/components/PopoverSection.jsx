@@ -18,7 +18,7 @@
  */
 import React from 'react';
 import PropTypes from 'prop-types';
-import InfoTooltipWithTrigger from './InfoTooltipWithTrigger';
+import { InfoTooltipWithTrigger } from '@superset-ui/chart-controls';
 
 const propTypes = {
   title: PropTypes.string.isRequired,
@@ -36,7 +36,7 @@ export default function PopoverSection({
   info,
 }) {
   return (
-    <div className={'PopoverSection ' + (!isSelected ? 'dimmed' : '')}>
+    <div className={`PopoverSection ${!isSelected ? 'dimmed' : ''}`}>
       <div onClick={onSelect} className="pointer">
         <strong>{title}</strong> &nbsp;
         {info && (
