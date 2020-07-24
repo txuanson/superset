@@ -65,7 +65,7 @@ const DatasetModal: FunctionComponent<DatasetModalProps> = ({
     tableName: string;
   }) => {
     setDatasourceId(dbId);
-    setDisableSave(isNil(dbId) || isEmpty(schema) || isEmpty(tableName));
+    setDisableSave(isNil(dbId) || isEmpty(tableName));
     setSchema(schema);
     setTableName(tableName);
   };
@@ -73,7 +73,7 @@ const DatasetModal: FunctionComponent<DatasetModalProps> = ({
   const onSave = () => {
     const data = {
       database: datasourceId,
-      schema: currentSchema,
+      ...(currentSchema ? { schema: currentSchema } : {}),
       table_name: currentTableName,
     };
     SupersetClient.post({
