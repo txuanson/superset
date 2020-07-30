@@ -32,6 +32,10 @@ module.exports = {
   ],
   webpackFinal: config => ({
     ...config,
+    resolve: {
+      ...config.resolve,
+      ...customConfig.resolve,
+    },
     module: {
       ...config.module,
       rules: customConfig.module.rules,
