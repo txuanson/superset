@@ -19,7 +19,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {
-  Button,
   DropdownButton,
   FormControl,
   FormGroup,
@@ -33,6 +32,7 @@ import {
   Tabs,
   Tooltip,
 } from 'react-bootstrap';
+import Button from 'src/components/Button';
 import Datetime from 'react-datetime';
 import 'react-datetime/css/react-datetime.css';
 import moment from 'moment';
@@ -108,6 +108,8 @@ const defaultProps = {
   onOpenDateFilterControl: () => {},
   onCloseDateFilterControl: () => {},
 };
+
+
 
 function isValidMoment(s) {
   /* Moment sometimes consider invalid dates as valid, eg, "10 years ago" gets
@@ -190,6 +192,7 @@ export default class DateFilterControl extends React.Component {
       sinceViewMode: 'days',
       untilViewMode: 'days',
     };
+    this.stateSnapshotWhenOpened = {};
 
     const value = props.value;
     if (value.indexOf(SEPARATOR) >= 0) {
@@ -201,6 +204,7 @@ export default class DateFilterControl extends React.Component {
     }
 
     this.close = this.close.bind(this);
+    this.dismissOverlay = this.dismissOverlay.bind(this);
     this.handleClick = this.handleClick.bind(this);
     this.handleClickTrigger = this.handleClickTrigger.bind(this);
     this.isValidSince = this.isValidSince.bind(this);
@@ -276,7 +280,7 @@ export default class DateFilterControl extends React.Component {
     // but need to exclude OverlayTrigger component to avoid handle click events twice.
     if (target.getAttribute('name') !== 'popover-trigger') {
       if (this.popoverContainer && !this.popoverContainer.contains(target)) {
-        this.props.onCloseDateFilterControl();
+        this.dismissOverlay();
       }
     }
   }
@@ -287,12 +291,14 @@ export default class DateFilterControl extends React.Component {
     // and before handleClick handler
     if (!this.popoverContainer) {
       this.props.onOpenDateFilterControl();
+      this.stateSnapshotWhenOpened = { ...this.state };
     } else {
-      this.props.onCloseDateFilterControl();
+      this.dismissOverlay();
     }
   }
 
   close() {
+    console.warn('closing!!!!');
     let val;
     if (
       this.state.type === TYPES.DEFAULTS ||
@@ -304,10 +310,14 @@ export default class DateFilterControl extends React.Component {
     } else {
       val = [this.state.since, this.state.until].join(SEPARATOR);
     }
-    this.props.onCloseDateFilterControl();
     this.props.onChange(val);
     this.refs.trigger.hide();
     this.setState({ showSinceCalendar: false, showUntilCalendar: false });
+  }
+  dismissOverlay() {
+    console.warn('dismissing!!!!');
+    this.setState(this.stateSnapshotWhenOpened);
+    this.refs.trigger.hide();
   }
   isValidSince(date) {
     return (
@@ -579,9 +589,9 @@ export default class DateFilterControl extends React.Component {
           overlay={this.renderPopover()}
           onClick={this.handleClickTrigger}
         >
-          <Label name="popover-trigger" style={{ cursor: 'pointer' }}>
+          <Button name="popover-trigger" style={{ cursor: 'pointer' }}>
             {value}
-          </Label>
+          </Button>
         </OverlayTrigger>
       </div>
     );

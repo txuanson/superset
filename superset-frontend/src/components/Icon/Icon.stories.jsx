@@ -18,10 +18,30 @@
  */
 import React from 'react';
 import Icon, { iconsRegistry } from './';
+import { withKnobs, boolean, select, text } from '@storybook/addon-knobs';
+import { supersetTheme } from '@superset-ui/style';
 
 export default {
   title: 'Icon',
   component: Icon,
+  decorators: [withKnobs],
+};
+
+
+const palette = {};
+Object.entries(supersetTheme.colors).forEach(([familyName, family]) => {
+  Object.entries(family).forEach(([colorName, colorValue]) => {
+    palette[`${familyName} / ${colorName}`] = colorValue;
+  });
+})
+
+const colorKnob = {
+  label: 'Color',
+  options: {
+    Default: null,
+    ...palette,
+  },
+  defaultValue: null,
 };
 
 export const SupersetIcon = () => {
@@ -29,8 +49,18 @@ export const SupersetIcon = () => {
     <>
       {Object.keys(iconsRegistry).map(iconName => (
         <>
-          <div>{iconName}:</div>
-          <Icon name={iconName} key={iconName} />
+          {iconName}: <br />
+          <Icon
+            name={iconName}
+            key={iconName}
+            color={select(
+              colorKnob.label,
+              colorKnob.options,
+              colorKnob.defaultValue,
+              colorKnob.groupId,
+            )}
+          />
+          <hr />
         </>
       ))}
     </>
