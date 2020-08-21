@@ -24,3 +24,4 @@
  */
 /* eslint no-restricted-imports: 0 */
 export * from 'antd';
+export { default as Icon } from '@ant-design/icons';
