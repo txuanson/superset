@@ -43,28 +43,26 @@ export const bsStyleKnob = {
 };
 
 export const LabelGallery = () => (
-  <div style={{ padding: '10px' }}>
+  <>
     {Object.values(bsStyleKnob.options).map(opt => (
       <Label key={opt} bsStyle={opt} onClick={action('clicked')}>
         {`style: "${opt}"`}
       </Label>
     ))}
-  </div>
+  </>
 );
 
 export const InteractiveLabel = () => (
-  <div style={{ padding: '10px' }}>
-    <Label
-      bsStyle={select(
-        bsStyleKnob.label,
-        bsStyleKnob.options,
-        bsStyleKnob.defaultValue,
-      )}
-      onClick={
-        boolean('Has onClick action', false) ? action('clicked') : undefined
-      }
-    >
-      {text('Label', 'Label!')}
-    </Label>
-  </div>
+  <Label
+    bsStyle={select(
+      bsStyleKnob.label,
+      bsStyleKnob.options,
+      bsStyleKnob.defaultValue,
+    )}
+    onClick={
+      boolean('Has onClick action', false) ? action('clicked') : undefined
+    }
+  >
+    {text('Label', 'Label!')}
+  </Label>
 );
