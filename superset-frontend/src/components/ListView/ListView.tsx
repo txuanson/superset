@@ -325,6 +325,7 @@ const ListView: FunctionComponent<ListViewProps> = ({
           )}
           {viewingMode === 'card' && (
             <CardCollection
+              bulkSelectEnabled={bulkSelectEnabled}
               prepareRow={prepareRow}
               renderCard={renderCard}
               rows={rows}
@@ -338,11 +339,13 @@ const ListView: FunctionComponent<ListViewProps> = ({
               prepareRow={prepareRow}
               headerGroups={headerGroups}
               rows={rows}
+              columns={columns}
               loading={loading}
             />
           )}
         </div>
       </div>
+
       <div className="pagination-container">
         <Pagination
           totalPages={pageCount || 0}
@@ -351,12 +354,13 @@ const ListView: FunctionComponent<ListViewProps> = ({
           hideFirstAndLastPageLinks
         />
         <div className="row-count-container">
-          {t(
-            '%s-%s of %s',
-            pageSize * pageIndex + (rows.length && 1),
-            pageSize * pageIndex + rows.length,
-            count,
-          )}
+          {!loading &&
+            t(
+              '%s-%s of %s',
+              pageSize * pageIndex + (rows.length && 1),
+              pageSize * pageIndex + rows.length,
+              count,
+            )}
         </div>
       </div>
     </ListViewStyles>

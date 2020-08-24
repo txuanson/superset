@@ -17,14 +17,16 @@
  * under the License.
  */
 import React from 'react';
-import { TableInstance } from 'react-table';
+import { TableInstance, Row } from 'react-table';
 import styled from '@superset-ui/style';
+import cx from 'classnames';
 
-interface Props {
-  renderCard?: (row: any) => React.ReactNode;
-  prepareRow: TableInstance['prepareRow'];
-  rows: TableInstance['rows'];
+interface CardCollectionProps {
+  bulkSelectEnabled?: boolean;
   loading: boolean;
+  prepareRow: TableInstance['prepareRow'];
+  renderCard?: (row: any) => React.ReactNode;
+  rows: TableInstance['rows'];
 }
 
 const CardContainer = styled.div`
@@ -36,21 +38,60 @@ const CardContainer = styled.div`
     ${({ theme }) => theme.gridUnit * 4}px;
 `;
 
+const CardWrapper = styled.div`
+  border: 2px solid transparent;
+  &.card-selected {
+    border: 2px solid ${({ theme }) => theme.colors.primary.base};
+  }
+  &.bulk-select {
+    cursor: pointer;
+  }
+`;
+
 export default function CardCollection({
-  renderCard,
-  prepareRow,
-  rows,
+  bulkSelectEnabled,
   loading,
-}: Props) {
+  prepareRow,
+  renderCard,
+  rows,
+}: CardCollectionProps) {
+  function handleClick(
+    event: React.MouseEvent<HTMLDivElement, MouseEvent>,
+    toggleRowSelected: Row['toggleRowSelected'],
+  ) {
+    if (bulkSelectEnabled) {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleRowSelected();
+    }
+  }
+
+  if (!renderCard) return null;
   return (
     <CardContainer>
-      {rows.map(row => {
-        if (!renderCard) return null;
-        prepareRow(row);
-        return (
-          <div key={row.id}>{renderCard({ ...row.original, loading })}</div>
-        );
-      })}
+      {loading &&
+        rows.length === 0 &&
+        [...new Array(25)].map((e, i) => {
+          return <div key={i}>{renderCard({ loading })}</div>;
+        })}
+      {rows.length > 0 &&
+        rows.map(row => {
+          if (!renderCard) return null;
+          prepareRow(row);
+          return (
+            <CardWrapper
+              className={cx({
+                'card-selected': bulkSelectEnabled && row.isSelected,
+                'bulk-select': bulkSelectEnabled,
+              })}
+              key={row.id}
+              onClick={e => handleClick(e, row.toggleRowSelected)}
+              role="none"
+            >
+              {renderCard({ ...row.original, loading })}
+            </CardWrapper>
+          );
+        })}
     </CardContainer>
   );
 }

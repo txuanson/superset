@@ -16,11 +16,31 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+import React from 'react';
 
-/*
-  Antd is exported from here so we can override components with Emotion as needed.
+import withToasts from 'src/messageToasts/enhancers/withToasts';
+import SubMenu, { SubMenuProps } from 'src/components/Menu/SubMenu';
+import { commonMenuData } from 'src/views/CRUD/data/common';
 
-  For documentation, see https://ant.design/components/overview/
- */
-/* eslint no-restricted-imports: 0 */
-export * from 'antd';
+interface DatasourceListProps {
+  addDangerToast: (msg: string) => void;
+  addSuccessToast: (msg: string) => void;
+}
+
+function DatasourceList({
+  addDangerToast,
+  addSuccessToast,
+}: DatasourceListProps) {
+  const menuData: SubMenuProps = {
+    activeChild: 'Databases',
+    ...commonMenuData,
+  };
+
+  return (
+    <>
+      <SubMenu {...menuData} />
+    </>
+  );
+}
+
+export default withToasts(DatasourceList);

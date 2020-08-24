@@ -17,30 +17,17 @@
  * under the License.
  */
 import React from 'react';
-import { Panel, Row, Tab } from 'react-bootstrap';
-import { shallow } from 'enzyme';
+import ReactDOM from 'react-dom';
+import { supersetTheme, ThemeProvider } from '@superset-ui/style';
+import Menu from 'src/components/Menu/Menu';
 
-import Welcome from 'src/welcome/Welcome';
-
-describe('Welcome', () => {
-  const mockedProps = {
-    user: {
-      username: 'alpha',
-      firstName: 'alpha',
-      lastName: 'alpha',
-      createdOn: '2016-11-11T12:34:17',
-      userId: 5,
-      email: 'alpha@alpha.com',
-      isActive: true,
-    },
-  };
-  it('is valid', () => {
-    expect(React.isValidElement(<Welcome {...mockedProps} />)).toBe(true);
-  });
-  it('renders 3 Tab, Panel, and Row components', () => {
-    const wrapper = shallow(<Welcome {...mockedProps} />);
-    expect(wrapper.find(Tab)).toHaveLength(3);
-    expect(wrapper.find(Panel)).toHaveLength(3);
-    expect(wrapper.find(Row)).toHaveLength(3);
-  });
-});
+const container = document.getElementById('app');
+const bootstrapJson = container?.getAttribute('data-bootstrap') ?? '{}';
+const bootstrap = JSON.parse(bootstrapJson);
+const menu = { ...bootstrap.common.menu_data };
+const app = (
+  <ThemeProvider theme={supersetTheme}>
+    <Menu data={menu} />
+  </ThemeProvider>
+);
+ReactDOM.render(app, document.getElementById('app-menu'));

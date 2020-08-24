@@ -17,24 +17,25 @@
  * under the License.
  */
 import React from 'react';
-import { hot } from 'react-hot-loader/root';
-import { supersetTheme, ThemeProvider } from '@superset-ui/style';
-import setupApp from '../setup/setupApp';
-import setupPlugins from '../setup/setupPlugins';
-import AddSliceContainer from './AddSliceContainer';
+import thunk from 'redux-thunk';
+import configureStore from 'redux-mock-store';
+import { styledMount as mount } from 'spec/helpers/theming';
 
-setupApp();
-setupPlugins();
+import DatabaseList from 'src/views/CRUD/data/database/DatabaseList';
+import SubMenu from 'src/components/Menu/SubMenu';
 
-const addSliceContainer = document.getElementById('app');
-const bootstrapData = JSON.parse(
-  addSliceContainer?.getAttribute('data-bootstrap') || '{}',
-);
+// store needed for withToasts(DatabaseList)
+const mockStore = configureStore([thunk]);
+const store = mockStore({});
 
-const App = () => (
-  <ThemeProvider theme={supersetTheme}>
-    <AddSliceContainer datasources={bootstrapData.datasources} />
-  </ThemeProvider>
-);
+describe('DatabaseList', () => {
+  const wrapper = mount(<DatabaseList />, { context: { store } });
 
-export default hot(App);
+  it('renders', () => {
+    expect(wrapper.find(DatabaseList)).toExist();
+  });
+
+  it('renders a SubMenu', () => {
+    expect(wrapper.find(SubMenu)).toExist();
+  });
+});

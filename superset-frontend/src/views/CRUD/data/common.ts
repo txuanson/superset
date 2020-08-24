@@ -16,25 +16,25 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
-import { hot } from 'react-hot-loader/root';
-import { supersetTheme, ThemeProvider } from '@superset-ui/style';
-import setupApp from '../setup/setupApp';
-import setupPlugins from '../setup/setupPlugins';
-import AddSliceContainer from './AddSliceContainer';
+import { t } from '@superset-ui/translation';
 
-setupApp();
-setupPlugins();
-
-const addSliceContainer = document.getElementById('app');
-const bootstrapData = JSON.parse(
-  addSliceContainer?.getAttribute('data-bootstrap') || '{}',
-);
-
-const App = () => (
-  <ThemeProvider theme={supersetTheme}>
-    <AddSliceContainer datasources={bootstrapData.datasources} />
-  </ThemeProvider>
-);
-
-export default hot(App);
+export const commonMenuData = {
+  name: t('Data'),
+  children: [
+    {
+      name: 'Datasets',
+      label: t('Datasets'),
+      url: '/tablemodelview/list/',
+    },
+    {
+      name: 'Databases',
+      label: t('Databases'),
+      url: '/databaseview/list/',
+    },
+    {
+      name: 'Saved Queries',
+      label: t('Saved Queries'),
+      url: '/sqllab/my_queries/',
+    },
+  ],
+};

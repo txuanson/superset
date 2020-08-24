@@ -16,25 +16,24 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
-import { hot } from 'react-hot-loader/root';
-import { supersetTheme, ThemeProvider } from '@superset-ui/style';
-import setupApp from '../setup/setupApp';
-import setupPlugins from '../setup/setupPlugins';
-import AddSliceContainer from './AddSliceContainer';
+import styled from '@superset-ui/style';
+import { Skeleton } from 'antd';
 
-setupApp();
-setupPlugins();
+/*
+  Antd is exported from here so we can override components with Emotion as needed.
 
-const addSliceContainer = document.getElementById('app');
-const bootstrapData = JSON.parse(
-  addSliceContainer?.getAttribute('data-bootstrap') || '{}',
-);
+  For documentation, see https://ant.design/components/overview/
+ */
+/* eslint no-restricted-imports: 0 */
 
-const App = () => (
-  <ThemeProvider theme={supersetTheme}>
-    <AddSliceContainer datasources={bootstrapData.datasources} />
-  </ThemeProvider>
-);
+export * from 'antd';
 
-export default hot(App);
+export const ThinSkeleton = styled(Skeleton)`
+  h3 {
+    margin: ${({ theme }) => theme.gridUnit}px 0;
+  }
+
+  ul {
+    margin-bottom: 0;
+  }
+`;

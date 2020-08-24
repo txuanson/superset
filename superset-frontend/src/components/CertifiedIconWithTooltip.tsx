@@ -17,24 +17,33 @@
  * under the License.
  */
 import React from 'react';
-import { hot } from 'react-hot-loader/root';
-import { supersetTheme, ThemeProvider } from '@superset-ui/style';
-import setupApp from '../setup/setupApp';
-import setupPlugins from '../setup/setupPlugins';
-import AddSliceContainer from './AddSliceContainer';
+import { t } from '@superset-ui/translation';
+import { supersetTheme } from '@superset-ui/style';
+import Icon from 'src/components/Icon';
+import TooltipWrapper from 'src/components/TooltipWrapper';
 
-setupApp();
-setupPlugins();
+interface CertifiedIconWithTooltipProps {
+  certifiedBy?: string;
+  details?: string;
+}
 
-const addSliceContainer = document.getElementById('app');
-const bootstrapData = JSON.parse(
-  addSliceContainer?.getAttribute('data-bootstrap') || '{}',
-);
+function CertifiedIconWithTooltip({
+  certifiedBy,
+  details,
+}: CertifiedIconWithTooltipProps) {
+  return (
+    <TooltipWrapper
+      label="certified-details"
+      tooltip={
+        <>
+          {certifiedBy && <div>{t('Certified by %s', certifiedBy)}</div>}
+          <div>{details}</div>
+        </>
+      }
+    >
+      <Icon color={supersetTheme.colors.primary.base} name="certified" />
+    </TooltipWrapper>
+  );
+}
 
-const App = () => (
-  <ThemeProvider theme={supersetTheme}>
-    <AddSliceContainer datasources={bootstrapData.datasources} />
-  </ThemeProvider>
-);
-
-export default hot(App);
+export default CertifiedIconWithTooltip;
