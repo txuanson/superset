@@ -14,8 +14,9 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+import re
 from functools import partial
-from typing import Any, Callable, cast, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, cast, Dict, List, Optional, Pattern, Tuple, Union
 
 import geohash as geohash_lib
 import numpy as np
@@ -686,3 +687,31 @@ def prophet(  # pylint: disable=too-many-arguments
                 target_df = target_df.assign(**{new_column: fit_df[new_column]})
     target_df.reset_index(level=0, inplace=True)
     return target_df.rename(columns={"ds": DTTM_ALIAS})
+
+
+def time_grain_to_resample_rule(time_grain: str) -> str:
+    """
+    Convert a time grain string to a rule compatible with the Pandas
+    resample function.
+
+    :param time_grain: ISO 8601 time grain
+    :return: Pandas resample rule
+    """
+    regexes: Tuple[Tuple[Pattern, str], ...] = (
+        (re.compile(r"PT(\d+)S"), r"\1sec"),
+        (re.compile(r"PT(\d+)M"), r"\1min"),
+        (re.compile(r"PT(\d+)H"), r"\1hour"),
+        (re.compile(r"P(\d+)D"), r"\1D"),
+        (re.compile(r"1969-12-28T00:00:00Z\/P1W"), r"W-SUN"),
+        (re.compile(r"1969-12-29T00:00:00Z\/P1W"), r"W-MON"),
+        (re.compile(r"P1W\/1970-01-03T00:00:00Z"), r"W-SUN"),
+        (re.compile(r"P1W\/1970-01-04T00:00:00Z"), r"W-MON"),
+        (re.compile(r"P(\d+)W"), r"\1W"),
+        (re.compile(r"P0.25M"), r"1Q"),
+        (re.compile(r"P(\d+)M"), r"\1M"),
+        (re.compile(r"P(\d+)Y"), r"\1Y"),
+    )
+    rule = time_grain
+    for match, replace in regexes:
+        rule = match.sub(replace, rule)
+    return rule

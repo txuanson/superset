@@ -74,6 +74,7 @@ from superset.utils.core import (
 )
 from superset.utils.dates import datetime_to_epoch
 from superset.utils.hashing import md5_sha_from_str
+from superset.utils.pandas_postprocessing import time_grain_to_resample_rule
 
 if TYPE_CHECKING:
     from superset.connectors.base.models import BaseDatasource
@@ -882,24 +883,51 @@ class PivotTableViz(BaseViz):
         return cast(str, value)
 
     def get_data(self, df: pd.DataFrame) -> VizData:
+        fd = self.form_data
         if df.empty:
             return None
 
-        if self.form_data.get("granularity") == "all" and DTTM_ALIAS in df:
+        if fd.get("granularity") == "all" and DTTM_ALIAS in df:
             del df[DTTM_ALIAS]
 
         metrics = [utils.get_metric_name(m) for m in self.form_data["metrics"]]
         aggfuncs: Dict[str, Union[str, Callable[[Any], Any]]] = {}
         for metric in metrics:
-            aggfuncs[metric] = self.get_aggfunc(metric, df, self.form_data)
+            aggfuncs[metric] = self.get_aggfunc(metric, df, fd)
 
-        groupby = self.form_data.get("groupby") or []
-        columns = self.form_data.get("columns") or []
+        groupby = fd.get("groupby") or []
+        columns = fd.get("columns") or []
+
+        def _format_datetime(value: Union[str, date, datetime]) -> str:
+            epoch: Optional[float] = None
+            if isinstance(value, str):
+                epoch = datetime_to_epoch(pd.Timestamp(value))
+            elif isinstance(value, datetime):
+                epoch = value.timestamp()
+            elif isinstance(value, date):
+                epoch = datetime(value.year, value.month, value.day).timestamp()
+            if epoch:
+                return f"__timestamp:{datetime_to_epoch(pd.Timestamp(value))}"
+            return value
+
+        if self.form_data.get("zero_out"):
+            time_grain = fd.get("time_grain_sqla") or fd.get("granularity")
+            dttm_col = fd.get("granularity_sqla")
+            if not time_grain or not dttm_col:
+                raise QueryObjectValidationError(
+                    _("Zero filling requires setting a time grain")
+                )
+            rule = time_grain_to_resample_rule(time_grain)
+            df = df.resample(rule, on=dttm_col).last()
+            df = df.fillna(0)
+            df[dttm_col] = df.index
+            df = df.resample(rule).asfreq()
+            df = df.reset_index(drop=True)
 
         for column_name in groupby + columns:
             column = self.datasource.get_column(column_name)
             if column and column.is_temporal:
-                ts = df[column_name].apply(self._format_datetime)
+                ts = df[column_name].apply(_format_datetime)
                 df[column_name] = ts
 
         if self.form_data.get("transpose_pivot"):
@@ -1362,6 +1390,16 @@ class NVD3TimeSeriesViz(NVD3Viz):
                 values=self.metric_labels,
                 fill_value=self.pivot_fill_value,
             )
+        if fd.get("zero_out"):
+            time_grain = fd.get("time_grain_sqla") or fd.get("granularity")
+            if not time_grain:
+                raise QueryObjectValidationError(
+                    _("Zero filling requires setting a time grain")
+                )
+            rule = time_grain_to_resample_rule(time_grain)
+            df = df.resample(rule).last()
+            df = df.fillna(0)
+            df = df.resample(rule).asfreq()
 
         rule = fd.get("resample_rule")
         method = fd.get("resample_method")
