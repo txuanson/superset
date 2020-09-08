@@ -797,6 +797,13 @@ class TimeTableViz(BaseViz):
             values = self.metric_labels[0]
             columns = fd.get("groupby")
         pt = df.pivot_table(index=DTTM_ALIAS, columns=columns, values=values)
+        time_grain = fd.get("time_grain_sqla") or fd.get("granularity")
+        if time_grain:
+            rule = time_grain_to_resample_rule(time_grain)
+            pt = pt.resample(rule).last()
+            pt = pt.fillna(0)
+            pt = pt.resample(rule).asfreq()
+
         pt.index = pt.index.map(str)
         pt = pt.sort_index()
         return dict(
@@ -908,11 +915,17 @@ class PivotTableViz(BaseViz):
                 epoch = datetime(value.year, value.month, value.day).timestamp()
             if epoch:
                 return f"__timestamp:{datetime_to_epoch(pd.Timestamp(value))}"
-            return value
+            return cast(str, value)
 
-        if self.form_data.get("zero_out"):
-            time_grain = fd.get("time_grain_sqla") or fd.get("granularity")
+        if self.form_data.get("fill_missing_with_zero"):
             dttm_col = fd.get("granularity_sqla")
+            time_grain = fd.get("time_grain_sqla") or fd.get("granularity")
+            if dttm_col not in groupby + columns:
+                raise QueryObjectValidationError(
+                    _(
+                        "Zero filling requires specifying the time grain as a pivot row/column"
+                    )
+                )
             if not time_grain or not dttm_col:
                 raise QueryObjectValidationError(
                     _("Zero filling requires setting a time grain")
@@ -1390,16 +1403,16 @@ class NVD3TimeSeriesViz(NVD3Viz):
                 values=self.metric_labels,
                 fill_value=self.pivot_fill_value,
             )
-        if fd.get("zero_out"):
+        if fd.get("fill_missing_with_zero"):
             time_grain = fd.get("time_grain_sqla") or fd.get("granularity")
             if not time_grain:
                 raise QueryObjectValidationError(
                     _("Zero filling requires setting a time grain")
                 )
-            rule = time_grain_to_resample_rule(time_grain)
-            df = df.resample(rule).last()
+            zero_fill_rule = time_grain_to_resample_rule(time_grain)
+            df = df.resample(zero_fill_rule).last()
             df = df.fillna(0)
-            df = df.resample(rule).asfreq()
+            df = df.resample(zero_fill_rule).asfreq()
 
         rule = fd.get("resample_rule")
         method = fd.get("resample_method")

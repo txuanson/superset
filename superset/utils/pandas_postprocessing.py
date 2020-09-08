@@ -697,7 +697,7 @@ def time_grain_to_resample_rule(time_grain: str) -> str:
     :param time_grain: ISO 8601 time grain
     :return: Pandas resample rule
     """
-    regexes: Tuple[Tuple[Pattern, str], ...] = (
+    regexes: Tuple[Tuple[Pattern[str], str], ...] = (
         (re.compile(r"PT(\d+)S"), r"\1sec"),
         (re.compile(r"PT(\d+)M"), r"\1min"),
         (re.compile(r"PT(\d+)H"), r"\1hour"),
