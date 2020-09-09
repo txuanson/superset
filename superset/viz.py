@@ -74,7 +74,7 @@ from superset.utils.core import (
 )
 from superset.utils.dates import datetime_to_epoch
 from superset.utils.hashing import md5_sha_from_str
-from superset.utils.pandas_postprocessing import time_grain_to_resample_rule
+from superset.utils.pandas_postprocessing import fill_missing_timegrains
 
 if TYPE_CHECKING:
     from superset.connectors.base.models import BaseDatasource
@@ -796,13 +796,16 @@ class TimeTableViz(BaseViz):
         if fd.get("groupby"):
             values = self.metric_labels[0]
             columns = fd.get("groupby")
+
         pt = df.pivot_table(index=DTTM_ALIAS, columns=columns, values=values)
+
+        # zero fill
         time_grain = fd.get("time_grain_sqla") or fd.get("granularity")
         if time_grain:
-            rule = time_grain_to_resample_rule(time_grain)
-            pt = pt.resample(rule).last()
-            pt = pt.fillna(0)
-            pt = pt.resample(rule).asfreq()
+            pt[DTTM_ALIAS] = pt.index
+            pt = pt.reset_index(drop=True)
+            pt = fill_missing_timegrains(pt, time_grain=time_grain, fill_value=0)
+            pt = pt.set_index(pd.to_datetime(pt[DTTM_ALIAS])).drop(DTTM_ALIAS, axis=1)
 
         pt.index = pt.index.map(str)
         pt = pt.sort_index()
@@ -917,29 +920,10 @@ class PivotTableViz(BaseViz):
                 return f"__timestamp:{datetime_to_epoch(pd.Timestamp(value))}"
             return cast(str, value)
 
-        if self.form_data.get("fill_missing_with_zero"):
-            dttm_col = fd.get("granularity_sqla")
-            time_grain = fd.get("time_grain_sqla") or fd.get("granularity")
-            if dttm_col not in groupby + columns:
-                raise QueryObjectValidationError(
-                    _(
-                        "Zero filling requires specifying the time grain as a pivot row/column"
-                    )
-                )
-            if not time_grain or not dttm_col:
-                raise QueryObjectValidationError(
-                    _("Zero filling requires setting a time grain")
-                )
-            rule = time_grain_to_resample_rule(time_grain)
-            df = df.resample(rule, on=dttm_col).last()
-            df = df.fillna(0)
-            df[dttm_col] = df.index
-            df = df.resample(rule).asfreq()
-            df = df.reset_index(drop=True)
-
         for column_name in groupby + columns:
             column = self.datasource.get_column(column_name)
             if column and column.is_temporal:
+                pass
                 ts = df[column_name].apply(_format_datetime)
                 df[column_name] = ts
 
@@ -1388,6 +1372,14 @@ class NVD3TimeSeriesViz(NVD3Viz):
         if df.empty:
             return df
 
+        if fd.get("fill_missing_with_zero"):
+            time_grain = fd.get("time_grain_sqla") or fd.get("granularity")
+            if not time_grain:
+                raise QueryObjectValidationError(
+                    _("Zero filling requires setting a time grain")
+                )
+            df = fill_missing_timegrains(df, time_grain)
+
         if aggregate:
             df = df.pivot_table(
                 index=DTTM_ALIAS,
@@ -1403,16 +1395,6 @@ class NVD3TimeSeriesViz(NVD3Viz):
                 values=self.metric_labels,
                 fill_value=self.pivot_fill_value,
             )
-        if fd.get("fill_missing_with_zero"):
-            time_grain = fd.get("time_grain_sqla") or fd.get("granularity")
-            if not time_grain:
-                raise QueryObjectValidationError(
-                    _("Zero filling requires setting a time grain")
-                )
-            zero_fill_rule = time_grain_to_resample_rule(time_grain)
-            df = df.resample(zero_fill_rule).last()
-            df = df.fillna(0)
-            df = df.resample(zero_fill_rule).asfreq()
 
         rule = fd.get("resample_rule")
         method = fd.get("resample_method")

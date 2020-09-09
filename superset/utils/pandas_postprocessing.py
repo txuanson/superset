@@ -22,7 +22,7 @@ import geohash as geohash_lib
 import numpy as np
 from flask_babel import gettext as _
 from geopy.point import Point
-from pandas import DataFrame, NamedAgg, Series
+from pandas import DataFrame, NamedAgg, Series, to_datetime
 
 from superset.exceptions import QueryObjectValidationError
 from superset.utils.core import DTTM_ALIAS, PostProcessingContributionOrientation
@@ -689,7 +689,7 @@ def prophet(  # pylint: disable=too-many-arguments
     return target_df.rename(columns={"ds": DTTM_ALIAS})
 
 
-def time_grain_to_resample_rule(time_grain: str) -> str:
+def _time_grain_to_resample_rule(time_grain: str) -> str:
     """
     Convert a time grain string to a rule compatible with the Pandas
     resample function.
@@ -711,7 +711,40 @@ def time_grain_to_resample_rule(time_grain: str) -> str:
         (re.compile(r"P(\d+)M"), r"\1M"),
         (re.compile(r"P(\d+)Y"), r"\1Y"),
     )
-    rule = time_grain
     for match, replace in regexes:
-        rule = match.sub(replace, rule)
-    return rule
+        if match.match(time_grain):
+            return match.sub(replace, time_grain)
+    raise QueryObjectValidationError(
+        _(
+            "No resample rule for given time grain: %(time_grain)s",
+            time_grain=time_grain,
+        )
+    )
+
+
+def fill_missing_timegrains(
+    df: DataFrame,
+    time_grain: str,
+    fill_value: float = 0,
+    temporal_column: Optional[str] = None,
+) -> DataFrame:
+    """
+    Fill missing timegrains with a given value. If there are multiple observations
+    within a given time, uses the most recent observation for that time grain.
+
+    :param df:
+    :param time_grain:
+    :param fill_value:
+    :param temporal_column: name of temporal column. If left empty, use default.
+    :return:
+    """
+    temporal_column = temporal_column or DTTM_ALIAS
+    if temporal_column not in df.columns:
+        raise QueryObjectValidationError(_("Temporal column not present in DataFrame"))
+    rule = _time_grain_to_resample_rule(time_grain)
+    df = df.set_index(to_datetime(df[temporal_column])).drop(temporal_column, axis=1)
+    # only pick the most recent obsservation within the time grain
+    df = df.resample(rule).last()
+    df = df.fillna(fill_value)
+    df[temporal_column] = df.index
+    return df.reset_index(drop=True)

@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 # isort:skip_file
-from datetime import datetime
+from datetime import date, datetime
 import math
 from typing import Any, List, Optional
 
@@ -538,11 +538,40 @@ def test_prophet_incorrect_time_grain():
 
 
 def test_time_grain_to_resample_rule():
-    assert proc.time_grain_to_resample_rule("PT1S") == "1sec"
-    assert proc.time_grain_to_resample_rule("PT5S") == "5sec"
-    assert proc.time_grain_to_resample_rule("PT10M") == "10min"
-    assert proc.time_grain_to_resample_rule("P1W") == "1W"
-    assert proc.time_grain_to_resample_rule("P0.25M") == "1Q"
-    assert proc.time_grain_to_resample_rule("P1M") == "1M"
-    assert proc.time_grain_to_resample_rule("P3M") == "3M"
-    assert proc.time_grain_to_resample_rule("P1Y") == "1Y"
+    assert proc._time_grain_to_resample_rule("PT1S") == "1sec"
+    assert proc._time_grain_to_resample_rule("PT5S") == "5sec"
+    assert proc._time_grain_to_resample_rule("PT10M") == "10min"
+    assert proc._time_grain_to_resample_rule("P1W") == "1W"
+    assert proc._time_grain_to_resample_rule("P0.25M") == "1Q"
+    assert proc._time_grain_to_resample_rule("P1M") == "1M"
+    assert proc._time_grain_to_resample_rule("P3M") == "3M"
+    assert proc._time_grain_to_resample_rule("P1Y") == "1Y"
+    with pytest.raises(QueryObjectValidationError):
+        proc._time_grain_to_resample_rule("qwerty")
+
+
+def test_fill_missing_timegrains():
+    base_df = DataFrame(
+        [
+            {"__timestamp": date(2020, 8, 27), "value": 1,},
+            {"__timestamp": date(2020, 8, 28), "value": 2,},
+            {"__timestamp": date(2020, 9, 8), "value": 3,},
+        ]
+    )
+    # daily timegrain
+    df = proc.fill_missing_timegrains(df=base_df, time_grain="P1D", fill_value=0)
+    assert len(df) == 13
+    print(df)
+    assert len(df[df.value == 0]) == 10
+
+    # bidaily timegrain
+    df = proc.fill_missing_timegrains(df=base_df, time_grain="P2D", fill_value=0)
+    assert len(df) == 7
+    assert series_to_list(df.value)[0] == 2
+
+    # weekly timegrain
+    df = proc.fill_missing_timegrains(df=base_df, time_grain="P1W", fill_value=0)
+    assert len(df) == 3
+    assert series_to_list(df.value)[0] == 2
+    assert series_to_list(df.value)[1] == 0
+    assert series_to_list(df.value)[2] == 3
