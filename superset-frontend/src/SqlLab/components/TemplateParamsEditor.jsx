@@ -26,11 +26,11 @@ import 'brace/mode/html';
 import 'brace/mode/markdown';
 import 'brace/theme/textmate';
 
-import { t } from '@superset-ui/translation';
+import { t } from '@superset-ui/core';
 import { InfoTooltipWithTrigger } from '@superset-ui/chart-controls';
 
+import Button from 'src/components/Button';
 import ModalTrigger from '../../components/ModalTrigger';
-import Button from '../../components/Button';
 
 const propTypes = {
   onChange: PropTypes.func,
@@ -123,7 +123,7 @@ export default class TemplateParamsEditor extends React.Component {
       <ModalTrigger
         modalTitle={t('Template Parameters')}
         triggerNode={
-          <Button tooltip={t('Edit template parameters')}>
+          <Button tooltip={t('Edit template parameters')} buttonSize="small">
             {`${t('parameters')} `}
             {paramCount > 0 && <Badge>{paramCount}</Badge>}
             {!this.state.isValid && (
