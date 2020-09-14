@@ -87,6 +87,8 @@ class CeleryConfig(object):
 
 CELERY_CONFIG = CeleryConfig
 
+JINJA_BASE_TEMPLATE_PROCESSOR = BaseTemplateProcessor
+
 CUSTOM_TEMPLATE_PROCESSORS = {
     CustomPrestoTemplateProcessor.engine: CustomPrestoTemplateProcessor
 }
