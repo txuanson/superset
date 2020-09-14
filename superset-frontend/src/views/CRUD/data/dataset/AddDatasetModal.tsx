@@ -44,10 +44,8 @@ const StyledIcon = styled(Icon)`
 `;
 
 const TableSelectorContainer = styled.div`
-  .TableSelector {
-    padding-bottom: 340px;
-    width: 65%;
-  }
+  padding-bottom: 340px;
+  width: 65%;
 `;
 
 const DatasetModal: FunctionComponent<DatasetModalProps> = ({

@@ -22,23 +22,24 @@ import { Alert, Badge, Col, Radio, Tabs, Tab, Well } from 'react-bootstrap';
 import shortid from 'shortid';
 import { styled, SupersetClient, t } from '@superset-ui/core';
 
-import Label from 'src/components/Label';
 import Button from 'src/components/Button';
+import CertifiedIconWithTooltip from 'src/components/CertifiedIconWithTooltip';
+import DatabaseSelector from 'src/components/DatabaseSelector';
+import Label from 'src/components/Label';
 import Loading from 'src/components/Loading';
 import TableSelector from 'src/components/TableSelector';
-import CertifiedIconWithTooltip from 'src/components/CertifiedIconWithTooltip';
 
-import getClientErrorObject from '../utils/getClientErrorObject';
 import CheckboxControl from '../explore/components/controls/CheckboxControl';
-import TextControl from '../explore/components/controls/TextControl';
-import SelectControl from '../explore/components/controls/SelectControl';
-import TextAreaControl from '../explore/components/controls/TextAreaControl';
-import SelectAsyncControl from '../explore/components/controls/SelectAsyncControl';
-import SpatialControl from '../explore/components/controls/SpatialControl';
 import CollectionTable from '../CRUD/CollectionTable';
 import EditableTitle from '../components/EditableTitle';
-import Fieldset from '../CRUD/Fieldset';
 import Field from '../CRUD/Field';
+import Fieldset from '../CRUD/Fieldset';
+import SelectAsyncControl from '../explore/components/controls/SelectAsyncControl';
+import SelectControl from '../explore/components/controls/SelectControl';
+import SpatialControl from '../explore/components/controls/SpatialControl';
+import TextAreaControl from '../explore/components/controls/TextAreaControl';
+import TextControl from '../explore/components/controls/TextControl';
+import getClientErrorObject from '../utils/getClientErrorObject';
 
 import withToasts from '../messageToasts/enhancers/withToasts';
 
@@ -616,23 +617,43 @@ export class DatasourceEditor extends React.PureComponent {
           {this.state.datasourceType === DATASOURCE_TYPES.virtual.key && (
             <div>
               {this.state.isSqla && (
-                <Field
-                  fieldKey="sql"
-                  label={t('SQL')}
-                  description={t(
-                    'When specifying SQL, the datasource acts as a view. ' +
-                      'Superset will use this statement as a subquery while grouping and filtering ' +
-                      'on the generated parent queries.',
-                  )}
-                  control={
-                    <TextAreaControl
-                      language="sql"
-                      offerEditInModal={false}
-                      minLines={25}
-                      maxLines={25}
-                    />
-                  }
-                />
+                <>
+                  <Field
+                    fieldKey="databaseSelector"
+                    label={t('virtual')}
+                    control={
+                      <DatabaseSelector
+                        dbId={datasource.database.id}
+                        schema={datasource.schema}
+                        onSchemaChange={schema =>
+                          this.onDatasourcePropChange('schema', schema)
+                        }
+                        onDbChange={database =>
+                          this.onDatasourcePropChange('database', database)
+                        }
+                        formMode={false}
+                        handleError={this.props.addDangerToast}
+                      />
+                    }
+                  />
+                  <Field
+                    fieldKey="sql"
+                    label={t('SQL')}
+                    description={t(
+                      'When specifying SQL, the datasource acts as a view. ' +
+                        'Superset will use this statement as a subquery while grouping and filtering ' +
+                        'on the generated parent queries.',
+                    )}
+                    control={
+                      <TextAreaControl
+                        language="sql"
+                        offerEditInModal={false}
+                        minLines={25}
+                        maxLines={25}
+                      />
+                    }
+                  />
+                </>
               )}
               {this.state.isDruid && (
                 <Field
