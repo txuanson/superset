@@ -679,8 +679,11 @@ export class DatasourceEditor extends React.PureComponent {
                   label={t('Physical')}
                   control={
                     <TableSelector
+                      clearable={false}
                       dbId={datasource.database.id}
+                      handleError={this.props.addDangerToast}
                       schema={datasource.schema}
+                      sqlLabMode={false}
                       tableName={datasource.table_name}
                       onSchemaChange={schema =>
                         this.onDatasourcePropChange('schema', schema)
@@ -691,9 +694,6 @@ export class DatasourceEditor extends React.PureComponent {
                       onTableChange={table => {
                         this.onDatasourcePropChange('table_name', table);
                       }}
-                      sqlLabMode={false}
-                      clearable={false}
-                      handleError={this.props.addDangerToast}
                     />
                   }
                   description={t(

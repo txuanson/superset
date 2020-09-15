@@ -57,8 +57,8 @@ const DatabaseSelectorWrapper = styled.div`
 interface DatabaseSelectorProps {
   dbId: number;
   schema?: string;
-  onSchemaChange: (arg0: any) => {};
-  onDbChange: (db: any) => void;
+  onSchemaChange?: (arg0?: any) => {};
+  onDbChange?: (db: any) => void;
   onSchemasLoad?: (schemas: Array<object>) => void;
   getDbList?: (arg0: any) => {};
   getTableList?: (dbId: number, schema: string, force: boolean) => {};
@@ -134,6 +134,7 @@ export default function DatabaseSelector({
       onChange({
         dbId: currentDbId,
         schema: currentSchema,
+        tableName: undefined,
       });
     }
   }
@@ -153,10 +154,15 @@ export default function DatabaseSelector({
   }
 
   function changeDataBase(db: any, force = false) {
+    console.log('change database');
     const dbId = db ? db.id : null;
     setSchemaOptions([]);
-    onSchemaChange(null);
-    onDbChange(db);
+    if (onSchemaChange) {
+      onSchemaChange(null);
+    }
+    if (onDbChange) {
+      onDbChange(db);
+    }
     fetchSchemas(dbId, force);
     setCurrentDbId(dbId);
     setCurrentSchema(undefined);
@@ -164,8 +170,11 @@ export default function DatabaseSelector({
   }
 
   function changeSchema(schemaOpt: any, force = false) {
+    console.log('change schema');
     const schema = schemaOpt ? schemaOpt.value : null;
-    onSchemaChange(schema);
+    if (onSchemaChange) {
+      onSchemaChange(schema);
+    }
     setCurrentSchema(schema);
     onSelectChange();
     if (getTableList) {
