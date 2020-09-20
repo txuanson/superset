@@ -34,6 +34,13 @@ module.exports = {
         path: `${__dirname}/src/images`,
       },
     },
+    {
+      resolve: `gatsby-source-github-contributors`,
+      options: {
+        repo: "apache/incubator-superset",
+        token: process.env.GITHUB_TOKEN,
+      }
+    },
     `gatsby-transformer-sharp`,
     `gatsby-plugin-sharp`,
     {

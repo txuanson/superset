@@ -18,8 +18,11 @@
  */
 import React from 'react';
 import { css } from '@emotion/core';
-import { Card, List } from 'antd';
+import {
+  Badge, Card, List, Tooltip,
+} from 'antd';
 import { GithubOutlined } from '@ant-design/icons';
+import { useStaticQuery, graphql } from 'gatsby';
 import SEO from '../components/seo';
 import Layout from '../components/layout';
 import { pmc } from '../resources/data';
@@ -62,7 +65,7 @@ const links = [
   ],
 ];
 
-const communityContainer = css`
+const contributorsStyle = css`
   display: flex;
   flex-wrap: wrap;
   justify-content: space-around;
@@ -88,24 +91,54 @@ const getInvolvedContainer = css`
   margin-bottom: 25px;
 `;
 
+const ContributorCard = ({
+  url, imageUrl, login, name,
+}) => (
+  <a href={url} target="_blank" rel="noreferrer" key={login}>
+    <Card
+      className="communityCard"
+      hoverable
+      style={{ width: '150px' }}
+      size="small"
+      cover={<img alt="example" src={imageUrl} />}
+    >
+      <GithubOutlined style={{ paddingRight: 3, paddingTop: 3 }} />
+      {name}
+    </Card>
+  </a>
+);
+const ContributorCardSmall = ({
+  url, imageUrl, login, name,
+}) => (
+  <Tooltip title={name} key={login}>
+    <a href={url} target="_blank" rel="noreferrer">
+      <img src={imageUrl} style={{ width: '75px' }} />
+    </a>
+  </Tooltip>
+);
+
 const Community = () => {
-  const pmcList = pmc.map((e) => {
-    const name = e.name.indexOf(' ');
-    return (
-      <a href={e.github} target="_blank" rel="noreferrer" key={name}>
-        <Card
-          className="communityCard"
-          hoverable
-          style={{ width: '150px' }}
-          size="small"
-          cover={<img alt="example" src={e.image} />}
-        >
-          <GithubOutlined style={{ paddingRight: 3, paddingTop: 3 }} />
-          {e.name}
-        </Card>
-      </a>
-    );
-  });
+  const pmcList = pmc.map((e) => (
+    <ContributorCard
+      url={e.github}
+      imageUrl={e.image}
+      name={e.name}
+    />
+  ));
+  const pmcGithub = new Set(pmc.map((u) => u.github.split('/')[3]));
+  console.log(pmcGithub);
+  const contributors = useStaticQuery(graphql`
+    query {
+      allGitHubContributor {
+        nodes {
+          login
+          name
+          url
+          avatarUrl
+        }
+      }
+    }
+  `).allGitHubContributor.nodes;
   return (
     <Layout>
       <div className="contentPage">
@@ -134,8 +167,28 @@ const Community = () => {
           </div>
         </section>
         <section className="ppmc">
-          <h2>Apache Committers</h2>
-          <div css={communityContainer}>{pmcList}</div>
+          <h2>
+            Apache Committers
+            {' '}
+            <Badge count={pmcList.length} overflowCount={5000} />
+          </h2>
+          <div css={contributorsStyle}>{pmcList}</div>
+        </section>
+        <section>
+          <h2>
+            GitHub Contributors
+            {' '}
+            <Badge count={contributors.length} overflowCount={5000} />
+          </h2>
+          <div css={contributorsStyle}>
+            {contributors.filter((u) => !pmcGithub.has(u.login)).map((u) => (
+              <ContributorCardSmall
+                url={u.url}
+                imageUrl={u.avatarUrl}
+                name={u.name || u.login}
+              />
+            ))}
+          </div>
         </section>
       </div>
     </Layout>
