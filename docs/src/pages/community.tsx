@@ -91,7 +91,7 @@ const getInvolvedContainer = css`
   margin-bottom: 25px;
 `;
 
-const ContributorCard = ({
+const ContributorTile = ({
   url, imageUrl, login, name,
 }) => (
   <a href={url} target="_blank" rel="noreferrer" key={login}>
@@ -107,7 +107,7 @@ const ContributorCard = ({
     </Card>
   </a>
 );
-const ContributorCardSmall = ({
+const ContributorImage = ({
   url, imageUrl, login, name,
 }) => (
   <Tooltip title={name} key={login}>
@@ -118,27 +118,26 @@ const ContributorCardSmall = ({
 );
 
 const Community = () => {
-  const pmcList = pmc.map((e) => (
-    <ContributorCard
-      url={e.github}
-      imageUrl={e.image}
-      name={e.name}
-    />
-  ));
-  const pmcGithub = new Set(pmc.map((u) => u.github.split('/')[3]));
-  console.log(pmcGithub);
-  const contributors = useStaticQuery(graphql`
-    query {
-      allGitHubContributor {
-        nodes {
-          login
-          name
-          url
-          avatarUrl
+  let contributors = [];
+  if (process.env.GITHUB_TOKEN) {
+    contributors = useStaticQuery(graphql`
+      query {
+        allGitHubContributor {
+          nodes {
+            login
+            name
+            url
+            avatarUrl
+          }
         }
       }
-    }
-  `).allGitHubContributor.nodes;
+    `).allGitHubContributor.nodes;
+  }
+
+  // Set of github logins of PMC + committers
+  const pmcGithubLogins = new Set(pmc.map((u) => u.github.split('/')[3]));
+  // Removing PMC + committers from contributor list to avoid dups
+  const contributorsWithoutPmc = contributors.filter((u) => !pmcGithubLogins.has(u.login));
   return (
     <Layout>
       <div className="contentPage">
@@ -170,9 +169,17 @@ const Community = () => {
           <h2>
             Apache Committers
             {' '}
-            <Badge count={pmcList.length} overflowCount={5000} />
+            <Badge count={pmc.length} overflowCount={5000} />
           </h2>
-          <div css={contributorsStyle}>{pmcList}</div>
+          <div css={contributorsStyle}>
+            {pmc.map((e) => (
+              <ContributorCard
+                url={e.github}
+                imageUrl={e.image}
+                name={e.name}
+              />
+            ))}
+          </div>
         </section>
         <section>
           <h2>
@@ -181,8 +188,8 @@ const Community = () => {
             <Badge count={contributors.length} overflowCount={5000} />
           </h2>
           <div css={contributorsStyle}>
-            {contributors.filter((u) => !pmcGithub.has(u.login)).map((u) => (
-              <ContributorCardSmall
+            {contributorsWithoutPmc.map((u) => (
+              <ContributorTile
                 url={u.url}
                 imageUrl={u.avatarUrl}
                 name={u.name || u.login}
