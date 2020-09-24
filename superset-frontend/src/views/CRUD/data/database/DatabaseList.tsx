@@ -46,7 +46,7 @@ const IconBlack = styled(Icon)`
 `;
 
 function BooleanDisplay(value: any) {
-  return value ? <IconBlack name="check" /> : <IconBlack name="cancel-x" />;
+  return value.value ? <IconBlack name="check" /> : <IconBlack name="cancel-x" />;
 }
 
 function DatabaseList({ addDangerToast, addSuccessToast }: DatabaseListProps) {
