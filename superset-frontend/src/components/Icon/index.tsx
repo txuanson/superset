@@ -375,7 +375,7 @@ export const iconsRegistry: Record<
 
 interface IconProps extends SVGProps<SVGSVGElement> {
   name: IconName;
-  onClick: any;
+  onClick: React.MouseEventHandler;
 }
 
 const Icon = ({
