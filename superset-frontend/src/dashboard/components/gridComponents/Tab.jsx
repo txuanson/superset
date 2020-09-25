@@ -19,13 +19,14 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import DashboardComponent from '../../containers/DashboardComponent';
-import DragDroppable from '../dnd/DragDroppable';
-import EditableTitle from '../../../components/EditableTitle';
-import AnchorLink from '../../../components/AnchorLink';
-import DeleteComponentModal from '../DeleteComponentModal';
-import WithPopoverMenu from '../menu/WithPopoverMenu';
-import { componentShape } from '../../util/propShapes';
+import Icon from 'src/components/Icon';
+import DashboardComponent from 'src/dashboard/containers/DashboardComponent';
+import DragDroppable from 'src/dashboard/components/dnd/DragDroppable';
+import EditableTitle from 'src/components/EditableTitle';
+import AnchorLink from 'src/components/AnchorLink';
+import DeleteComponentModal from 'src/dashboard/components/DeleteComponentModal';
+import WithPopoverMenu from 'src/dashboard/components/menu/WithPopoverMenu';
+import { componentShape } from 'src/dashboard/util/propShapes';
 
 export const RENDER_TAB = 'RENDER_TAB';
 export const RENDER_TAB_CONTENT = 'RENDER_TAB_CONTENT';
@@ -214,9 +215,7 @@ export default class Tab extends React.PureComponent {
       filters,
     } = this.props;
     const deleteTabIcon = (
-      <div className="icon-button">
-        <span className="fa fa-trash" />
-      </div>
+      <Icon name="trash" />
     );
 
     return (
