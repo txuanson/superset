@@ -35,7 +35,7 @@ const Link = ({
   href = '#',
   onClick = () => undefined,
   placement = 'top',
-  style = {},
+  style = {cursor: 'pointer'},
   tooltip = null,
 }: Props) => {
   const link = (
