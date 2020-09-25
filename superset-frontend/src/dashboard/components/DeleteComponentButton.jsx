@@ -19,7 +19,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import IconButton from './IconButton';
+import Icon from 'src/components/Icon';
 
 const propTypes = {
   onDelete: PropTypes.func.isRequired,
@@ -30,7 +30,7 @@ const defaultProps = {};
 export default class DeleteComponentButton extends React.PureComponent {
   render() {
     const { onDelete } = this.props;
-    return <IconButton onClick={onDelete} className="fa fa-trash" />;
+    return <Icon onClick={onDelete} name="trash" />;
   }
 }
 
