@@ -26,11 +26,11 @@ import DataTable from '@superset-ui/plugin-chart-table/lib/DataTable';
 
 import Button from 'src/components/Button';
 import { fDuration } from 'src/modules/dates';
-import Link from '../../components/Link';
-import ResultSet from './ResultSet';
-import ModalTrigger from '../../components/ModalTrigger';
-import HighlightedSql from './HighlightedSql';
-import QueryStateLabel from './QueryStateLabel';
+import Link from 'src/components/Link';
+import ResultSet from 'src/SqlLab/components/ResultSet';
+import ModalTrigger from 'src/components/ModalTrigger';
+import HighlightedSql from 'src/SqlLab/components/HighlightedSql';
+import QueryStateLabel from 'src/SqlLab/components/QueryStateLabel';
 
 const propTypes = {
   columns: PropTypes.array,
