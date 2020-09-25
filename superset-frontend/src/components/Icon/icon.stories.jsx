@@ -17,8 +17,9 @@
  * under the License.
  */
 import React from 'react';
-import { withKnobs, select } from '@storybook/addon-knobs';
+import { withKnobs, select, boolean } from '@storybook/addon-knobs';
 import { styled, supersetTheme } from '@superset-ui/core';
+import { action } from '@storybook/addon-actions';
 import Icon, { iconsRegistry } from '.';
 
 export default {
@@ -77,6 +78,11 @@ export const SupersetIcon = () => {
                 colorKnob.defaultValue,
                 colorKnob.groupId,
               )}
+              onClick={
+                boolean('Has onClick action', false)
+                  ? action('clicked')
+                  : undefined
+              }
             />
             <div>{iconName}</div>
           </IconBlock>
