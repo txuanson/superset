@@ -17,6 +17,7 @@
  * under the License.
  */
 import React, { SVGProps } from 'react';
+import { styled } from '@superset-ui/core';
 
 import { ReactComponent as AlertSolidIcon } from 'images/icons/alert_solid.svg';
 import { ReactComponent as AlertIcon } from 'images/icons/alert.svg';
@@ -374,6 +375,7 @@ export const iconsRegistry: Record<
 
 interface IconProps extends SVGProps<SVGSVGElement> {
   name: IconName;
+  onClick: any;
 }
 
 const Icon = ({
@@ -382,6 +384,7 @@ const Icon = ({
   viewBox = '0 0 24 24',
   ...rest
 }: IconProps) => {
+
   const Component = iconsRegistry[name];
 
   return (
@@ -389,4 +392,6 @@ const Icon = ({
   );
 };
 
-export default Icon;
+export default styled(Icon)`
+  cursor: ${({ onClick }) => (onClick ? 'pointer' : 'default')};
+`;
