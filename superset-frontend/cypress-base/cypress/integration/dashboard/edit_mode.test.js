@@ -30,7 +30,7 @@ describe('Dashboard edit mode', () => {
     // wait for box plot to appear
     cy.get('.grid-container .box_plot');
 
-    cy.get('.fa.fa-trash')
+    cy.get('data-test=trash')
       .last()
       .then($el => {
         cy.wrap($el).invoke('show').click();

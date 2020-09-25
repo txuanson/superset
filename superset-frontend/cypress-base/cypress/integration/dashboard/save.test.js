@@ -54,7 +54,7 @@ describe('Dashboard save action', () => {
 
     // remove box_plot chart from dashboard
     cy.get('.dashboard-header [data-test=edit-alt]').click();
-    cy.get('.fa.fa-trash').last().trigger('click', { force: true });
+    cy.get('data-test=trash').last().trigger('click', { force: true });
     cy.get('.grid-container .box_plot').should('not.exist');
 
     cy.route('POST', '/superset/save_dash/**/').as('saveRequest');
