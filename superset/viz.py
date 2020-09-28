@@ -1818,6 +1818,7 @@ class SankeyViz(BaseViz):
     viz_type = "sankey"
     verbose_name = _("Sankey")
     is_timeseries = False
+    can_loop = False
     credits = '<a href="https://www.npmjs.com/package/d3-sankey">d3-sankey on npm</a>'
 
     def query_obj(self) -> QueryObjectDict:
@@ -1863,15 +1864,24 @@ class SankeyViz(BaseViz):
                     return cycle
             return None
 
-        cycle = find_cycle(hierarchy)
-        if cycle:
-            raise QueryObjectValidationError(
-                _(
-                    "There's a loop in your Sankey, please provide a tree. "
-                    "Here's a faulty link: {}"
-                ).format(cycle)
-            )
+        if not self.can_loop:
+            cycle = find_cycle(hierarchy)
+            if cycle:
+                raise QueryObjectValidationError(
+                    _(
+                        "There's a loop in your Sankey, please provide a tree. "
+                        "Here's a faulty link: {}"
+                    ).format(cycle)
+                )
         return recs
+
+
+class SankeyLoopViz(SankeyViz):
+    viz_type = "sankey_loop"
+    verbose_name = _("Sankey Loop")
+    is_timeseries = False
+    can_loop = True
+    credits = '<a href="https://www.npmjs.com/package/d3-sankey">d3-sankey on npm</a>'
 
 
 class DirectedForceViz(BaseViz):
