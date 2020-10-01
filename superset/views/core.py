@@ -131,6 +131,7 @@ from superset.views.utils import (
     get_dashboard,
     get_dashboard_changedon_dt,
     get_dashboard_extra_filters,
+    get_database_ids,
     get_datasource_info,
     get_form_data,
     get_viz,
@@ -1776,7 +1777,7 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
     @expose("/get_or_create_table/", methods=["POST"])
     @event_logger.log_this
     def sqllab_table_viz(self) -> FlaskResponse:  # pylint: disable=no-self-use
-        """ Gets or creates a table object with attributes passed to the API.
+        """Gets or creates a table object with attributes passed to the API.
 
         It expects the json with params:
         * datasourceName - e.g. table name, required
