@@ -21,7 +21,7 @@ import geohash as geohash_lib
 import numpy as np
 from flask_babel import gettext as _
 from geopy.point import Point
-from pandas import DataFrame, NamedAgg, Series, Timestamp
+from pandas import DataFrame, NamedAgg, Series, Timestamp, melt
 
 from superset.exceptions import QueryObjectValidationError
 from superset.utils.core import DTTM_ALIAS, PostProcessingContributionOrientation
@@ -583,6 +583,7 @@ def _prophet_fit_and_predict(  # pylint: disable=too-many-arguments
     yearly_seasonality: Union[bool, str, int],
     weekly_seasonality: Union[bool, str, int],
     daily_seasonality: Union[bool, str, int],
+    additional_regressors: List[str],
     periods: int,
     freq: str,
 ) -> DataFrame:
@@ -601,10 +602,23 @@ def _prophet_fit_and_predict(  # pylint: disable=too-many-arguments
     )
     if df["ds"].dt.tz:
         df["ds"] = df["ds"].dt.tz_convert(None)
+    for column in additional_regressors:
+        model.add_regressor(column)
     model.fit(df)
     future = model.make_future_dataframe(periods=periods, freq=freq)
-    forecast = model.predict(future)[["ds", "yhat", "yhat_lower", "yhat_upper"]]
-    return forecast.join(df.set_index("ds"), on="ds").set_index(["ds"])
+    forecast_df: Optional[DataFrame] = None
+    for outer_column in additional_regressors:
+        regressor_df = future.copy()
+        for inner_column in additional_regressors:
+            regressor_df[[inner_column]] = regressor_df.apply(lambda _: True if outer_column == inner_column else False, axis=1)
+        if forecast_df is None:
+            forecast_df = regressor_df
+        else:
+            forecast_df = forecast_df.append(regressor_df)
+
+    fit_df = model.predict(forecast_df)[["ds", "yhat", "yhat_lower", "yhat_upper"] + additional_regressors]
+
+    return fit_df.join(df.set_index("ds"), on="ds").set_index(["ds"])
 
 
 def prophet(  # pylint: disable=too-many-arguments
@@ -662,17 +676,34 @@ def prophet(  # pylint: disable=too-many-arguments
     if len(df.columns) < 2:
         raise QueryObjectValidationError(_("DataFrame include at least one series"))
 
-    target_df = DataFrame()
+    columns = [column for column in df.columns if column != DTTM_ALIAS]
+    target_df = melt(
+        df,
+        id_vars=DTTM_ALIAS,
+        value_vars=columns,
+        var_name="__series",
+        value_name="__y",
+    )
+
+    for column in columns:
+        def _one_hot_encoding(series: Series) -> bool:
+            return True if series["__series"] == column else False
+
+        target_df[[column]] = target_df.apply(_one_hot_encoding, axis=1)
+    target_df = target_df.drop(columns=["__series"])
+    target_df = target_df.rename(columns={DTTM_ALIAS: "ds", "__y": "y"})
+    fit_df = _prophet_fit_and_predict(
+        df=target_df,
+        confidence_interval=confidence_interval,
+        yearly_seasonality=_prophet_parse_seasonality(yearly_seasonality),
+        weekly_seasonality=_prophet_parse_seasonality(weekly_seasonality),
+        daily_seasonality=_prophet_parse_seasonality(daily_seasonality),
+        additional_regressors=columns,
+        periods=periods,
+        freq=freq,
+    )
+
     for column in [column for column in df.columns if column != DTTM_ALIAS]:
-        fit_df = _prophet_fit_and_predict(
-            df=df[[DTTM_ALIAS, column]].rename(columns={DTTM_ALIAS: "ds", column: "y"}),
-            confidence_interval=confidence_interval,
-            yearly_seasonality=_prophet_parse_seasonality(yearly_seasonality),
-            weekly_seasonality=_prophet_parse_seasonality(weekly_seasonality),
-            daily_seasonality=_prophet_parse_seasonality(daily_seasonality),
-            periods=periods,
-            freq=freq,
-        )
         new_columns = [
             f"{column}__yhat",
             f"{column}__yhat_lower",

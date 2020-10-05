@@ -131,7 +131,7 @@ setup(
         "pinot": ["pinotdb>=0.3.3, <0.4"],
         "postgres": ["psycopg2-binary==2.8.5"],
         "presto": ["pyhive[presto]>=0.4.0"],
-        "prophet": ["fbprophet>=0.6, <0.7"],
+        "prophet": ["fbprophet>=0.7.1, <0.8"],
         "redshift": ["sqlalchemy-redshift>=0.8.1, < 0.9"],
         "snowflake": ["snowflake-sqlalchemy>=1.2.3, <1.3"],
         "teradata": ["sqlalchemy-teradata==0.9.0.dev0"],
