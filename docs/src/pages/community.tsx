@@ -138,6 +138,7 @@ const Community = () => {
   const pmcGithubLogins = new Set(pmc.map((u) => u.github.split('/')[3]));
   // Removing PMC + committers from contributor list to avoid dups
   const contributorsWithoutPmc = contributors.filter((u) => !pmcGithubLogins.has(u.login));
+  console.log(contributors);
   return (
     <Layout>
       <div className="contentPage">
@@ -173,7 +174,7 @@ const Community = () => {
           </h2>
           <div css={contributorsStyle}>
             {pmc.map((e) => (
-              <ContributorCard
+              <ContributorTile
                 url={e.github}
                 imageUrl={e.image}
                 name={e.name}
@@ -189,7 +190,7 @@ const Community = () => {
           </h2>
           <div css={contributorsStyle}>
             {contributorsWithoutPmc.map((u) => (
-              <ContributorTile
+              <ContributorImage
                 url={u.url}
                 imageUrl={u.avatarUrl}
                 name={u.name || u.login}
