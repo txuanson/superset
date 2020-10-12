@@ -31,7 +31,7 @@ from flask_appbuilder import expose
 from flask_appbuilder.models.sqla.interface import SQLAInterface
 from flask_appbuilder.security.decorators import has_access, has_access_api
 from flask_appbuilder.security.sqla import models as ab_models
-from flask_babel import gettext as __, lazy_gettext as _
+from flask_babel import gettext as __
 from jinja2.exceptions import TemplateError
 from sqlalchemy import and_, or_
 from sqlalchemy.engine.url import make_url
@@ -443,7 +443,7 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
     def slice_json(self, slice_id: int) -> FlaskResponse:
         form_data, slc = get_form_data(slice_id, use_slice_data=True)
         if not slc:
-            return json_error_response("The slice does not exist")
+            return json_error_response(__("The slice does not exist"))
         try:
             viz_obj = get_viz(
                 datasource_type=slc.datasource.type,
@@ -556,7 +556,7 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
             except DatabaseNotFound as ex:
                 logger.exception(ex)
                 flash(
-                    _(
+                    __(
                         "Cannot import dashboard: %(db_error)s.\n"
                         "Make sure to create the database before "
                         "importing the dashboard.",
@@ -567,7 +567,7 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
             except Exception as ex:  # pylint: disable=broad-except
                 logger.exception(ex)
                 flash(
-                    _(
+                    __(
                         "An unknown error occurred. "
                         "Please contact your Superset administrator"
                     ),
@@ -677,13 +677,13 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
 
         if action == "overwrite" and not slice_overwrite_perm:
             return json_error_response(
-                _("You don't have the rights to ") + _("alter this ") + _("chart"),
+                __("You don't have the rights to ") + __("alter this ") + __("chart"),
                 status=400,
             )
 
         if action == "saveas" and not slice_add_perm:
             return json_error_response(
-                _("You don't have the rights to ") + _("create a ") + _("chart"),
+                __("You don't have the rights to ") + __("create a ") + __("chart"),
                 status=400,
             )
 
@@ -723,7 +723,7 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
         if slc:
             title = slc.slice_name
         else:
-            title = _("Explore - %(table)s", table=table_name)
+            title = __("Explore - %(table)s", table=table_name)
         return self.render_template(
             "superset/basic.html",
             bootstrap_data=json.dumps(
@@ -805,11 +805,11 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
 
         if action == "saveas" and slice_add_perm:
             ChartDAO.save(slc)
-            msg = _("Chart [{}] has been saved").format(slc.slice_name)
+            msg = __("Chart [%(s)] has been saved", chart=slc.slice_name)
             flash(msg, "info")
         elif action == "overwrite" and slice_overwrite_perm:
             ChartDAO.overwrite(slc)
-            msg = _("Chart [{}] has been overwritten").format(slc.slice_name)
+            msg = __("Chart [%(chart)s] has been overwritten", chart=slc.slice_name)
             flash(msg, "info")
 
         # Adding slice to a dashboard if requested
@@ -829,15 +829,17 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
             dash_overwrite_perm = check_ownership(dash, raise_if_false=False)
             if not dash_overwrite_perm:
                 return json_error_response(
-                    _("You don't have the rights to ")
-                    + _("alter this ")
-                    + _("dashboard"),
+                    __("You don't have the rights to ")
+                    + __("alter this ")
+                    + __("dashboard"),
                     status=400,
                 )
 
             flash(
-                _("Chart [{}] was added to dashboard [{}]").format(
-                    slc.slice_name, dash.dashboard_title
+                __(
+                    "Chart [{}] was added to dashboard [%(dashboard)s]",
+                    chart=slc.slice_name,
+                    dashboard=dash.dashboard_title,
                 ),
                 "info",
             )
@@ -847,9 +849,9 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
             dash_add_perm = security_manager.can_access("can_add", "DashboardModelView")
             if not dash_add_perm:
                 return json_error_response(
-                    _("You don't have the rights to ")
-                    + _("create a ")
-                    + _("dashboard"),
+                    __("You don't have the rights to ")
+                    + __("create a ")
+                    + __("dashboard"),
                     status=400,
                 )
 
@@ -858,9 +860,12 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
                 owners=[g.user] if g.user else [],
             )
             flash(
-                _(
-                    "Dashboard [{}] just got created and chart [{}] was added " "to it"
-                ).format(dash.dashboard_title, slc.slice_name),
+                __(
+                    "Dashboard [%(dashboard)s] just got created and "
+                    "chart [%(chart)s] was added to it",
+                    dashboard=dash.dashboard_title,
+                    chart=slc.slice_name,
+                ),
                 "info",
             )
 
@@ -921,7 +926,7 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
         )
         database = query.filter_by(id=db_id).one_or_none()
         if not database:
-            return json_error_response("Not found", 404)
+            return json_error_response(__("Not found"), 404)
 
         force_refresh_parsed = force_refresh.lower() == "true"
         schema_parsed = utils.parse_js_uri_path_item(schema, eval_undefined=True)
@@ -1140,7 +1145,7 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
             logger.info("Invalid driver")
             driver_name = make_url(uri).drivername
             return json_error_response(
-                _(
+                __(
                     "Could not load database driver: %(driver_name)s",
                     driver_name=driver_name,
                 ),
@@ -1149,7 +1154,7 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
         except ArgumentError:
             logger.info("Invalid URI")
             return json_error_response(
-                _(
+                __(
                     "Invalid connection string, a valid string usually follows:\n"
                     "'DRIVER://USER:PASSWORD@DB-HOST/DATABASE-NAME'"
                 )
@@ -1157,15 +1162,15 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
         except OperationalError:
             logger.warning("Connection failed")
             return json_error_response(
-                _("Connection failed, please check your connection settings"), 400
+                __("Connection failed, please check your connection settings"), 400
             )
         except DBSecurityException as ex:
             logger.warning("Stopped an unsafe database connection")
-            return json_error_response(_(str(ex)), 400)
+            return json_error_response(__("Error: %(error)s", error=str(ex)), 400)
         except Exception as ex:  # pylint: disable=broad-except
             logger.warning("Unexpected error %s", type(ex).__name__)
             return json_error_response(
-                _("Unexpected error occurred, please check your logs for details"), 400
+                __("Unexpected error occurred, please check your logs for details"), 400
             )
 
     @api
@@ -1570,14 +1575,21 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
                 return json_success(json.dumps({"published": dash.published}))
 
             return json_error_response(
-                f"ERROR: cannot find dashboard {dashboard_id}", status=404
+                __(
+                    f"ERROR: cannot find dashboard %(dashboard_id)s",
+                    dashboard_id=dashboard_id,
+                ),
+                status=404,
             )
 
         edit_perm = is_owner(dash, g.user) or admin_role in get_user_roles()
         if not edit_perm:
             return json_error_response(
-                f'ERROR: "{g.user.username}" cannot alter '
-                f'dashboard "{dash.dashboard_title}"',
+                __(
+                    'ERROR: "%(user)s" cannot alter dashboard "%(dashboard)s"',
+                    user=g.user.username,
+                    dashboard=dash.dashboard_title,
+                ),
                 status=403,
             )
 
@@ -1825,10 +1837,10 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
             table_name = data["datasourceName"]
             database_id = data["dbId"]
         except KeyError:
-            return json_error_response("Missing required fields", status=400)
+            return json_error_response(__("Missing required fields"), status=400)
         database = db.session.query(Database).get(database_id)
         if not database:
-            return json_error_response("Database not found", status=400)
+            return json_error_response(__("Database not found"), status=400)
         table = (
             db.session.query(SqlaTable)
             .filter_by(database_id=database_id, table_name=table_name)
@@ -1891,7 +1903,7 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
             stats_logger.incr(
                 f"deprecated.{self.__class__.__name__}.select_star.database_not_found"
             )
-            return json_error_response("Not found", 404)
+            return json_error_response(__("Not found"), 404)
         schema = utils.parse_js_uri_path_item(schema, eval_undefined=True)
         table_name = utils.parse_js_uri_path_item(table_name)  # type: ignore
         if not self.appbuilder.sm.can_access_table(database, Table(table_name, schema)):
@@ -1904,7 +1916,7 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
                 table_name,
                 schema,
             )
-            return json_error_response("Not found", 404)
+            return json_error_response(__("Not found"), 404)
         stats_logger.incr(f"deprecated.{self.__class__.__name__}.select_star.success")
         return json_success(
             database.select_star(
@@ -1971,7 +1983,7 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
         of rows returned.
         """
         if not results_backend:
-            return json_error_response("Results backend isn't configured")
+            return json_error_response(__("Results backend isn't configured"))
 
         read_from_results_backend_start = now_as_float()
         blob = results_backend.get(key)
@@ -1981,7 +1993,7 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
         )
         if not blob:
             return json_error_response(
-                "Data could not be retrieved. " "You may want to re-run the query.",
+                "Data could not be retrieved. You may want to re-run the query.",
                 status=410,
             )
 
@@ -2012,7 +2024,7 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
             try:
                 rows = int(request.args["rows"])
             except ValueError:
-                return json_error_response("Invalid `rows` argument", status=400)
+                return json_error_response(__("Invalid `rows` argument"), status=400)
             obj = apply_display_max_row_limit(obj, rows)
 
         return json_success(
@@ -2069,28 +2081,32 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
             #       or provide it as mydb so we can render template params
             #       without having to also persist a Query ORM object.
             return json_error_response(
-                "SQL validation does not support template parameters", status=400
+                __("SQL validation does not support template parameters"), status=400
             )
 
         session = db.session()
         mydb = session.query(models.Database).filter_by(id=database_id).one_or_none()
         if not mydb:
             return json_error_response(
-                "Database with id {} is missing.".format(database_id), status=400
+                __("Database with id %(database)s is missing.", database=database_id),
+                status=400,
             )
 
         spec = mydb.db_engine_spec
         validators_by_engine = get_feature_flags().get("SQL_VALIDATORS_BY_ENGINE")
         if not validators_by_engine or spec.engine not in validators_by_engine:
             return json_error_response(
-                "no SQL validator is configured for {}".format(spec.engine), status=400
+                __("no SQL validator is configured for %(engine)s", engine=spec.engine),
+                status=400,
             )
         validator_name = validators_by_engine[spec.engine]
         validator = get_validator_by_name(validator_name)
         if not validator:
             return json_error_response(
-                "No validator named {} found (configured for the {} engine)".format(
-                    validator_name, spec.engine
+                __(
+                    "No validator named %(validator)s found (configured for the %(engine)s engine)",
+                    validator=validator_name,
+                    engine=spec.engine,
                 )
             )
 
@@ -2108,7 +2124,7 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
             return json_success(payload)
         except Exception as ex:  # pylint: disable=broad-except
             logger.exception(ex)
-            msg = _(
+            msg = __(
                 "%(validator)s was unable to check your query.\n"
                 "Please recheck your query.\n"
                 "Exception: %(ex)s",
@@ -2155,7 +2171,7 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
             task.forget()
         except Exception as ex:  # pylint: disable=broad-except
             logger.exception("Query %i: %s", query.id, str(ex))
-            msg = _(
+            msg = __(
                 "Failed to start remote query on a worker. "
                 "Tell your administrator to verify the availability of "
                 "the message queue."
@@ -2274,7 +2290,9 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
         session = db.session()
         mydb = session.query(models.Database).get(database_id)
         if not mydb:
-            return json_error_response("Database with id %i is missing.", database_id)
+            return json_error_response(
+                __("Database with id %(database)s is missing.", database_id)
+            )
 
         # Set tmp_schema_name for CTA
         # TODO(bkyryliuk): consider parsing, splitting tmp_schema_name from
@@ -2310,9 +2328,9 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
         except SQLAlchemyError as ex:
             logger.error("Errors saving query details %s", str(ex))
             session.rollback()
-            raise Exception(_("Query record was not created as expected."))
+            raise Exception(__("Query record was not created as expected."))
         if not query_id:
-            raise Exception(_("Query record was not created as expected."))
+            raise Exception(__("Query record was not created as expected."))
 
         logger.info("Triggering query_id: %i", query_id)
 
@@ -2331,9 +2349,12 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
                 query.sql, **template_params
             )
         except TemplateError as ex:
-            error_msg = utils.error_msg_from_exception(ex)
             return json_error_response(
-                f"Query {query_id}: Template syntax error: {error_msg}"
+                __(
+                    "Query %(query)s: Template syntax error: %(error)s",
+                    query=query_id,
+                    error=utils.error_msg_from_exception(ex),
+                )
             )
 
         # Limit is not applied to the CTA queries if SQLLAB_CTAS_NO_LIMIT flag is set
@@ -2455,7 +2476,7 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
         stats_logger.incr("queries")
         if not g.user.get_id():
             return json_error_response(
-                "Please login to access the queries.", status=403
+                __("Please login to access the queries."), status=403
             )
 
         # UTC date time, same that is stored in the DB.
@@ -2589,7 +2610,7 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
 
         return self.render_template(
             "superset/basic.html",
-            title=_("%(user)s's profile", user=username),
+            title=__("%(user)s's profile", user=username),
             entry="profile",
             bootstrap_data=json.dumps(
                 payload, default=utils.pessimistic_json_iso_dttm_ser
@@ -2675,7 +2696,7 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
         get the schema access control settings for csv upload in this database
         """
         if not request.args.get("db_id"):
-            return json_error_response("No database is allowed for your csv upload")
+            return json_error_response(__("No database is allowed for your csv upload"))
 
         db_id = int(request.args["db_id"])
         database = db.session.query(models.Database).filter_by(id=db_id).one()
@@ -2695,6 +2716,8 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
         except Exception as ex:  # pylint: disable=broad-except
             logger.exception(ex)
             return json_error_response(
-                "Failed to fetch schemas allowed for csv upload in this database! "
-                "Please contact your Superset Admin!"
+                __(
+                    "Failed to fetch schemas allowed for csv upload in this database! "
+                    "Please contact your Superset Admin!"
+                )
             )
