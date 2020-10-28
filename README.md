@@ -19,7 +19,7 @@ under the License.
 
 Superset
 =========
-
+THIS LINE WILL BE REMOVED.
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/apache/incubator-superset)
 [![Build Status](https://travis-ci.org/apache/incubator-superset.svg?branch=master)](https://travis-ci.org/apache/incubator-superset)
