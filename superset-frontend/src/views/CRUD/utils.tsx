@@ -60,7 +60,7 @@ const createFetchResourceMethod = (method: string) => (
 export const getRecentAcitivtyObjs = (
   userId: string | number,
   recent: string,
-  addDangerToast: (arg0: string, arg1: string) => void,
+  addDangerToast: (arg0: string) => void,
 ) => {
   const getParams = (filters?: Array<any>) => {
     const params = {
@@ -143,8 +143,7 @@ export const getRecentAcitivtyObjs = (
           })
           .catch(e =>
             addDangerToast(
-              'There was an error fetching you recent activity:',
-              e,
+              t('There was an error fetching you recent activity:', e),
             ),
           );
       }
