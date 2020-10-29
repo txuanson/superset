@@ -86,6 +86,7 @@ export default function ChartCard({
               <div
                 role="button"
                 tabIndex={0}
+                data-test="chart-list-delete-option"
                 className="action-button"
                 onClick={confirmDelete}
               >
@@ -97,6 +98,7 @@ export default function ChartCard({
       )}
       {canEdit && (
         <Menu.Item
+          data-test="chart-list-edit-option"
           role="button"
           tabIndex={0}
           onClick={() => openChartEditModal(chart)}
