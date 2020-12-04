@@ -24,13 +24,22 @@ import { Menu } from 'src/common/components';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import URI from 'urijs';
-import { styled, t } from '@superset-ui/core';
+import { makeApi, styled, t } from '@superset-ui/core';
 import { isFeatureEnabled, FeatureFlag } from 'src/featureFlags';
 
 import { areArraysShallowEqual } from 'src/reduxUtils';
 import * as Actions from '../actions/sqlLab';
 import SqlEditor from './SqlEditor';
 import TabStatusIcon from './TabStatusIcon';
+
+const getDatabasesIds = async () => {
+  const response = await makeApi({
+    method: 'GET',
+    endpoint: '/api/v1/database',
+  })();
+
+  return response.ids;
+};
 
 const propTypes = {
   actions: PropTypes.object.isRequired,
@@ -76,6 +85,7 @@ class TabbedSqlEditors extends React.PureComponent {
       queriesArray: [],
       dataPreviewQueries: [],
       hideLeftBar: false,
+      databaseIds: getDatabasesIds(),
     };
     this.removeQueryEditor = this.removeQueryEditor.bind(this);
     this.renameTab = this.renameTab.bind(this);
@@ -164,7 +174,6 @@ class TabbedSqlEditors extends React.PureComponent {
       this.popNewTab();
     } else if (query.new || this.props.queryEditors.length === 0) {
       this.newQueryEditor();
-
       if (query.new) {
         window.history.replaceState({}, document.title, this.state.sqlLabUrl);
       }
@@ -242,9 +251,7 @@ class TabbedSqlEditors extends React.PureComponent {
   newQueryEditor() {
     queryCount += 1;
     const activeQueryEditor = this.activeQueryEditor();
-    const firstDbId = Math.min(
-      ...Object.values(this.props.databases).map(database => database.id),
-    );
+    const firstDbId = Math.min(this.state.databaseIds);
     const warning = isFeatureEnabled(FeatureFlag.SQLLAB_BACKEND_PERSISTENCE)
       ? ''
       : `${t(
