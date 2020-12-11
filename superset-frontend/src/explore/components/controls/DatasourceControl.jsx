@@ -19,7 +19,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Col, Collapse, Row, Well } from 'react-bootstrap';
-import { t, styled } from '@superset-ui/core';
+import { t, styled, supersetTheme } from '@superset-ui/core';
 import { ColumnOption, MetricOption } from '@superset-ui/chart-controls';
 
 import Select from 'src/components/Select';
@@ -75,25 +75,19 @@ const Styles = styled.div`
     cursor: pointer;
   }
   .title-select {
-    position: absolute;
-    left: 32px;
-    right: 32px;
-    width: ${({ theme }) => theme.gridUnit * 65}px;
+    width: ${({ theme }) => theme.gridUnit * 50}px;
     display: inline-block;
     .Select__control {
       background-color: #f0f0f0;
     }
   }
   .dataset-svg {
-    position: absolute;
-    let: 0;
-    top: 1px;
     vertical-align: -9px;
     margin-right: 10px;
   }
-  .container {
-    position: relative;
-    height: 30px;
+  .data-container {
+  }
+  .datasource-modal-trigger.ant-dropdown-trigger {
   }
 `;
 
@@ -188,8 +182,12 @@ class DatasourceControl extends React.PureComponent {
 
     return (
       <Styles className="DatasourceControl">
-        <div className="container">
-          <Icon name="dataset-physical" className="dataset-svg" />
+        <div className="data-container">
+          <Icon
+            name="dataset-physical"
+            className="dataset-svg"
+            color={supersetTheme.colors.grayscale.base}
+          />
           <Select
             value={datasource.name}
             clearable={false}
