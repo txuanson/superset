@@ -167,7 +167,9 @@ class DatasourceControl extends React.PureComponent {
       <Styles className="DatasourceControl">
         <div className="data-container">
           <Icon name="dataset-physical" className="dataset-svg" />
-          <span className="title-select">{datasource.name}</span>
+          <Tooltip title={datasource.name}>
+            <span className="title-select">{datasource.name}</span>
+          </Tooltip>
           <Dropdown
             overlay={datasourceMenu}
             trigger={['click']}
