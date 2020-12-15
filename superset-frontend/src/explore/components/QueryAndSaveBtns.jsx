@@ -40,11 +40,13 @@ const defaultProps = {
 };
 
 const Styles = styled.div`
+  justify-content: space-around;
   display: flex;
   flex-shrink: 0;
   flex-direction: row;
   align-items: center;
-  padding: 0px ${({ theme }) => 2 * theme.gridUnit}px;
+  padding: ${({ theme }) => 2 * theme.gridUnit}px;
+  border-top: 1px solid ${({ theme }) => theme.colors.grayscale.light2};
   .btn {
     /* just to make sure buttons don't jiggle */
     width: 100px;
@@ -60,7 +62,7 @@ export default function QueryAndSaveBtns({
   chartIsStale,
   errorMessage,
 }) {
-  let qryButtonStyle = 'tertiary';
+  let qryButtonStyle = 'primary';
   if (errorMessage) {
     qryButtonStyle = 'danger';
   } else if (chartIsStale) {
@@ -95,7 +97,7 @@ export default function QueryAndSaveBtns({
         <ButtonGroup className="query-and-save">
           {qryOrStopButton}
           <Button
-            buttonStyle="tertiary"
+            buttonStyle="secondary"
             buttonSize="small"
             data-target="#save_modal"
             data-toggle="modal"

@@ -73,11 +73,12 @@ const Styles = styled.div`
     border-right: 1px solid ${({ theme }) => theme.colors.grayscale.light2};
     display: flex;
     flex-direction: column;
-    padding: ${({ theme }) => 2 * theme.gridUnit}px 0;
     max-height: 100%;
+    padding: 0;
   }
   .control-pane {
     background-color: ${({ theme }) => theme.colors.grayscale.light4};
+    padding: ${({ theme }) => 2 * theme.gridUnit}px 0;
   }
   .title-container {
     position: relative;
@@ -441,6 +442,14 @@ class ExploreViewContainer extends React.Component {
           </div>
         ) : null}
         <div className='col-sm-3 data-source-selection'>
+
+          <ConnectedControlPanelsContainer
+            actions={this.props.actions}
+            form_data={this.props.form_data}
+            controls={this.props.controls}
+            datasource_type={this.props.datasource_type}
+            isDatasourceMetaLoading={this.props.isDatasourceMetaLoading}
+          />
           <QueryAndSaveBtns
             canAdd={!!(this.props.can_add || this.props.can_overwrite)}
             onQuery={this.onQuery}
@@ -450,13 +459,6 @@ class ExploreViewContainer extends React.Component {
             chartIsStale={this.state.chartIsStale}
             errorMessage={this.renderErrorMessage()}
             datasourceType={this.props.datasource_type}
-          />
-          <ConnectedControlPanelsContainer
-            actions={this.props.actions}
-            form_data={this.props.form_data}
-            controls={this.props.controls}
-            datasource_type={this.props.datasource_type}
-            isDatasourceMetaLoading={this.props.isDatasourceMetaLoading}
           />
         </div>
         <div className={collapse ? 'col-sm-9' : 'col-sm-7'}>
