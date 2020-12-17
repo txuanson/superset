@@ -189,13 +189,15 @@ describe('AdhocFilter', () => {
     // eslint-disable-next-line no-unused-expressions
     expect(adhocFilter8.isValid()).toBe(false);
   });
+});
 
-  it('can translate from simple expressions to sql expressions', () => {
+describe('translateToSql', () => {
+  it('can translate from simple numerical expressions to sql expressions', () => {
     const adhocFilter1 = new AdhocFilter({
       expressionType: EXPRESSION_TYPES.SIMPLE,
       subject: 'value',
       operator: '==',
-      comparator: '10',
+      comparator: 10,
       clause: CLAUSES.WHERE,
     });
     expect(adhocFilter1.translateToSql()).toBe('value = 10');
@@ -204,9 +206,33 @@ describe('AdhocFilter', () => {
       expressionType: EXPRESSION_TYPES.SIMPLE,
       subject: 'SUM(value)',
       operator: '!=',
-      comparator: '5',
+      comparator: 5,
       clause: CLAUSES.HAVING,
     });
     expect(adhocFilter2.translateToSql()).toBe('SUM(value) <> 5');
+  });
+
+  it('can translate from simple string expression to sql expression', () => {
+    const adhocFilter1 = new AdhocFilter({
+      expressionType: EXPRESSION_TYPES.SIMPLE,
+      subject: 'value',
+      operator: '==',
+      comparator: 'boy',
+      clause: CLAUSES.WHERE,
+    });
+    expect(adhocFilter1.translateToSql()).toBe("value = 'boy'");
+  });
+
+  it('returns empty string when selecting HAVING clause', () => {
+    const adhocFilter1 = new AdhocFilter({
+      expressionType: EXPRESSION_TYPES.SIMPLE,
+      subject: 'value',
+      operator: '==',
+      comparator: 'boy',
+      clause: CLAUSES.WHERE,
+    });
+    expect(adhocFilter1.translateToSql({ useSimple: true })).toBe(
+      "value = 'boy'",
+    );
   });
 });

@@ -46,22 +46,33 @@ const OPERATORS_TO_SQL = {
   },
 };
 
-function translateToSql(adhocMetric, { useSimple } = {}) {
-  if (adhocMetric.expressionType === EXPRESSION_TYPES.SIMPLE || useSimple) {
+function translateToSql(adhocMetric) {
+  if (
+    adhocMetric.expressionType === EXPRESSION_TYPES.SIMPLE &&
+    adhocMetric.comparator &&
+    adhocMetric.operator
+  ) {
     const isMulti = MULTI_OPERATORS.has(adhocMetric.operator);
     const { subject } = adhocMetric;
     const operator =
       adhocMetric.operator && CUSTOM_OPERATORS.has(adhocMetric.operator)
         ? OPERATORS_TO_SQL[adhocMetric.operator](adhocMetric)
         : OPERATORS_TO_SQL[adhocMetric.operator];
-    const comparator = Array.isArray(adhocMetric.comparator)
-      ? adhocMetric.comparator.join("','")
-      : adhocMetric.comparator || '';
+    let comparator;
+    if (Array.isArray(adhocMetric.comparator)) {
+      comparator = adhocMetric.comparator.join("','");
+    } else {
+      const quote = typeof adhocMetric.comparator === 'string' ? "'" : '';
+      comparator = `${quote}${adhocMetric.comparator || ''}${quote}`;
+    }
     return `${subject} ${operator} ${isMulti ? "('" : ''}${comparator}${
       isMulti ? "')" : ''
     }`;
   }
-  if (adhocMetric.expressionType === EXPRESSION_TYPES.SQL) {
+  if (
+    adhocMetric.expressionType === EXPRESSION_TYPES.SQL &&
+    adhocMetric.sqlExpression
+  ) {
     return adhocMetric.sqlExpression;
   }
   return '';
@@ -80,7 +91,7 @@ export default class AdhocFilter {
       this.sqlExpression =
         typeof adhocFilter.sqlExpression === 'string'
           ? adhocFilter.sqlExpression
-          : translateToSql(adhocFilter, { useSimple: true });
+          : translateToSql(adhocFilter);
       this.clause = adhocFilter.clause;
       if (adhocFilter.operator && CUSTOM_OPERATORS.has(adhocFilter.operator)) {
         this.subject = adhocFilter.subject;
@@ -132,7 +143,7 @@ export default class AdhocFilter {
             // A non-empty array of values ('IN' or 'NOT IN' clauses)
             return true;
           }
-        } else if (this.comparator !== null) {
+        } else if (this.comparator !== null && this.comparator !== undefined) {
           // A value has been selected or typed
           return true;
         }
