@@ -19,7 +19,7 @@
 import { t, styled } from '@superset-ui/core';
 import React, { useEffect } from 'react';
 import { Alert } from 'react-bootstrap';
-import { Empty } from 'src/common/components';
+import { Empty, Button as AntDButton } from 'src/common/components';
 import { ReactComponent as EmptyImage } from 'images/empty.svg';
 import cx from 'classnames';
 import Button from 'src/components/Button';
@@ -261,6 +261,7 @@ function ListView<T extends object = any>({
     pageCount = 1,
     gotoPage,
     applyFilterValue,
+    clearFilterValues,
     selectedFlatRows,
     toggleAllRowsSelected,
     setViewMode,
@@ -294,6 +295,10 @@ function ListView<T extends object = any>({
   }
 
   const cardViewEnabled = Boolean(renderCard);
+  const hasFilterValue =
+    internalFilters.filter(
+      ({ value }) => typeof value !== 'undefined' && value !== null,
+    ).length > 0;
 
   useEffect(() => {
     // discard selections if bulk select is disabled
@@ -388,13 +393,22 @@ function ListView<T extends object = any>({
               highlightRowId={highlightRowId}
             />
           )}
-          {!loading && rows.length === 0 && (
+          {!loading && rows.length === 0 && !hasFilterValue && (
             <EmptyWrapper className={viewMode}>
               <Empty
                 image={<EmptyImage />}
                 description={emptyState.message || 'No Data'}
               >
                 {emptyState.slot || null}
+              </Empty>
+            </EmptyWrapper>
+          )}
+          {!loading && rows.length === 0 && hasFilterValue && (
+            <EmptyWrapper className={viewMode}>
+              <Empty image={<EmptyImage />} description="No Data">
+                <AntDButton type="link" onClick={clearFilterValues}>
+                  {t('Clear Filters')}
+                </AntDButton>
               </Empty>
             </EmptyWrapper>
           )}

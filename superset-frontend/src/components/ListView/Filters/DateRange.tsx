@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import moment, { Moment } from 'moment';
 import { styled } from '@superset-ui/core';
 import { RangePicker as AntRangePicker } from 'src/common/components/DatePicker';
@@ -48,6 +48,10 @@ export default function DateRangeFilter({
     if (!value || (Array.isArray(value) && !value.length)) return null;
     return [moment(value[0]), moment(value[1])];
   }, [value]);
+
+  useEffect(() => {
+    setValue(initialValue ?? null);
+  }, [initialValue]);
 
   return (
     <RangeFilterContainer>

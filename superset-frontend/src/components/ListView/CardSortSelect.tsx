@@ -20,7 +20,7 @@ import React, { useState } from 'react';
 import { styled, withTheme, SupersetThemeProps } from '@superset-ui/core';
 import { PartialThemeConfig, Select } from 'src/components/Select';
 import { CardSortSelectOption, FetchDataConfig, SortColumn } from './types';
-import { filterSelectStyles } from './utils';
+import { filterSelectStyles } from './Filters';
 
 const SortTitle = styled.label`
   font-weight: bold;

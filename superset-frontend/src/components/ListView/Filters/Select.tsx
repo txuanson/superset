@@ -16,16 +16,35 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { withTheme, SupersetThemeProps } from '@superset-ui/core';
 import {
   Select,
   PaginatedSelect,
   PartialThemeConfig,
+  PartialStylesConfig,
 } from 'src/components/Select';
+
 import { Filter, SelectOption } from 'src/components/ListView/types';
-import { filterSelectStyles } from 'src/components/ListView/utils';
 import { FilterContainer, BaseFilter, FilterTitle } from './Base';
+
+export const filterSelectStyles: PartialStylesConfig = {
+  container: (provider, { getValue }) => ({
+    ...provider,
+    // dynamic width based on label string length
+    minWidth: `${Math.min(
+      12,
+      Math.max(5, 3 + getValue()[0].label.length / 2),
+    )}em`,
+  }),
+  control: provider => ({
+    ...provider,
+    borderWidth: 0,
+    boxShadow: 'none',
+    cursor: 'pointer',
+    backgroundColor: 'transparent',
+  }),
+};
 
 interface SelectFilterProps extends BaseFilter {
   emptyLabel?: string;
@@ -114,6 +133,12 @@ function SelectFilter({
       },
     };
   };
+
+  useEffect(() => {
+    if (!initialValue) {
+      setSelectedOption(initialOption);
+    }
+  }, [initialValue]);
 
   return (
     <FilterContainer>

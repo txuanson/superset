@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import SearchInput from 'src/components/SearchInput';
 import { FilterContainer, BaseFilter } from './Base';
 
@@ -32,7 +32,7 @@ export default function SearchFilter({
   initialValue,
   onSubmit,
 }: SearchHeaderProps) {
-  const [value, setValue] = useState(initialValue || '');
+  const [value, setValue] = useState(initialValue ?? '');
   const handleSubmit = () => {
     if (value) {
       onSubmit(value);
@@ -42,6 +42,10 @@ export default function SearchFilter({
     setValue('');
     onSubmit('');
   };
+
+  useEffect(() => {
+    setValue(initialValue ?? '');
+  }, [initialValue]);
 
   return (
     <FilterContainer>

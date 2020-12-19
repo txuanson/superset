@@ -28,6 +28,8 @@ import SearchFilter from './Search';
 import SelectFilter from './Select';
 import DateRangeFilter from './DateRange';
 
+export { filterSelectStyles } from './Select';
+
 interface UIFiltersProps {
   filters: Filters;
   internalFilters: InternalFilter[];

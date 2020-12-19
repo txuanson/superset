@@ -35,7 +35,6 @@ import {
 
 import rison from 'rison';
 import { isEqual } from 'lodash';
-import { PartialStylesConfig } from 'src/components/Select';
 import {
   FetchDataConfig,
   Filter,
@@ -352,6 +351,17 @@ export function useListViewState({
     });
   };
 
+  const clearFilterValues = () => {
+    setInternalFilters(currentInternalFilters => {
+      const update = currentInternalFilters.map(filter => ({
+        ...filter,
+        value: undefined,
+      }));
+      setAllFilters(convertFilters(update));
+      gotoPage(0); // clear any pagination
+      return update;
+    });
+  };
   return {
     canNextPage,
     canPreviousPage,
@@ -367,24 +377,7 @@ export function useListViewState({
     state: { pageIndex, pageSize, sortBy, filters, internalFilters, viewMode },
     toggleAllRowsSelected,
     applyFilterValue,
+    clearFilterValues,
     setViewMode,
   };
 }
-
-export const filterSelectStyles: PartialStylesConfig = {
-  container: (provider, { getValue }) => ({
-    ...provider,
-    // dynamic width based on label string length
-    minWidth: `${Math.min(
-      12,
-      Math.max(5, 3 + getValue()[0].label.length / 2),
-    )}em`,
-  }),
-  control: provider => ({
-    ...provider,
-    borderWidth: 0,
-    boxShadow: 'none',
-    cursor: 'pointer',
-    backgroundColor: 'transparent',
-  }),
-};
