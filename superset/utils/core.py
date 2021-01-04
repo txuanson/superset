@@ -825,7 +825,10 @@ class timeout:  # pylint: disable=invalid-name
 
     def __enter__(self) -> None:
         try:
-            if threading.current_thread() == threading.main_thread():
+            if (
+                hasattr(signal, "SIGALRM")
+                and threading.current_thread() == threading.main_thread()
+            ):
                 signal.signal(signal.SIGALRM, self.handle_timeout)
                 signal.alarm(self.seconds)
         except ValueError as ex:
