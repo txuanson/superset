@@ -191,12 +191,12 @@ const DataSourcePanel = ({
         <Collapse
           accordion
           bordered={false}
-          defaultActiveKey={['column', 'metrics']}
+          defaultActiveKey={['1']}
           expandIconPosition="right"
         >
           <Collapse.Panel
             header={<span className="header">{t('Columns')}</span>}
-            key="column"
+            key="1"
           >
             <div className="field-length">
               {t(`Showing %s of %s`, columnSlice.length, columns.length)}
@@ -208,10 +208,15 @@ const DataSourcePanel = ({
             ))}
           </Collapse.Panel>
         </Collapse>
-        <Collapse accordion bordered={false} expandIconPosition="right">
+        <Collapse
+          defaultActiveKey={['1']}
+          accordion
+          bordered={false}
+          expandIconPosition="right"
+        >
           <Collapse.Panel
             header={<span className="header">{t('Metrics')}</span>}
-            key="metrics"
+            key="1"
           >
             <div className="field-length">
               {t(`Showing %s of %s`, metricSlice.length, metrics.length)}
