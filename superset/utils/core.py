@@ -82,7 +82,7 @@ from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlalchemy.engine import Connection, Engine
 from sqlalchemy.engine.reflection import Inspector
 from sqlalchemy.sql.type_api import Variant
-from sqlalchemy.types import TEXT, TypeDecorator
+from sqlalchemy.types import TEXT, TypeDecorator, TypeEngine
 
 import _thread  # pylint: disable=C0411
 from superset.errors import ErrorLevel, SupersetErrorType
@@ -296,6 +296,19 @@ class TemporalType(str, Enum):
     TEXT = "TEXT"
     TIME = "TIME"
     TIMESTAMP = "TIMESTAMP"
+
+
+class ColumnTypeSource(Enum):
+    GET_TABLE = 1
+    CURSOR_DESCRIPION = 2
+
+
+class ColumnSpec(NamedTuple):
+    normalized_column_name: str
+    generic_type: GenericDataType
+    sqla_type: TypeEngine
+    is_dttm: bool
+    python_date_format: Optional[str]
 
 
 try:

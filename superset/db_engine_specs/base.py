@@ -22,6 +22,7 @@ import logging
 import re
 from contextlib import closing
 from datetime import datetime
+from enum import Enum
 from typing import (
     Any,
     Callable,
@@ -1097,3 +1098,9 @@ class BaseEngineSpec:  # pylint: disable=too-many-public-methods
     def is_readonly_query(cls, parsed_query: ParsedQuery) -> bool:
         """Pessimistic readonly, 100% sure statement won't mutate anything"""
         return parsed_query.is_select() or parsed_query.is_explain()
+
+    @classmethod
+    def get_column_specs(
+        cls, source: utils.ColumnTypeSource, column_name: str, native_type: str,
+    ) -> utils.ColumnSpec:
+        pass
