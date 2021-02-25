@@ -19,6 +19,9 @@ under the License.
 ## Change Log
 
 ### 0.38.0 (Mon Nov 17 07:23:54 2020 +00:00)
+- [#11340](https://github.com/apache/incubator-superset/pull/11340) feat: adding feature flags to escape/hide html in markdown (#11340)
+
+### 0.38.0 (Mon Nov 17 07:23:54 2020 +00:00)
 - [#11724](https://github.com/apache/incubator-superset/pull/11724) fix: prior npm font source had a glitch (#11724) (@rusackas)
 - [#11718](https://github.com/apache/incubator-superset/pull/11718) refactor: Load fonts from packages rather than local binaries (#11718) (@rusackas)
 - [#11365](https://github.com/apache/incubator-superset/pull/11365) fix(sqla): allow 'unknown' type queries in explore view (#11365) (@serenajiang)
