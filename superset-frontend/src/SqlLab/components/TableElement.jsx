@@ -281,6 +281,7 @@ class TableElement extends React.PureComponent {
     return (
       <Collapse.Panel
         {...this.props}
+        isActive="true"
         header={this.renderHeader()}
         className="TableElement"
       >
