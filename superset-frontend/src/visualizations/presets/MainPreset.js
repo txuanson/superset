@@ -59,6 +59,7 @@ import {
   EchartsTimeseriesChartPlugin,
   EchartsGraphChartPlugin,
 } from '@superset-ui/plugin-chart-echarts';
+import { PivotTableChartPlugin as NewPivotTableChartPlugin } from '@superset-ui/plugin-chart-pivot-table';
 import {
   SelectFilterPlugin,
   RangeFilterPlugin,
@@ -119,6 +120,7 @@ export default class MainPreset extends Preset {
         new TimeFilterPlugin().configure({ key: 'filter_time' }),
         new TimeColumnFilterPlugin().configure({ key: 'filter_timecolumn' }),
         new TimeGrainFilterPlugin().configure({ key: 'filter_timegrain' }),
+        new NewPivotTableChartPlugin().configure({ key: 'new_pivot_table' }),
       ],
     });
   }
