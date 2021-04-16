@@ -764,7 +764,6 @@ def test_fill_missing_timegrains():
     # daily timegrain
     df = proc.fill_missing_timegrains(df=base_df, time_grain="P1D", fill_value=0)
     assert len(df) == 13
-    print(df)
     assert len(df[df.value == 0]) == 10
 
     # bidaily timegrain
