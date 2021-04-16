@@ -16,13 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
-import { t } from '@superset-ui/translation';
-import Button, { DropdownItemProps } from '../Button';
+import React, { useState } from 'react';
+import { t, styled } from '@superset-ui/core';
+import { Menu } from 'src/common/components';
+import NavDropdown from 'src/components/NavDropdown';
 
-const dropdownItems: DropdownItemProps[] = [
+export const dropdownItems = [
   {
-    label: t('SQL Query'),
+    label: t('SQL query'),
     url: '/superset/sqllab',
     icon: 'fa-fw fa-search',
   },
@@ -37,13 +38,36 @@ const dropdownItems: DropdownItemProps[] = [
     icon: 'fa-fw fa-dashboard',
   },
 ];
+const StyledI = styled.div`
+  color: ${({ theme }) => theme.colors.primary.dark1};
+`;
 
 export default function NewMenu() {
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
   return (
-    <li className="dropdown">
-      <Button buttonStyle="primary" dropdownItems={dropdownItems}>
-        <i className="fa fa-plus" /> New
-      </Button>
-    </li>
+    <NavDropdown
+      id="new-dropdown"
+      data-test="new-dropdown"
+      title={<StyledI className="fa fa-plus" />}
+      onMouseEnter={() => setDropdownOpen(true)}
+      onMouseLeave={() => setDropdownOpen(false)}
+      onToggle={value => setDropdownOpen(value)}
+      open={dropdownOpen}
+    >
+      <Menu>
+        {dropdownItems.map((menu, i) => (
+          <Menu.Item key={i}>
+            <a href={menu.url}>
+              <i
+                data-test={`menu-item-${menu.label}`}
+                className={`fa ${menu.icon}`}
+              />{' '}
+              {menu.label}
+            </a>
+          </Menu.Item>
+        ))}
+      </Menu>
+    </NavDropdown>
   );
 }

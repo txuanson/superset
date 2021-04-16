@@ -18,13 +18,16 @@
  */
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Popover, OverlayTrigger } from 'react-bootstrap';
-import { t } from '@superset-ui/translation';
+import { t } from '@superset-ui/core';
 
+import Popover from 'src/components/Popover';
 import FormLabel from 'src/components/FormLabel';
+import Icon from 'src/components/Icon';
+import { Tooltip } from 'src/common/components/Tooltip';
 import CopyToClipboard from 'src/components/CopyToClipboard';
+import { getShortUrl } from 'src/utils/urlUtils';
+import { URL_PARAMS } from 'src/constants';
 import { getExploreLongUrl, getURIDirectory } from '../exploreUtils';
-import { getShortUrl } from '../../utils/common';
 
 const propTypes = {
   latestQueryFormData: PropTypes.object.isRequired,
@@ -57,8 +60,7 @@ export default class EmbedCodeButton extends React.Component {
   }
 
   handleInputChange(e) {
-    const value = e.currentTarget.value;
-    const name = e.currentTarget.name;
+    const { value, name } = e.currentTarget;
     const data = {};
     data[name] = value;
     this.setState(data);
@@ -67,7 +69,7 @@ export default class EmbedCodeButton extends React.Component {
   generateEmbedHTML() {
     const srcLink = `${window.location.origin + getURIDirectory()}?r=${
       this.state.shortUrlId
-    }&standalone=true&height=${this.state.height}`;
+    }&${URL_PARAMS.standalone}=1&height=${this.state.height}`;
     return (
       '<iframe\n' +
       `  width="${this.state.width}"\n` +
@@ -81,84 +83,90 @@ export default class EmbedCodeButton extends React.Component {
     );
   }
 
-  renderPopover() {
+  renderPopoverContent() {
     const html = this.generateEmbedHTML();
     return (
-      <Popover id="embed-code-popover">
-        <div>
-          <div className="row">
-            <div className="col-sm-10">
-              <textarea
-                name="embedCode"
-                value={html}
-                rows="4"
-                readOnly
+      <div id="embed-code-popover" data-test="embed-code-popover">
+        <div className="row">
+          <div className="col-sm-10">
+            <textarea
+              data-test="embed-code-textarea"
+              name="embedCode"
+              value={html}
+              rows="4"
+              readOnly
+              className="form-control input-sm"
+            />
+          </div>
+          <div className="col-sm-2">
+            <CopyToClipboard
+              shouldShowText={false}
+              text={html}
+              copyNode={
+                <i className="fa fa-clipboard" title={t('Copy to clipboard')} />
+              }
+            />
+          </div>
+        </div>
+        <br />
+        <div className="row">
+          <div className="col-md-6 col-sm-12">
+            <div className="form-group">
+              <small>
+                <FormLabel htmlFor="embed-height">{t('Height')}</FormLabel>
+              </small>
+              <input
                 className="form-control input-sm"
-              />
-            </div>
-            <div className="col-sm-2">
-              <CopyToClipboard
-                shouldShowText={false}
-                text={html}
-                copyNode={
-                  <i
-                    className="fa fa-clipboard"
-                    title={t('Copy to clipboard')}
-                  />
-                }
+                type="text"
+                defaultValue={this.state.height}
+                name="height"
+                onChange={this.handleInputChange}
               />
             </div>
           </div>
-          <br />
-          <div className="row">
-            <div className="col-md-6 col-sm-12">
-              <div className="form-group">
-                <small>
-                  <FormLabel htmlFor="embed-height">{t('Height')}</FormLabel>
-                </small>
-                <input
-                  className="form-control input-sm"
-                  type="text"
-                  defaultValue={this.state.height}
-                  name="height"
-                  onChange={this.handleInputChange}
-                />
-              </div>
-            </div>
-            <div className="col-md-6 col-sm-12">
-              <div className="form-group">
-                <small>
-                  <FormLabel htmlFor="embed-width">{t('Width')}</FormLabel>
-                </small>
-                <input
-                  className="form-control input-sm"
-                  type="text"
-                  defaultValue={this.state.width}
-                  name="width"
-                  onChange={this.handleInputChange}
-                  id="embed-width"
-                />
-              </div>
+          <div className="col-md-6 col-sm-12">
+            <div className="form-group">
+              <small>
+                <FormLabel htmlFor="embed-width">{t('Width')}</FormLabel>
+              </small>
+              <input
+                className="form-control input-sm"
+                type="text"
+                defaultValue={this.state.width}
+                name="width"
+                onChange={this.handleInputChange}
+                id="embed-width"
+              />
             </div>
           </div>
         </div>
-      </Popover>
+      </div>
     );
   }
+
   render() {
     return (
-      <OverlayTrigger
+      <Popover
         trigger="click"
-        rootClose
         placement="left"
-        onEnter={this.getCopyUrl}
-        overlay={this.renderPopover()}
+        onClick={this.getCopyUrl}
+        content={this.renderPopoverContent()}
       >
-        <span className="btn btn-default btn-sm" data-test="embed-code-button">
-          <i className="fa fa-code" />
-          &nbsp;
-        </span>
-      </OverlayTrigger>
+        <Tooltip
+          id="embed-code-tooltip"
+          placement="top"
+          title="Embed code"
+          trigger={['hover']}
+        >
+          <div
+            className="btn btn-default btn-sm"
+            data-test="embed-code-button"
+            style={{ height: 30 }}
+          >
+            <Icon name="code" width={15} height={15} style={{ marginTop: 1 }} />
+          </div>
+        </Tooltip>
+      </Popover>
     );
   }
 }

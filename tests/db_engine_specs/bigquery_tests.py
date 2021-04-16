@@ -74,6 +74,28 @@ class TestBigQueryDbEngineSpec(TestDbEngineSpec):
             )
             self.assertEqual(str(actual), expected)
 
+    def test_custom_minute_timegrain_expressions(self):
+        """
+        DB Eng Specs (bigquery): Test time grain expressions
+        """
+        col = column("temporal")
+        test_cases = {
+            "DATE": "CAST(TIMESTAMP_SECONDS("
+            "5*60 * DIV(UNIX_SECONDS(CAST(temporal AS TIMESTAMP)), 5*60)"
+            ") AS DATE)",
+            "DATETIME": "CAST(TIMESTAMP_SECONDS("
+            "5*60 * DIV(UNIX_SECONDS(CAST(temporal AS TIMESTAMP)), 5*60)"
+            ") AS DATETIME)",
+            "TIMESTAMP": "CAST(TIMESTAMP_SECONDS("
+            "5*60 * DIV(UNIX_SECONDS(CAST(temporal AS TIMESTAMP)), 5*60)"
+            ") AS TIMESTAMP)",
+        }
+        for type_, expected in test_cases.items():
+            actual = BigQueryEngineSpec.get_timestamp_expr(
+                col=col, pdf=None, time_grain="PT5M", type_=type_
+            )
+            assert str(actual) == expected
+
     def test_fetch_data(self):
         """
         DB Eng Specs (bigquery): Test fetch data
@@ -121,6 +143,27 @@ class TestBigQueryDbEngineSpec(TestDbEngineSpec):
             database, "some_table", "some_schema"
         )
         self.assertEqual(result, expected_result)
+
+    def test_normalize_indexes(self):
+        """
+        DB Eng Specs (bigquery): Test extra table metadata
+        """
+        indexes = [{"name": "partition", "column_names": [None], "unique": False}]
+        normalized_idx = BigQueryEngineSpec.normalize_indexes(indexes)
+        self.assertEqual(normalized_idx, [])
+
+        indexes = [{"name": "partition", "column_names": ["dttm"], "unique": False}]
+        normalized_idx = BigQueryEngineSpec.normalize_indexes(indexes)
+        self.assertEqual(normalized_idx, indexes)
+
+        indexes = [
+            {"name": "partition", "column_names": ["dttm", None], "unique": False}
+        ]
+        normalized_idx = BigQueryEngineSpec.normalize_indexes(indexes)
+        self.assertEqual(
+            normalized_idx,
+            [{"name": "partition", "column_names": ["dttm"], "unique": False}],
+        )
 
     def test_df_to_sql(self):
         """

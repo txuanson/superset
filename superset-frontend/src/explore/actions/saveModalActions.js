@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { SupersetClient } from '@superset-ui/connection';
+import { SupersetClient } from '@superset-ui/core';
 import { getExploreUrl } from '../exploreUtils';
 
 export const FETCH_DASHBOARDS_SUCCEEDED = 'FETCH_DASHBOARDS_SUCCEEDED';
@@ -71,7 +71,10 @@ export function saveSlice(formData, requestParams) {
     });
 
     return SupersetClient.post({ url, postPayload: { form_data: formData } })
-      .then(({ json }) => dispatch(saveSliceSuccess(json)))
+      .then(response => {
+        dispatch(saveSliceSuccess(response.json));
+        return response.json;
+      })
       .catch(() => dispatch(saveSliceFailed()));
   };
 }

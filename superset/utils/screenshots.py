@@ -26,12 +26,11 @@ from superset.utils.webdriver import WebDriverProxy, WindowSize
 logger = logging.getLogger(__name__)
 
 try:
-    from PIL import Image  # pylint: disable=import-error
+    from PIL import Image
 except ModuleNotFoundError:
     logger.info("No PIL installation found")
 
 if TYPE_CHECKING:
-    # pylint: disable=unused-import
     from flask_appbuilder.security.sqla.models import User
     from flask_caching import Cache
 
@@ -152,16 +151,16 @@ class BaseScreenshot:
         try:
             payload = self.get_screenshot(user=user, window_size=window_size)
         except Exception as ex:  # pylint: disable=broad-except
-            logger.error("Failed at generating thumbnail %s", ex)
+            logger.warning("Failed at generating thumbnail %s", ex, exc_info=True)
 
         if payload and window_size != thumb_size:
             try:
                 payload = self.resize_image(payload, thumb_size=thumb_size)
             except Exception as ex:  # pylint: disable=broad-except
-                logger.error("Failed at resizing thumbnail %s", ex)
+                logger.warning("Failed at resizing thumbnail %s", ex, exc_info=True)
                 payload = None
 
-        if payload and cache:
+        if payload:
             logger.info("Caching thumbnail: %s", cache_key)
             cache.set(cache_key, payload)
             logger.info("Done caching thumbnail")
@@ -196,12 +195,30 @@ class BaseScreenshot:
 class ChartScreenshot(BaseScreenshot):
     thumbnail_type: str = "chart"
     element: str = "chart-container"
-    window_size: WindowSize = (800, 600)
-    thumb_size: WindowSize = (800, 600)
+
+    def __init__(
+        self,
+        url: str,
+        digest: str,
+        window_size: Optional[WindowSize] = None,
+        thumb_size: Optional[WindowSize] = None,
+    ):
+        super().__init__(url, digest)
+        self.window_size = window_size or (800, 600)
+        self.thumb_size = thumb_size or (800, 600)
 
 
 class DashboardScreenshot(BaseScreenshot):
     thumbnail_type: str = "dashboard"
     element: str = "grid-container"
-    window_size: WindowSize = (1600, int(1600 * 0.75))
-    thumb_size: WindowSize = (400, int(400 * 0.75))
+
+    def __init__(
+        self,
+        url: str,
+        digest: str,
+        window_size: Optional[WindowSize] = None,
+        thumb_size: Optional[WindowSize] = None,
+    ):
+        super().__init__(url, digest)
+        self.window_size = window_size or (1600, 1200)
+        self.thumb_size = thumb_size or (800, 600)

@@ -23,8 +23,8 @@ import { styledMount as mount } from 'spec/helpers/theming';
 import Button from '.';
 import {
   ButtonGallery,
-  buttonSizeKnob,
-  buttonStyleKnob,
+  SIZES as buttonSizes,
+  STYLES as buttonStyles,
 } from './Button.stories';
 
 describe('Button', () => {
@@ -54,15 +54,9 @@ describe('Button', () => {
     wrapper = mount(<ButtonGallery />);
 
     const permutationCount =
-      Object.values(buttonStyleKnob.options).filter(o => o).length *
-      Object.values(buttonSizeKnob.options).length;
+      Object.values(buttonStyles.options).filter(o => o).length *
+      Object.values(buttonSizes.options).length;
 
     expect(wrapper.find(Button).length).toEqual(permutationCount);
-  });
-
-  // test things NOT in the storybook!
-  it('renders custom button styles without melting', () => {
-    wrapper = mount(<Button buttonStyle="foobar" />);
-    expect(wrapper.find('Button.btn-foobar')).toHaveLength(1);
   });
 });

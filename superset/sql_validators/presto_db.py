@@ -53,10 +53,9 @@ class PrestoDBSQLValidator(BaseSQLValidator):
         sql = parsed_query.stripped()
 
         # Hook to allow environment-specific mutation (usually comments) to the SQL
-        # pylint: disable=invalid-name
-        SQL_QUERY_MUTATOR = config["SQL_QUERY_MUTATOR"]
-        if SQL_QUERY_MUTATOR:
-            sql = SQL_QUERY_MUTATOR(sql, user_name, security_manager, database)
+        sql_query_mutator = config["SQL_QUERY_MUTATOR"]
+        if sql_query_mutator:
+            sql = sql_query_mutator(sql, user_name, security_manager, database)
 
         # Transform the final statement to an explain call before sending it on
         # to presto to validate
@@ -167,13 +166,13 @@ class PrestoDBSQLValidator(BaseSQLValidator):
         # execution of all statements (if many)
         annotations: List[SQLValidationAnnotation] = []
         with closing(engine.raw_connection()) as conn:
-            with closing(conn.cursor()) as cursor:
-                for statement in parsed_query.get_statements():
-                    annotation = cls.validate_statement(
-                        statement, database, cursor, user_name
-                    )
-                    if annotation:
-                        annotations.append(annotation)
+            cursor = conn.cursor()
+            for statement in parsed_query.get_statements():
+                annotation = cls.validate_statement(
+                    statement, database, cursor, user_name
+                )
+                if annotation:
+                    annotations.append(annotation)
         logger.debug("Validation found %i error(s)", len(annotations))
 
         return annotations

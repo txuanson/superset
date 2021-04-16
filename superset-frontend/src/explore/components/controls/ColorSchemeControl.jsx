@@ -19,9 +19,10 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { isFunction } from 'lodash';
-import { CreatableSelect } from 'src/components/Select';
+import { Select } from 'src/components/Select';
+import { Tooltip } from 'src/common/components/Tooltip';
 import ControlHeader from '../ControlHeader';
-import TooltipWrapper from '../../../components/TooltipWrapper';
+
 import './ColorSchemeControl.less';
 
 const propTypes = {
@@ -35,8 +36,8 @@ const propTypes = {
   choices: PropTypes.oneOfType([
     PropTypes.arrayOf(PropTypes.array),
     PropTypes.func,
-  ]).isRequired,
-  schemes: PropTypes.oneOfType([PropTypes.object, PropTypes.func]).isRequired,
+  ]),
+  schemes: PropTypes.oneOfType([PropTypes.object, PropTypes.func]),
   isLinear: PropTypes.bool,
 };
 
@@ -50,10 +51,6 @@ const defaultProps = {
 export default class ColorSchemeControl extends React.PureComponent {
   constructor(props) {
     super(props);
-    this.state = {
-      scheme: this.props.value,
-    };
-
     this.onChange = this.onChange.bind(this);
     this.renderOption = this.renderOption.bind(this);
   }
@@ -61,13 +58,11 @@ export default class ColorSchemeControl extends React.PureComponent {
   onChange(option) {
     const optionValue = option ? option.value : null;
     this.props.onChange(optionValue);
-    this.setState({ scheme: optionValue });
   }
 
   renderOption(key) {
-    const { isLinear, schemes } = this.props;
-    const schemeLookup = isFunction(schemes) ? schemes() : schemes;
-    const currentScheme = schemeLookup[key.value || defaultProps.value];
+    const { isLinear } = this.props;
+    const currentScheme = this.schemes[key.value];
 
     // For categorical scheme, display all the colors
     // For sequential scheme, show 10 or interpolate to 10.
@@ -78,11 +73,8 @@ export default class ColorSchemeControl extends React.PureComponent {
     }
 
     return (
-      <TooltipWrapper
-        label={`${currentScheme.id}-tooltip`}
-        tooltip={currentScheme.label}
-      >
-        <ul className="color-scheme-container">
+      <Tooltip id={`${currentScheme.id}-tooltip`} title={currentScheme.label}>
+        <ul className="color-scheme-container" data-test={currentScheme.id}>
           {colors.map((color, i) => (
             <li
               key={`${currentScheme.id}-${i}`}
@@ -95,17 +87,21 @@ export default class ColorSchemeControl extends React.PureComponent {
             </li>
           ))}
         </ul>
-      </TooltipWrapper>
+      </Tooltip>
     );
   }
 
   render() {
-    const { choices } = this.props;
-    const options = (isFunction(choices) ? choices() : choices).map(choice => ({
-      value: choice[0],
-      label: choice[1],
-    }));
-
+    const { schemes, choices } = this.props;
+    // save parsed schemes for later
+    this.schemes = isFunction(schemes) ? schemes() : schemes;
+    const options = (isFunction(choices) ? choices() : choices).map(
+      ([value, label]) => ({
+        value,
+        // use scheme label if available
+        label: this.schemes[value]?.label || label,
+      }),
+    );
     const selectProps = {
       multi: false,
       name: `select-${this.props.name}`,
@@ -122,7 +118,7 @@ export default class ColorSchemeControl extends React.PureComponent {
     return (
       <div>
         <ControlHeader {...this.props} />
-        <CreatableSelect {...selectProps} />
+        <Select {...selectProps} />
       </div>
     );
   }

@@ -16,17 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { Alert } from 'react-bootstrap';
-import styled from '@superset-ui/style';
+import { styled } from '@superset-ui/core';
 import cx from 'classnames';
 import Interweave from 'interweave';
-import React, { useEffect, useState } from 'react';
-import Icon from 'src/components/Icon';
-import { ToastType } from 'src/messageToasts/types';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import Icon, { IconName } from 'src/components/Icon';
+import { ToastType } from 'src/messageToasts/constants';
+import { ToastMeta } from '../types';
 
-import { SUCCESS_TOAST, WARNING_TOAST, DANGER_TOAST } from '../constants';
-
-const ToastContianer = styled.div`
+const ToastContainer = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
@@ -36,20 +34,26 @@ const ToastContianer = styled.div`
   }
 `;
 
+const StyledIcon = styled(Icon)`
+  min-width: ${({ theme }) => theme.gridUnit * 5}px;
+`;
+
 interface ToastPresenterProps {
-  toast: { id: string; toastType: ToastType; text: string; duration: number };
+  toast: ToastMeta;
   onCloseToast: (id: string) => void;
 }
 
 export default function Toast({ toast, onCloseToast }: ToastPresenterProps) {
-  let hideTimer: ReturnType<typeof setTimeout>;
+  const hideTimer = useRef<ReturnType<typeof setTimeout>>();
   const [visible, setVisible] = useState(false);
   const showToast = () => {
     setVisible(true);
   };
 
-  const handleClosePress = () => {
-    clearTimeout(hideTimer);
+  const handleClosePress = useCallback(() => {
+    if (hideTimer.current) {
+      clearTimeout(hideTimer.current);
+    }
     // Wait for the transition
     setVisible(() => {
       setTimeout(() => {
@@ -57,39 +61,50 @@ export default function Toast({ toast, onCloseToast }: ToastPresenterProps) {
       }, 150);
       return false;
     });
-  };
+  }, [onCloseToast, toast.id]);
 
   useEffect(() => {
     setTimeout(showToast);
 
     if (toast.duration > 0) {
-      hideTimer = setTimeout(handleClosePress, toast.duration);
+      hideTimer.current = setTimeout(handleClosePress, toast.duration);
     }
     return () => {
-      clearTimeout(hideTimer);
+      if (hideTimer.current) {
+        clearTimeout(hideTimer.current);
+      }
     };
-  }, []);
+  }, [handleClosePress, toast.duration]);
+
+  let iconName: IconName = 'circle-check-solid';
+  let className = 'toast--success';
+  if (toast.toastType === ToastType.WARNING) {
+    iconName = 'warning-solid';
+    className = 'toast--warning';
+  } else if (toast.toastType === ToastType.DANGER) {
+    iconName = 'error-solid';
+    className = 'toast--danger';
+  } else if (toast.toastType === ToastType.INFO) {
+    iconName = 'info-solid';
+    className = 'toast--info';
+  }
 
   return (
-    <Alert
-      onDismiss={handleClosePress}
-      bsClass={cx(
-        'alert',
-        'toast',
-        visible && 'toast--visible',
-        toast.toastType === SUCCESS_TOAST && 'toast--success',
-        toast.toastType === WARNING_TOAST && 'toast--warning',
-        toast.toastType === DANGER_TOAST && 'toast--danger',
-      )}
+    <ToastContainer
+      className={cx('alert', 'toast', visible && 'toast--visible', className)}
+      data-test="toast-container"
+      role="alert"
     >
-      <ToastContianer>
-        {toast.toastType === SUCCESS_TOAST && (
-          <Icon name="circle-check-solid" />
-        )}
-        {toast.toastType === WARNING_TOAST ||
-          (toast.toastType === DANGER_TOAST && <Icon name="error" />)}
-        <Interweave content={toast.text} />
-      </ToastContianer>
-    </Alert>
+      <StyledIcon name={iconName} />
+      <Interweave content={toast.text} />
+      <i
+        className="fa fa-close pull-right pointer"
+        role="button"
+        tabIndex={0}
+        onClick={handleClosePress}
+        aria-label="Close"
+        data-test="close-button"
+      />
+    </ToastContainer>
   );
 }

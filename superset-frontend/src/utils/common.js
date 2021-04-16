@@ -16,13 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { SupersetClient } from '@superset-ui/connection';
-import { getTimeFormatter, TimeFormats } from '@superset-ui/time-format';
-import getClientErrorObject from './getClientErrorObject';
+import {
+  SupersetClient,
+  getTimeFormatter,
+  TimeFormats,
+} from '@superset-ui/core';
 
 // ATTENTION: If you change any constants, make sure to also change constants.py
 
 export const NULL_STRING = '<NULL>';
+export const TRUE_STRING = 'TRUE';
+export const FALSE_STRING = 'FALSE';
 
 // moment time format strings
 export const SHORT_DATE = 'MMM D, YYYY';
@@ -52,51 +56,20 @@ export function storeQuery(query) {
   });
 }
 
-export function getParamsFromUrl() {
-  const hash = window.location.search;
-  const params = hash.split('?')[1].split('&');
-  const newParams = {};
-  params.forEach(p => {
-    const value = p.split('=')[1].replace(/\+/g, ' ');
-    const key = p.split('=')[0];
-    newParams[key] = value;
-  });
-  return newParams;
-}
-
-export function getShortUrl(longUrl) {
-  return SupersetClient.post({
-    endpoint: '/r/shortner/',
-    postPayload: { data: `/${longUrl}` }, // note: url should contain 2x '/' to redirect properly
-    parseMethod: 'text',
-    stringify: false, // the url saves with an extra set of string quotes without this
-  })
-    .then(({ text }) => text)
-    .catch(response =>
-      getClientErrorObject(response).then(({ error, statusText }) =>
-        Promise.reject(error || statusText),
-      ),
-    );
-}
-
-export function supersetURL(rootUrl, getParams = {}) {
-  const url = new URL(rootUrl, window.location.origin);
-  for (const k in getParams) {
-    url.searchParams.set(k, getParams[k]);
-  }
-  return url.href;
-}
-
 export function optionLabel(opt) {
   if (opt === null) {
     return NULL_STRING;
-  } else if (opt === '') {
+  }
+  if (opt === '') {
     return '<empty string>';
-  } else if (opt === true) {
+  }
+  if (opt === true) {
     return '<true>';
-  } else if (opt === false) {
+  }
+  if (opt === false) {
     return '<false>';
-  } else if (typeof opt !== 'string' && opt.toString) {
+  }
+  if (typeof opt !== 'string' && opt.toString) {
     return opt.toString();
   }
   return opt;
@@ -116,7 +89,7 @@ export function optionFromValue(opt) {
 
 export function prepareCopyToClipboardTabularData(data) {
   let result = '';
-  for (let i = 0; i < data.length; ++i) {
+  for (let i = 0; i < data.length; i += 1) {
     result += `${Object.values(data[i]).join('\t')}\n`;
   }
   return result;
@@ -138,3 +111,17 @@ export function applyFormattingToTabularData(data) {
 }
 
 export const noOp = () => undefined;
+
+// Detects the user's OS through the browser
+export const detectOS = () => {
+  const { appVersion } = navigator;
+
+  // Leveraging this condition because of stackOverflow
+  // https://stackoverflow.com/questions/11219582/how-to-detect-my-browser-version-and-operating-system-using-javascript
+  if (appVersion.includes('Win')) return 'Windows';
+  if (appVersion.includes('Mac')) return 'MacOS';
+  if (appVersion.includes('X11')) return 'UNIX';
+  if (appVersion.includes('Linux')) return 'Linux';
+
+  return 'Unknown OS';
+};

@@ -18,11 +18,20 @@
  */
 /* eslint global-require: 0 */
 import $ from 'jquery';
-import { SupersetClient } from '@superset-ui/connection';
-import getClientErrorObject, {
+import { SupersetClient } from '@superset-ui/core';
+import {
+  getClientErrorObject,
   ClientErrorObject,
-} from '../utils/getClientErrorObject';
-import setupErrorMessages from './setupErrorMessages';
+} from 'src/utils/getClientErrorObject';
+import setupErrorMessages from 'src/setup/setupErrorMessages';
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+declare global {
+  interface Window {
+    $: any;
+    jQuery: any;
+  }
+}
 
 function showApiMessage(resp: ClientErrorObject) {
   const template =
@@ -75,16 +84,14 @@ export default function setupApp() {
         url: ev.currentTarget.href,
         parseMethod: null,
       }).then(() => {
-        location.reload();
+        window.location.reload();
       });
     });
   });
 
   // A set of hacks to allow apps to run within a FAB template
   // this allows for the server side generated menus to function
-  // @ts-ignore
   window.$ = $;
-  // @ts-ignore
   window.jQuery = $;
   require('bootstrap');
 

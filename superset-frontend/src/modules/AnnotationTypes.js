@@ -41,7 +41,7 @@ export const ANNOTATION_TYPES_METADATA = {
   },
   TIME_SERIES: {
     value: 'TIME_SERIES',
-    label: 'Time Series',
+    label: 'Time series',
   },
 };
 
@@ -77,5 +77,3 @@ export function applyNativeColumns(annotation) {
   }
   return annotation;
 }
-
-export default ANNOTATION_TYPES;

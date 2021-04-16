@@ -17,19 +17,17 @@
  * under the License.
  */
 import React, { FunctionComponent, useState } from 'react';
-import styled from '@superset-ui/style';
-import { SupersetClient } from '@superset-ui/connection';
+import { styled, t } from '@superset-ui/core';
+import { useSingleViewResource } from 'src/views/CRUD/hooks';
 import { isEmpty, isNil } from 'lodash';
-import { t } from '@superset-ui/translation';
 import Icon from 'src/components/Icon';
-import Modal from 'src/components/Modal';
+import Modal from 'src/common/components/Modal';
 import TableSelector from 'src/components/TableSelector';
 import withToasts from 'src/messageToasts/enhancers/withToasts';
-import { createErrorHandler } from 'src/views/CRUD/utils';
 
 type DatasetAddObject = {
   id: number;
-  databse: number;
+  database: number;
   schema: string;
   table_name: string;
 };
@@ -46,10 +44,8 @@ const StyledIcon = styled(Icon)`
 `;
 
 const TableSelectorContainer = styled.div`
-  .TableSelector {
-    padding-bottom: 340px;
-    width: 65%;
-  }
+  padding-bottom: 340px;
+  width: 65%;
 `;
 
 const DatasetModal: FunctionComponent<DatasetModalProps> = ({
@@ -61,8 +57,13 @@ const DatasetModal: FunctionComponent<DatasetModalProps> = ({
 }) => {
   const [currentSchema, setSchema] = useState('');
   const [currentTableName, setTableName] = useState('');
-  const [datasourceId, setDatasourceId] = useState<number | null>(null);
+  const [datasourceId, setDatasourceId] = useState<number>(0);
   const [disableSave, setDisableSave] = useState(true);
+  const { createResource } = useSingleViewResource<Partial<DatasetAddObject>>(
+    'dataset',
+    t('dataset'),
+    addDangerToast,
+  );
 
   const onChange = ({
     dbId,
@@ -80,32 +81,21 @@ const DatasetModal: FunctionComponent<DatasetModalProps> = ({
   };
 
   const onSave = () => {
-    SupersetClient.post({
-      endpoint: '/api/v1/dataset/',
-      body: JSON.stringify({
-        database: datasourceId,
-        ...(currentSchema ? { schema: currentSchema } : {}),
-        table_name: currentTableName,
-      }),
-      headers: { 'Content-Type': 'application/json' },
-    })
-      .then(({ json = {} }) => {
-        if (onDatasetAdd) {
-          onDatasetAdd({ id: json.id, ...json.result });
-        }
-        addSuccessToast(t('The dataset has been saved'));
-        onHide();
-      })
-      .catch(
-        createErrorHandler((errMsg: unknown) =>
-          addDangerToast(
-            t(
-              'Error while saving dataset: %s',
-              (errMsg as { table_name?: string }).table_name,
-            ),
-          ),
-        ),
-      );
+    const data = {
+      database: datasourceId,
+      ...(currentSchema ? { schema: currentSchema } : {}),
+      table_name: currentTableName,
+    };
+    createResource(data).then(response => {
+      if (!response) {
+        return;
+      }
+      if (onDatasetAdd) {
+        onDatasetAdd({ id: response.id, ...response });
+      }
+      addSuccessToast(t('The dataset has been saved'));
+      onHide();
+    });
   };
 
   return (
@@ -117,8 +107,8 @@ const DatasetModal: FunctionComponent<DatasetModalProps> = ({
       show={show}
       title={
         <>
-          <StyledIcon name="warning" />
-          {t('Add Dataset')}
+          <StyledIcon name="warning-solid" />
+          {t('Add dataset')}
         </>
       }
     >
@@ -130,7 +120,6 @@ const DatasetModal: FunctionComponent<DatasetModalProps> = ({
           handleError={addDangerToast}
           onChange={onChange}
           schema={currentSchema}
-          sqlLabMode={false}
           tableName={currentTableName}
         />
       </TableSelectorContainer>

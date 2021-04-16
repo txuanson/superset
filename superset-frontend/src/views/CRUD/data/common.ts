@@ -16,25 +16,34 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { t } from '@superset-ui/translation';
+import { t } from '@superset-ui/core';
 
 export const commonMenuData = {
   name: t('Data'),
-  children: [
-    {
-      name: 'Datasets',
-      label: t('Datasets'),
-      url: '/tablemodelview/list/',
-    },
+  tabs: [
     {
       name: 'Databases',
       label: t('Databases'),
       url: '/databaseview/list/',
+      usesRouter: true,
     },
     {
-      name: 'Saved Queries',
-      label: t('Saved Queries'),
-      url: '/sqllab/my_queries/',
+      name: 'Datasets',
+      label: t('Datasets'),
+      url: '/tablemodelview/list/',
+      usesRouter: true,
+    },
+    {
+      name: 'Saved queries',
+      label: t('Saved queries'),
+      url: '/savedqueryview/list/',
+      usesRouter: true,
+    },
+    {
+      name: 'Query history',
+      label: t('Query history'),
+      url: '/superset/sqllab/history/',
+      usesRouter: true,
     },
   ],
 };

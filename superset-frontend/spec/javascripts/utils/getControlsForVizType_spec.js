@@ -17,9 +17,8 @@
  * under the License.
  */
 
-import { getChartControlPanelRegistry } from '@superset-ui/chart';
+import { getChartControlPanelRegistry, t } from '@superset-ui/core';
 import getControlsForVizType from 'src/utils/getControlsForVizType';
-import { t } from '@superset-ui/translation';
 
 const fakePluginControls = {
   controlPanelSections: [
@@ -84,7 +83,7 @@ describe('getControlsForVizType', () => {
       JSON.stringify({
         label_colors: {
           type: 'ColorMapControl',
-          label: t('Color Map'),
+          label: t('Color map'),
           default: {},
           renderTrigger: true,
           mapStateToProps: state => ({

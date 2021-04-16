@@ -16,13 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { DataRecordFilters } from '@superset-ui/chart';
+import { DataRecordFilters } from '@superset-ui/core';
 
 export default function getEffectiveExtraFilters(filters: DataRecordFilters) {
   return Object.entries(filters)
     .map(([column, values]) => ({
       col: column,
-      op: Array.isArray(values) ? 'in' : '==',
+      op: Array.isArray(values) ? 'IN' : '==',
       val: values,
     }))
     .filter(filter => filter.val !== null);

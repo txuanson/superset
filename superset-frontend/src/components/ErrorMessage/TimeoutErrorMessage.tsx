@@ -17,7 +17,7 @@
  * under the License.
  */
 import React from 'react';
-import { t, tn } from '@superset-ui/translation';
+import { t, tn } from '@superset-ui/core';
 
 import { ErrorMessageComponentProps } from './types';
 import IssueCode from './IssueCode';
@@ -95,7 +95,7 @@ ${extra.issue_codes.map(issueCode => issueCode.message).join('\n')}`;
 
   return (
     <ErrorAlert
-      title={t('Timeout Error')}
+      title={t('Timeout error')}
       subtitle={subtitle}
       level={level}
       source={source}

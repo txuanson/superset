@@ -20,7 +20,7 @@ import URI from 'urijs';
 import fetchMock from 'fetch-mock';
 import sinon from 'sinon';
 
-import * as chartlib from '@superset-ui/chart';
+import * as chartlib from '@superset-ui/core';
 import { LOG_EVENT } from 'src/logger/actions';
 import * as exploreUtils from 'src/explore/exploreUtils';
 import * as actions from 'src/chart/chartAction';
@@ -189,7 +189,7 @@ describe('chart actions', () => {
         expect(dispatch.callCount).toBe(5);
         const updateFailedAction = dispatch.args[4][0];
         expect(updateFailedAction.type).toBe(actions.CHART_UPDATE_FAILED);
-        expect(updateFailedAction.queryResponse.error).toBe('misc error');
+        expect(updateFailedAction.queriesResponse[0].error).toBe('misc error');
 
         setupDefaultFetchMock();
       });

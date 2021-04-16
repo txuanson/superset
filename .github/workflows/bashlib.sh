@@ -88,11 +88,13 @@ build-instrumented-assets() {
 }
 
 setup-postgres() {
+  say "::group::Install dependency for unit tests"
+  sudo apt-get update && sudo apt-get install --yes libecpg-dev
   say "::group::Initialize database"
   psql "postgresql://superset:superset@127.0.0.1:15432/superset" <<-EOF
-    DROP SCHEMA IF EXISTS sqllab_test_db;
+    DROP SCHEMA IF EXISTS sqllab_test_db CASCADE;
+    DROP SCHEMA IF EXISTS admin_database CASCADE;
     CREATE SCHEMA sqllab_test_db;
-    DROP SCHEMA IF EXISTS admin_database;
     CREATE SCHEMA admin_database;
 EOF
   say "::endgroup::"
@@ -162,9 +164,10 @@ cypress-run() {
   export TERM="xterm"
 
   say "::group::Run Cypress for [$page]"
-  if [[ -z $CYPRESS_RECORD_KEY ]]; then
+  if [[ -z $CYPRESS_KEY ]]; then
     $cypress --spec "cypress/integration/$page" --browser "$browser"
   else
+    export CYPRESS_RECORD_KEY=`echo $CYPRESS_KEY | base64 --decode`
     # additional flags for Cypress dashboard recording
     $cypress --spec "cypress/integration/$page" --browser "$browser" \
       --record --group "$group" --tag "${GITHUB_REPOSITORY},${GITHUB_EVENT_NAME}" \
@@ -181,15 +184,12 @@ cypress-run-all() {
   # so errors can print to stderr.
   local flasklog="${HOME}/flask.log"
   local port=8081
+  export CYPRESS_BASE_URL="http://localhost:${port}"
 
   nohup flask run --no-debugger -p $port >"$flasklog" 2>&1 </dev/null &
   local flaskProcessId=$!
 
   cypress-run "*/**/*"
-
-  # Upload code coverage separately so each page can have separate flags
-  # -c will clean existing coverage reports, -F means add flags
-  codecov -cF "cypress"
 
   # After job is done, print out Flask log for debugging
   say "::group::Flask log for default run"
@@ -205,7 +205,11 @@ cypress-run-all() {
   local flaskProcessId=$!
 
   cypress-run "sqllab/*" "Backend persist"
-  codecov -cF "cypress"
+
+  # Upload code coverage separately so each page can have separate flags
+  # -c will clean existing coverage reports, -F means add flags
+  # || true to prevent CI failure on codecov upload
+  codecov -c -F "cypress" || true
 
   say "::group::Flask log for backend persist"
   cat "$flasklog"

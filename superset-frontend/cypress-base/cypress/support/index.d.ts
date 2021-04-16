@@ -30,17 +30,9 @@ declare namespace Cypress {
      */
     login(): void;
 
-    visitChartByParams(params: string | object): cy;
+    visitChartByParams(params: string | Record<string, unknown>): cy;
     visitChartByName(name: string): cy;
     visitChartById(id: number): cy;
-
-    /**
-     * Verify a waitXHR response and parse response JSON.
-     */
-    verifyResponseCodes(
-      xhr: WaitXHR,
-      callback?: (result: JSONValue) => void,
-    ): cy;
 
     /**
      * Verify slice container renders.

@@ -17,17 +17,29 @@
 import logging
 import re
 from datetime import datetime
-from typing import Any, List, Optional, Tuple, TYPE_CHECKING
+from typing import Any, List, Optional, Tuple
 
-from sqlalchemy.types import String, UnicodeText
+from flask_babel import gettext as __
 
 from superset.db_engine_specs.base import BaseEngineSpec, LimitMethod
+from superset.errors import SupersetErrorType
 from superset.utils import core as utils
 
-if TYPE_CHECKING:
-    from superset.models.core import Database  # pylint: disable=unused-import
-
 logger = logging.getLogger(__name__)
+
+
+# Regular expressions to catch custom errors
+CONNECTION_ACCESS_DENIED_REGEX = re.compile("Adaptive Server connection failed")
+CONNECTION_INVALID_HOSTNAME_REGEX = re.compile(
+    r"Adaptive Server is unavailable or does not exist \((?P<hostname>.*?)\)"
+    "(?!.*Net-Lib error).*$"
+)
+CONNECTION_PORT_CLOSED_REGEX = re.compile(
+    r"Net-Lib error during Connection refused \(61\)"
+)
+CONNECTION_HOST_DOWN_REGEX = re.compile(
+    r"Net-Lib error during Operation timed out \(60\)"
+)
 
 
 class MssqlEngineSpec(BaseEngineSpec):
@@ -52,6 +64,28 @@ class MssqlEngineSpec(BaseEngineSpec):
         "P1Y": "DATEADD(year, DATEDIFF(year, 0, {col}), 0)",
     }
 
+    custom_errors = {
+        CONNECTION_ACCESS_DENIED_REGEX: (
+            __('Either the username "%(username)s" or the password is incorrect.'),
+            SupersetErrorType.CONNECTION_ACCESS_DENIED_ERROR,
+        ),
+        CONNECTION_INVALID_HOSTNAME_REGEX: (
+            __('The hostname "%(hostname)s" cannot be resolved.'),
+            SupersetErrorType.CONNECTION_INVALID_HOSTNAME_ERROR,
+        ),
+        CONNECTION_PORT_CLOSED_REGEX: (
+            __('Port %(port)s on hostname "%(hostname)s" refused the connection.'),
+            SupersetErrorType.CONNECTION_PORT_CLOSED_ERROR,
+        ),
+        CONNECTION_HOST_DOWN_REGEX: (
+            __(
+                'The host "%(hostname)s" might be down, and can\'t be '
+                "reached on port %(port)s."
+            ),
+            SupersetErrorType.CONNECTION_HOST_DOWN_ERROR,
+        ),
+    }
+
     @classmethod
     def epoch_to_dttm(cls) -> str:
         return "dateadd(S, {col}, '1970-01-01')"
@@ -62,9 +96,11 @@ class MssqlEngineSpec(BaseEngineSpec):
         if tt == utils.TemporalType.DATE:
             return f"CONVERT(DATE, '{dttm.date().isoformat()}', 23)"
         if tt == utils.TemporalType.DATETIME:
-            return f"""CONVERT(DATETIME, '{dttm.isoformat(timespec="milliseconds")}', 126)"""  # pylint: disable=line-too-long
+            datetime_formatted = dttm.isoformat(timespec="milliseconds")
+            return f"""CONVERT(DATETIME, '{datetime_formatted}', 126)"""
         if tt == utils.TemporalType.SMALLDATETIME:
-            return f"""CONVERT(SMALLDATETIME, '{dttm.isoformat(sep=" ", timespec="seconds")}', 20)"""  # pylint: disable=line-too-long
+            datetime_formatted = dttm.isoformat(sep=" ", timespec="seconds")
+            return f"""CONVERT(SMALLDATETIME, '{datetime_formatted}', 20)"""
         return None
 
     @classmethod
@@ -74,11 +110,6 @@ class MssqlEngineSpec(BaseEngineSpec):
         data = super().fetch_data(cursor, limit)
         # Lists of `pyodbc.Row` need to be unpacked further
         return cls.pyodbc_rows_to_tuples(data)
-
-    column_type_mappings = (
-        (re.compile(r"^N((VAR)?CHAR|TEXT)", re.IGNORECASE), UnicodeText()),
-        (re.compile(r"^((VAR)?CHAR|TEXT|STRING)", re.IGNORECASE), String()),
-    )
 
     @classmethod
     def extract_error_message(cls, ex: Exception) -> str:

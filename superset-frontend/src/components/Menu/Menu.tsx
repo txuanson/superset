@@ -16,18 +16,18 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
-import { t } from '@superset-ui/translation';
-import { Nav, Navbar, NavItem, MenuItem } from 'react-bootstrap';
+import React, { useState } from 'react';
+import { t, styled } from '@superset-ui/core';
+import { Nav, Navbar, NavItem } from 'react-bootstrap';
 import NavDropdown from 'src/components/NavDropdown';
-import styled from '@superset-ui/style';
+import { Menu as DropdownMenu } from 'src/common/components';
+import { Link } from 'react-router-dom';
 import MenuObject, {
   MenuObjectProps,
   MenuObjectChildProps,
 } from './MenuObject';
-import NewMenu from './NewMenu';
-import UserMenu from './UserMenu';
 import LanguagePicker, { Languages } from './LanguagePicker';
+import NewMenu from './NewMenu';
 
 interface BrandProps {
   path: string;
@@ -47,6 +47,7 @@ interface NavBarProps {
   user_info_url: string;
   user_login_url: string;
   user_logout_url: string;
+  user_profile_url: string | null;
   locale: string;
 }
 
@@ -57,6 +58,7 @@ export interface MenuProps {
     navbar_right: NavBarProps;
     settings: MenuObjectProps[];
   };
+  isFrontendRoute?: (path?: string) => boolean;
 }
 
 const StyledHeader = styled.header`
@@ -73,7 +75,10 @@ const StyledHeader = styled.header`
   }
 
   .version-info {
-    padding: 5px 20px;
+    padding: ${({ theme }) => theme.gridUnit * 1.5}px
+      ${({ theme }) => theme.gridUnit * 4}px
+      ${({ theme }) => theme.gridUnit * 1.5}px
+      ${({ theme }) => theme.gridUnit * 7}px;
     color: ${({ theme }) => theme.colors.grayscale.base};
     font-size: ${({ theme }) => theme.typography.sizes.xs}px;
 
@@ -91,13 +96,15 @@ const StyledHeader = styled.header`
   .nav > li > a {
     padding: ${({ theme }) => theme.gridUnit * 4}px;
   }
+  .dropdown-header {
+    text-transform: uppercase;
+    padding-left: 12px;
+  }
 
-  .navbar-nav > li > a {
+  .navbar-inverse .navbar-nav li a {
     color: ${({ theme }) => theme.colors.grayscale.dark1};
     border-bottom: none;
-    &:focus {
-      border-bottom: none;
-    }
+    transition: background-color ${({ theme }) => theme.transitionTiming}s;
     &:after {
       content: '';
       position: absolute;
@@ -105,70 +112,52 @@ const StyledHeader = styled.header`
       left: 50%;
       width: 0;
       height: 3px;
-      background-color: ${({ theme }) => theme.colors.primary.base};
       opacity: 0;
       transform: translateX(-50%);
       transition: all ${({ theme }) => theme.transitionTiming}s;
+      background-color: ${({ theme }) => theme.colors.primary.base};
     }
-
+    &:focus {
+      border-bottom: none;
+      background-color: transparent;
+      /* background-color: ${({ theme }) => theme.colors.primary.light5}; */
+    }
     &:hover {
       color: ${({ theme }) => theme.colors.grayscale.dark1};
+      background-color: ${({ theme }) => theme.colors.primary.light5};
       border-bottom: none;
+      margin: 0;
       &:after {
         opacity: 1;
         width: 100%;
       }
     }
-    &:hover,
-    &:focus {
-      margin: 0;
-    }
   }
 
-  .settings-divider {
-    margin-bottom: 8px;
-    border-bottom: 1px solid ${({ theme }) => theme.colors.grayscale.light2};
-  }
   .navbar-right {
     display: flex;
     align-items: center;
-    .dropdown:first-of-type {
-      /* this is the "+ NEW" button. Sweep this up when it's replaced */
-      margin-right: ${({ theme }) => theme.gridUnit * 2}px;
+  }
+
+  .ant-menu {
+    .ant-menu-item-group-title {
+      padding-bottom: ${({ theme }) => theme.gridUnit}px;
+    }
+    .ant-menu-item {
+      margin-bottom: ${({ theme }) => theme.gridUnit * 2}px;
+    }
+    .about-section {
+      margin: ${({ theme }) => theme.gridUnit}px 0
+        ${({ theme }) => theme.gridUnit * 2}px;
     }
   }
 `;
 
 export function Menu({
   data: { menu, brand, navbar_right: navbarRight, settings },
+  isFrontendRoute = () => false,
 }: MenuProps) {
-  // Flatten settings
-  const flatSettings: any[] = [];
-
-  if (settings) {
-    settings.forEach((section: object, index: number) => {
-      const newSection: MenuObjectProps = {
-        ...section,
-        index,
-        isHeader: true,
-      };
-
-      flatSettings.push(newSection);
-
-      // Filter out '-'
-      if (newSection.childs) {
-        newSection.childs.forEach((child: any) => {
-          if (child !== '-') {
-            flatSettings.push(child);
-          }
-        });
-      }
-
-      if (index !== settings.length - 1) {
-        flatSettings.push('-');
-      }
-    });
-  }
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   return (
     <StyledHeader className="top" id="main-menu">
@@ -181,45 +170,94 @@ export function Menu({
           </Navbar.Brand>
           <Navbar.Toggle />
         </Navbar.Header>
-        <Nav>
-          {menu.map((item, index) => (
-            <MenuObject {...item} key={item.label} index={index + 1} />
-          ))}
+        <Nav data-test="navbar-top">
+          {menu.map((item, index) => {
+            const props = {
+              ...item,
+              isFrontendRoute: isFrontendRoute(item.url),
+              childs: item.childs?.map(c => {
+                if (typeof c === 'string') {
+                  return c;
+                }
+
+                return {
+                  ...c,
+                  isFrontendRoute: isFrontendRoute(c.url),
+                };
+              }),
+            };
+            return <MenuObject {...props} key={item.label} index={index + 1} />;
+          })}
         </Nav>
         <Nav className="navbar-right">
           {!navbarRight.user_is_anonymous && <NewMenu />}
-          {settings && settings.length && (
-            <NavDropdown id={`settings-dropdown`} title="Settings">
-              {flatSettings.map((section, index) => {
-                if (section === '-') {
-                  return (
-                    <MenuItem
-                      key={`$${index}`}
-                      divider
-                      disabled
-                      className="settings-divider"
-                    />
-                  );
-                } else if (section.isHeader) {
-                  return (
-                    <MenuItem key={`${section.label}`} disabled>
-                      {section.label}
-                    </MenuItem>
-                  );
-                }
+          <NavDropdown
+            id="settings-dropdown"
+            title={t('Settings')}
+            onMouseEnter={() => setDropdownOpen(true)}
+            onMouseLeave={() => setDropdownOpen(false)}
+            onToggle={value => setDropdownOpen(value)}
+            open={dropdownOpen}
+          >
+            <DropdownMenu>
+              {settings.map((section, index) => [
+                <DropdownMenu.ItemGroup
+                  key={`${section.label}`}
+                  title={section.label}
+                >
+                  {section.childs?.map(child => {
+                    if (typeof child !== 'string') {
+                      return (
+                        <DropdownMenu.Item key={`${child.label}`}>
+                          {isFrontendRoute(child.url) ? (
+                            <Link to={child.url || ''}>{child.label}</Link>
+                          ) : (
+                            <a href={child.url}>{child.label}</a>
+                          )}
+                        </DropdownMenu.Item>
+                      );
+                    }
+                    return null;
+                  })}
+                </DropdownMenu.ItemGroup>,
+                index < settings.length - 1 && <DropdownMenu.Divider />,
+              ])}
 
-                return (
-                  <MenuItem
-                    key={`${section.label}`}
-                    href={section.url}
-                    eventKey={index}
-                  >
-                    {section.label}
-                  </MenuItem>
-                );
-              })}
-            </NavDropdown>
-          )}
+              {!navbarRight.user_is_anonymous && [
+                <DropdownMenu.Divider key="user-divider" />,
+                <DropdownMenu.ItemGroup key="user-section" title={t('User')}>
+                  {navbarRight.user_profile_url && (
+                    <DropdownMenu.Item key="profile">
+                      <a href={navbarRight.user_profile_url}>{t('Profile')}</a>
+                    </DropdownMenu.Item>
+                  )}
+                  <DropdownMenu.Item key="info">
+                    <a href={navbarRight.user_info_url}>{t('Info')}</a>
+                  </DropdownMenu.Item>
+                  <DropdownMenu.Item key="logout">
+                    <a href={navbarRight.user_logout_url}>{t('Logout')}</a>
+                  </DropdownMenu.Item>
+                </DropdownMenu.ItemGroup>,
+              ]}
+              {(navbarRight.version_string || navbarRight.version_sha) && [
+                <DropdownMenu.Divider key="version-info-divider" />,
+                <DropdownMenu.ItemGroup key="about-section" title={t('About')}>
+                  <div className="about-section">
+                    {navbarRight.version_string && (
+                      <li className="version-info">
+                        <span>Version: {navbarRight.version_string}</span>
+                      </li>
+                    )}
+                    {navbarRight.version_sha && (
+                      <li className="version-info">
+                        <span>SHA: {navbarRight.version_sha}</span>
+                      </li>
+                    )}
+                  </div>
+                </DropdownMenu.ItemGroup>,
+              ]}
+            </DropdownMenu>
+          </NavDropdown>
           {navbarRight.documentation_url && (
             <NavItem
               href={navbarRight.documentation_url}
@@ -246,14 +284,6 @@ export function Menu({
               languages={navbarRight.languages}
             />
           )}
-          {!navbarRight.user_is_anonymous && (
-            <UserMenu
-              userInfoUrl={navbarRight.user_info_url}
-              userLogoutUrl={navbarRight.user_logout_url}
-              versionString={navbarRight.version_string}
-              versionSha={navbarRight.version_sha}
-            />
-          )}
           {navbarRight.user_is_anonymous && (
             <NavItem href={navbarRight.user_login_url}>
               <i className="fa fa-fw fa-sign-in" />
@@ -267,7 +297,7 @@ export function Menu({
 }
 
 // transform the menu data to reorganize components
-export default function MenuWrapper({ data }: MenuProps) {
+export default function MenuWrapper({ data, ...rest }: MenuProps) {
   const newMenuData = {
     ...data,
   };
@@ -277,15 +307,9 @@ export default function MenuWrapper({ data }: MenuProps) {
     Manage: true,
   };
 
-  // Menu items that should be ignored
-  const ignore = {
-    'Import Dashboards': true,
-  };
-
   // Cycle through menu.menu to build out cleanedMenu and settings
   const cleanedMenu: MenuObjectProps[] = [];
   const settings: MenuObjectProps[] = [];
-
   newMenuData.menu.forEach((item: any) => {
     if (!item) {
       return;
@@ -301,10 +325,7 @@ export default function MenuWrapper({ data }: MenuProps) {
       item.childs.forEach((child: MenuObjectChildProps | string) => {
         if (typeof child === 'string') {
           children.push(child);
-        } else if (
-          (child as MenuObjectChildProps).label &&
-          !ignore.hasOwnProperty(child.label)
-        ) {
+        } else if ((child as MenuObjectChildProps).label) {
           children.push(child);
         }
       });
@@ -322,5 +343,5 @@ export default function MenuWrapper({ data }: MenuProps) {
   newMenuData.menu = cleanedMenu;
   newMenuData.settings = settings;
 
-  return <Menu data={newMenuData} />;
+  return <Menu data={newMenuData} {...rest} />;
 }

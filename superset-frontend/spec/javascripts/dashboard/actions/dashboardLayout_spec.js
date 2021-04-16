@@ -40,7 +40,7 @@ import {
 
 import { setUnsavedChanges } from 'src/dashboard/actions/dashboardState';
 import * as dashboardFilters from 'src/dashboard/actions/dashboardFilters';
-import { addWarningToast, ADD_TOAST } from 'src/messageToasts/actions';
+import { ADD_TOAST } from 'src/messageToasts/actions';
 
 import {
   DASHBOARD_GRID_TYPE,
@@ -349,24 +349,27 @@ describe('dashboardLayout actions', () => {
       const { getState, dispatch } = setup({
         dashboardLayout: {
           present: {
-            source: { type: ROW_TYPE },
-            destination: { type: ROW_TYPE, children: ['rowChild'] },
-            dragging: { type: CHART_TYPE, meta: { width: 1 } },
-            rowChild: { type: CHART_TYPE, meta: { width: 12 } },
+            source: { id: 'source', type: ROW_TYPE, children: ['dragging'] },
+            destination: {
+              id: 'destination',
+              type: ROW_TYPE,
+              children: ['rowChild'],
+            },
+            dragging: { id: 'dragging', type: CHART_TYPE, meta: { width: 1 } },
+            rowChild: { id: 'rowChild', type: CHART_TYPE, meta: { width: 12 } },
           },
         },
       });
       const dropResult = {
         source: { id: 'source', type: ROW_TYPE },
         destination: { id: 'destination', type: ROW_TYPE },
-        dragging: { id: 'dragging', type: CHART_TYPE },
+        dragging: { id: 'dragging', type: CHART_TYPE, meta: { width: 1 } },
       };
 
       const thunk = handleComponentDrop(dropResult);
       thunk(dispatch, getState);
-      expect(dispatch.getCall(0).args[0].type).toEqual(
-        addWarningToast('').type,
-      );
+
+      expect(dispatch.getCall(0).args[0].type).toEqual(ADD_TOAST);
 
       expect(dispatch.callCount).toBe(1);
     });
@@ -479,18 +482,14 @@ describe('dashboardLayout actions', () => {
         },
       };
 
-      const thunk1 = handleComponentDrop(dropResult);
-      thunk1(dispatch, getState);
+      handleComponentDrop(dropResult)(dispatch, getState);
 
-      const thunk2 = dispatch.getCall(0).args[0];
-      thunk2(dispatch, getState);
-
-      expect(dispatch.getCall(1).args[0].type).toEqual(ADD_TOAST);
+      expect(dispatch.getCall(0).args[0].type).toEqual(ADD_TOAST);
     });
   });
 
   describe('undoLayoutAction', () => {
-    it('should dispatch a redux-undo .undo() action ', () => {
+    it('should dispatch a redux-undo .undo() action', () => {
       const { getState, dispatch } = setup({
         dashboardLayout: { past: ['non-empty'] },
       });
@@ -514,7 +513,7 @@ describe('dashboardLayout actions', () => {
   });
 
   describe('redoLayoutAction', () => {
-    it('should dispatch a redux-undo .redo() action ', () => {
+    it('should dispatch a redux-undo .redo() action', () => {
       const { getState, dispatch } = setup();
       const thunk = redoLayoutAction();
       thunk(dispatch, getState);

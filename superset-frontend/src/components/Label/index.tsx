@@ -16,109 +16,99 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
-import { Label as BootstrapLabel } from 'react-bootstrap';
-import styled from '@superset-ui/style';
-import cx from 'classnames';
+import React, { CSSProperties } from 'react';
+import { Tag } from 'src/common/components';
+import { useTheme } from '@superset-ui/core';
 
-export type OnClickHandler = React.MouseEventHandler<BootstrapLabel>;
+export type OnClickHandler = React.MouseEventHandler<HTMLElement>;
 
-export interface LabelProps {
+export type Type =
+  | 'success'
+  | 'warning'
+  | 'danger'
+  | 'info'
+  | 'default'
+  | 'primary'
+  | 'secondary';
+
+export interface LabelProps extends React.HTMLAttributes<HTMLSpanElement> {
   key?: string;
   className?: string;
-  id?: string;
-  tooltip?: string;
-  placement?: string;
   onClick?: OnClickHandler;
-  bsStyle?: string;
-  style?: BootstrapLabel.LabelProps['style'];
+  type?: Type;
+  style?: CSSProperties;
   children?: React.ReactNode;
+  role?: string;
 }
 
-const SupersetLabel = styled(BootstrapLabel)`
-  /* un-bunch them! */
-  margin-right: ${({ theme }) => theme.gridUnit}px;
-  &:first-of-type {
-    margin-left: 0;
-  }
-  &:last-of-type {
-    margin-right: 0;
-  }
-
-  cursor: ${({ onClick }) => (onClick ? 'pointer' : 'default')};
-  transition: background-color ${({ theme }) => theme.transitionTiming}s;
-  &.label-warning {
-    background-color: ${({ theme }) => theme.colors.warning.base};
-    &:hover {
-      background-color: ${({ theme, onClick }) =>
-        onClick ? theme.colors.warning.dark1 : theme.colors.warning.base};
-    }
-  }
-  &.label-danger {
-    background-color: ${({ theme }) => theme.colors.error.base};
-    &:hover {
-      background-color: ${({ theme, onClick }) =>
-        onClick ? theme.colors.error.dark1 : theme.colors.error.base};
-    }
-  }
-  &.label-success {
-    background-color: ${({ theme }) => theme.colors.success.base};
-    &:hover {
-      background-color: ${({ theme, onClick }) =>
-        onClick ? theme.colors.success.dark1 : theme.colors.success.base};
-    }
-  }
-  &.label-default {
-    background-color: ${({ theme }) => theme.colors.grayscale.base};
-    &:hover {
-      background-color: ${({ theme, onClick }) =>
-        onClick ? theme.colors.grayscale.dark1 : theme.colors.grayscale.base};
-    }
-  }
-  &.label-info {
-    background-color: ${({ theme }) => theme.colors.info};
-    &:hover {
-      background-color: ${({ theme, onClick }) =>
-        onClick ? theme.colors.info.dark1 : theme.colors.info.base};
-    }
-  }
-  &.label-primary {
-    background-color: ${({ theme }) => theme.colors.primary.base};
-    &:hover {
-      background-color: ${({ theme, onClick }) =>
-        onClick ? theme.colors.primary.dark1 : theme.colors.primary.base};
-    }
-  }
-  /* note this is NOT a supported bootstrap label Style... this overrides default */
-  &.label-secondary {
-    background-color: ${({ theme }) => theme.colors.secondary.base};
-    &:hover {
-      background-color: ${({ theme, onClick }) =>
-        onClick ? theme.colors.secondary.dark1 : theme.colors.secondary.base};
-    }
-  }
-`;
-
 export default function Label(props: LabelProps) {
-  const officialBootstrapStyles = [
-    'success',
-    'warning',
-    'danger',
-    'info',
-    'default',
-    'primary',
-  ];
-  const labelProps = {
-    ...props,
-    placement: props.placement || 'top',
-    bsStyle: officialBootstrapStyles.includes(props.bsStyle || '')
-      ? props.bsStyle
-      : 'default',
-    className: cx(props.className, {
-      [`label-${props.bsStyle}`]: !officialBootstrapStyles.includes(
-        props.bsStyle || '',
-      ),
-    }),
-  };
-  return <SupersetLabel {...labelProps}>{props.children}</SupersetLabel>;
+  const theme = useTheme();
+  const { colors, transitionTiming } = theme;
+  const { type, onClick, children, ...rest } = props;
+  const {
+    primary,
+    secondary,
+    grayscale,
+    success,
+    warning,
+    error,
+    info,
+  } = colors;
+
+  let backgroundColor = grayscale.light3;
+  let backgroundColorHover = onClick ? primary.light2 : grayscale.light3;
+  let borderColor = onClick ? grayscale.light2 : 'transparent';
+  let borderColorHover = onClick ? primary.light1 : 'transparent';
+  let color = grayscale.dark1;
+
+  if (type && type !== 'default') {
+    color = grayscale.light4;
+
+    let baseColor;
+    if (type === 'success') {
+      baseColor = success;
+    } else if (type === 'warning') {
+      baseColor = warning;
+    } else if (type === 'danger') {
+      baseColor = error;
+    } else if (type === 'info') {
+      baseColor = info;
+    } else if (type === 'secondary') {
+      baseColor = secondary;
+    } else {
+      baseColor = primary;
+    }
+
+    backgroundColor = baseColor.base;
+    backgroundColorHover = onClick ? baseColor.dark1 : baseColor.base;
+    borderColor = onClick ? baseColor.dark1 : 'transparent';
+    borderColorHover = onClick ? baseColor.dark2 : 'transparent';
+  }
+
+  return (
+    <Tag
+      css={{
+        transition: `background-color ${transitionTiming}s`,
+        whiteSpace: 'nowrap',
+        cursor: onClick ? 'pointer' : 'default',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        backgroundColor,
+        borderColor,
+        borderRadius: 21,
+        padding: '0.35em 0.8em',
+        lineHeight: 1,
+        color,
+        '&:hover': {
+          backgroundColor: backgroundColorHover,
+          borderColor: borderColorHover,
+          opacity: 1,
+        },
+      }}
+      onClick={onClick}
+      {...rest}
+    >
+      {children}
+    </Tag>
+  );
 }

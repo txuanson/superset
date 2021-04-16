@@ -18,7 +18,7 @@
 ######################################################################
 # PY stage that simply does a pip install on our requirements
 ######################################################################
-ARG PY_VER=3.6.9
+ARG PY_VER=3.7.9
 FROM python:${PY_VER} AS superset-py
 
 RUN mkdir /app \
@@ -28,6 +28,7 @@ RUN mkdir /app \
             default-libmysqlclient-dev \
             libpq-dev \
             libsasl2-dev \
+            libecpg-dev \
         && rm -rf /var/lib/apt/lists/*
 
 # First, we just wanna install requirements, which will allow us to utilize the cache
@@ -44,7 +45,10 @@ RUN cd /app \
 ######################################################################
 # Node stage to deal with static asset construction
 ######################################################################
-FROM node:10-jessie AS superset-node
+FROM node:14 AS superset-node
+
+ARG NPM_VER=7
+RUN npm install -g npm@${NPM_VER}
 
 ARG NPM_BUILD_CMD="build"
 ENV BUILD_CMD=${NPM_BUILD_CMD}
@@ -69,7 +73,7 @@ RUN cd /app/superset-frontend \
 ######################################################################
 # Final lean image...
 ######################################################################
-ARG PY_VER=3.6.9
+ARG PY_VER=3.7.9
 FROM python:${PY_VER} AS lean
 
 ENV LANG=C.UTF-8 \
@@ -78,7 +82,7 @@ ENV LANG=C.UTF-8 \
     FLASK_APP="superset.app:create_app()" \
     PYTHONPATH="/app/pythonpath" \
     SUPERSET_HOME="/app/superset_home" \
-    SUPERSET_PORT=8080
+    SUPERSET_PORT=8088
 
 RUN useradd --user-group --no-create-home --no-log-init --shell /bin/bash superset \
         && mkdir -p ${SUPERSET_HOME} ${PYTHONPATH} \
@@ -86,10 +90,11 @@ RUN useradd --user-group --no-create-home --no-log-init --shell /bin/bash supers
         && apt-get install -y --no-install-recommends \
             build-essential \
             default-libmysqlclient-dev \
+            libsasl2-modules-gssapi-mit \
             libpq-dev \
         && rm -rf /var/lib/apt/lists/*
 
-COPY --from=superset-py /usr/local/lib/python3.6/site-packages/ /usr/local/lib/python3.6/site-packages/
+COPY --from=superset-py /usr/local/lib/python3.7/site-packages/ /usr/local/lib/python3.7/site-packages/
 # Copying site-packages doesn't move the CLIs, so let's copy them one by one
 COPY --from=superset-py /usr/local/bin/gunicorn /usr/local/bin/celery /usr/local/bin/flask /usr/bin/
 COPY --from=superset-node /app/superset/static/assets /app/superset/static/assets
@@ -108,7 +113,7 @@ WORKDIR /app
 
 USER superset
 
-HEALTHCHECK CMD ["curl", "-f", "http://localhost:8088/health"]
+HEALTHCHECK CMD curl -f "http://localhost:$SUPERSET_PORT/health"
 
 EXPOSE ${SUPERSET_PORT}
 
@@ -127,3 +132,17 @@ RUN cd /app \
     && pip install --no-cache -r requirements/docker.txt \
     && pip install --no-cache -r requirements/requirements-local.txt || true
 USER superset
+
+
+######################################################################
+# CI image...
+######################################################################
+FROM lean AS ci
+
+COPY --chown=superset ./docker/docker-bootstrap.sh /app/docker/
+COPY --chown=superset ./docker/docker-init.sh /app/docker/
+COPY --chown=superset ./docker/docker-ci.sh /app/docker/
+
+RUN chmod a+x /app/docker/*.sh
+
+CMD /app/docker/docker-ci.sh

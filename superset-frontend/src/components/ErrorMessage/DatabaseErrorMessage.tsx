@@ -17,7 +17,7 @@
  * under the License.
  */
 import React from 'react';
-import { t, tn } from '@superset-ui/translation';
+import { t, tn } from '@superset-ui/core';
 
 import { ErrorMessageComponentProps } from './types';
 import IssueCode from './IssueCode';
@@ -46,7 +46,9 @@ function DatabaseErrorMessage({
         {t('This may be triggered by:')}
         <br />
         {extra.issue_codes
-          .map<React.ReactNode>(issueCode => <IssueCode {...issueCode} />)
+          .map<React.ReactNode>(issueCode => (
+            <IssueCode {...issueCode} key={issueCode.code} />
+          ))
           .reduce((prev, curr) => [prev, <br />, curr])}
       </p>
       {isVisualization && extra.owners && (
@@ -78,7 +80,7 @@ ${extra.issue_codes.map(issueCode => issueCode.message).join('\n')}`;
 
   return (
     <ErrorAlert
-      title={t('%s Error', extra.engine_name || t('DB Engine'))}
+      title={t('%s Error', extra.engine_name || t('DB engine'))}
       subtitle={message}
       level={level}
       source={source}

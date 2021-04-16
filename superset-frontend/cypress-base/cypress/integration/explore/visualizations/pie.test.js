@@ -38,18 +38,17 @@ describe('Visualization > Pie', () => {
 
   function verify(formData) {
     cy.visitChartByParams(JSON.stringify(formData));
-    cy.verifySliceSuccess({ waitAlias: '@getJson', chartSelector: 'svg' });
+    cy.verifySliceSuccess({ waitAlias: '@getJson' });
   }
 
   beforeEach(() => {
-    cy.server();
     cy.login();
-    cy.route('POST', '/superset/explore_json/**').as('getJson');
+    cy.intercept('POST', '/api/v1/chart/data*').as('getJson');
   });
 
   it('should work with ad-hoc metric', () => {
     verify(PIE_FORM_DATA);
-    cy.get('.chart-container .nv-pie .nv-slice path').should('have.length', 2);
+    cy.get('.chart-container .pie canvas').should('have.length', 1);
   });
 
   it('should work with simple filter', () => {
@@ -67,6 +66,6 @@ describe('Visualization > Pie', () => {
         },
       ],
     });
-    cy.get('.chart-container .nv-pie .nv-slice path').should('have.length', 1);
+    cy.get('.chart-container .pie canvas').should('have.length', 1);
   });
 });

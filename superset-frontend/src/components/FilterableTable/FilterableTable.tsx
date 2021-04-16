@@ -17,7 +17,6 @@
  * under the License.
  */
 import { List } from 'immutable';
-// @ts-ignore
 import JSONbig from 'json-bigint';
 import React, { PureComponent } from 'react';
 import JSONTree from 'react-json-tree';
@@ -26,17 +25,15 @@ import {
   Grid,
   ScrollSync,
   SortDirection,
+  SortDirectionType,
   SortIndicator,
   Table,
-  SortDirectionType,
 } from 'react-virtualized';
-import { getMultipleTextDimensions } from '@superset-ui/dimension';
-import { t } from '@superset-ui/translation';
-
+import { getMultipleTextDimensions, t, styled } from '@superset-ui/core';
+import { Tooltip } from 'src/common/components/Tooltip';
 import Button from '../Button';
 import CopyToClipboard from '../CopyToClipboard';
 import ModalTrigger from '../ModalTrigger';
-import TooltipWrapper from '../TooltipWrapper';
 
 function safeJsonObjectParse(
   data: unknown,
@@ -85,6 +82,11 @@ const JSON_TREE_THEME = {
   base0F: '#cc6633',
 };
 
+const StyledFilterableTable = styled.div`
+  overflow-x: auto;
+  margin-top: ${({ theme }) => theme.gridUnit * 2}px;
+`;
+
 // when more than MAX_COLUMNS_FOR_TABLE are returned, switch from table to grid view
 export const MAX_COLUMNS_FOR_TABLE = 50;
 
@@ -123,6 +125,18 @@ export default class FilterableTable extends PureComponent<
     striped: true,
     expandedColumns: [],
   };
+
+  list: List<Datum>;
+
+  complexColumns: Record<string, boolean>;
+
+  widthsForColumnsByKey: Record<string, number>;
+
+  totalTableWidth: number;
+
+  totalTableHeight: number;
+
+  container: React.RefObject<HTMLDivElement>;
 
   constructor(props: FilterableTableProps) {
     super(props);
@@ -174,15 +188,12 @@ export default class FilterableTable extends PureComponent<
     const PADDING = 40; // accounts for cell padding and width of sorting icon
     const widthsByColumnKey = {};
     const cellContent = [].concat(
-      ...this.props.orderedColumnKeys.map(key =>
-        this.list
-          .map((data: Datum) =>
-            this.getCellContent({ cellData: data[key], columnKey: key }),
-          )
-          // @ts-ignore
-          .push(key)
-          .toJS(),
-      ),
+      ...this.props.orderedColumnKeys.map(key => {
+        const cellContentList = this.list.map((data: Datum) =>
+          this.getCellContent({ cellData: data[key], columnKey: key }),
+        ) as List<string | JSX.Element>;
+        return cellContentList.push(key).toJS();
+      }),
     );
 
     const colWidths = getMultipleTextDimensions({
@@ -212,7 +223,7 @@ export default class FilterableTable extends PureComponent<
   }: {
     cellData: CellDataType;
     columnKey: string;
-  }) {
+  }): string | JSX.Element {
     if (cellData === null) {
       return <i className="text-muted">NULL</i>;
     }
@@ -229,32 +240,23 @@ export default class FilterableTable extends PureComponent<
     return this.complexColumns[columnKey] ? truncated : content;
   }
 
-  list: List<Datum>;
-  complexColumns: Record<string, boolean>;
-  widthsForColumnsByKey: Record<string, number>;
-  totalTableWidth: number;
-  totalTableHeight: number;
-  container: React.RefObject<HTMLDivElement>;
-
   formatTableData(data: Record<string, unknown>[]): Datum[] {
-    const formattedData = data.map(row => {
+    return data.map(row => {
       const newRow = {};
-      for (const k in row) {
-        const val = row[k];
+      Object.entries(row).forEach(([key, val]) => {
         if (['string', 'number'].indexOf(typeof val) >= 0) {
-          newRow[k] = val;
+          newRow[key] = val;
         } else {
-          newRow[k] = val === null ? null : JSONbig.stringify(val);
+          newRow[key] = val === null ? null : JSONbig.stringify(val);
         }
-      }
+      });
       return newRow;
     });
-    return formattedData;
   }
 
   hasMatch(text: string, row: Datum) {
-    const values = [];
-    for (const key in row) {
+    const values: string[] = [];
+    Object.keys(row).forEach(key => {
       if (row.hasOwnProperty(key)) {
         const cellValue = row[key];
         if (typeof cellValue === 'string') {
@@ -266,7 +268,7 @@ export default class FilterableTable extends PureComponent<
           values.push(cellValue.toString());
         }
       }
-    }
+    });
     const lowerCaseText = text.toLowerCase();
     return values.some(v => v.includes(lowerCaseText));
   }
@@ -290,7 +292,7 @@ export default class FilterableTable extends PureComponent<
   }
 
   fitTableToWidthIfNeeded() {
-    const containerWidth = this.container.current!.clientWidth;
+    const containerWidth = this.container.current?.clientWidth ?? 0;
     if (this.totalTableWidth < containerWidth) {
       // fit table width if content doesn't fill the width of the container
       this.totalTableWidth = containerWidth;
@@ -311,7 +313,7 @@ export default class FilterableTable extends PureComponent<
             <CopyToClipboard shouldShowText={false} text={jsonString} />
           </Button>
         }
-        modalTitle={t('Cell Content')}
+        modalTitle={t('Cell content')}
         triggerNode={node}
       />
     );
@@ -324,12 +326,15 @@ export default class FilterableTable extends PureComponent<
       if (aValue === bValue) {
         // equal items sort equally
         return 0;
-      } else if (aValue === null) {
+      }
+      if (aValue === null) {
         // nulls sort after anything else
         return 1;
-      } else if (bValue === null) {
+      }
+      if (bValue === null) {
         return -1;
-      } else if (descending) {
+      }
+      if (descending) {
         return aValue < bValue ? 1 : -1;
       }
       return aValue < bValue ? -1 : 1;
@@ -352,14 +357,14 @@ export default class FilterableTable extends PureComponent<
         ? 'header-style-disabled'
         : 'header-style';
     return (
-      <TooltipWrapper label="header" tooltip={label}>
+      <Tooltip id="header-tooltip" title={label}>
         <div className={className}>
           {label}
           {sortBy === dataKey && (
             <SortIndicator sortDirection={sortDirection} />
           )}
         </div>
-      </TooltipWrapper>
+      </Tooltip>
     );
   }
 
@@ -378,7 +383,7 @@ export default class FilterableTable extends PureComponent<
         ? 'header-style-disabled'
         : 'header-style';
     return (
-      <TooltipWrapper key={key} label="header" tooltip={label}>
+      <Tooltip key={key} id="header-tooltip" title={label}>
         <div
           style={{
             ...style,
@@ -391,7 +396,7 @@ export default class FilterableTable extends PureComponent<
         >
           {label}
         </div>
-      </TooltipWrapper>
+      </Tooltip>
     );
   }
 
@@ -457,42 +462,45 @@ export default class FilterableTable extends PureComponent<
 
     // fix height of filterable table
     return (
-      <ScrollSync>
-        {({ onScroll, scrollTop }) => (
-          <div
-            style={{ height }}
-            className="filterable-table-container Table"
-            ref={this.container}
-          >
-            <div className="LeftColumn">
-              <Grid
-                cellRenderer={this.renderGridCellHeader}
-                columnCount={orderedColumnKeys.length}
-                columnWidth={getColumnWidth}
-                height={rowHeight}
-                rowCount={1}
-                rowHeight={rowHeight}
-                scrollTop={scrollTop}
-                width={this.totalTableWidth}
-              />
+      <StyledFilterableTable>
+        <ScrollSync>
+          {({ onScroll, scrollTop }) => (
+            <div
+              style={{ height }}
+              className="filterable-table-container Table"
+              data-test="filterable-table-container"
+              ref={this.container}
+            >
+              <div className="LeftColumn">
+                <Grid
+                  cellRenderer={this.renderGridCellHeader}
+                  columnCount={orderedColumnKeys.length}
+                  columnWidth={getColumnWidth}
+                  height={rowHeight}
+                  rowCount={1}
+                  rowHeight={rowHeight}
+                  scrollTop={scrollTop}
+                  width={this.totalTableWidth}
+                />
+              </div>
+              <div className="RightColumn">
+                <Grid
+                  cellRenderer={this.renderGridCell}
+                  columnCount={orderedColumnKeys.length}
+                  columnWidth={getColumnWidth}
+                  height={totalTableHeight - rowHeight}
+                  onScroll={onScroll}
+                  overscanColumnCount={overscanColumnCount}
+                  overscanRowCount={overscanRowCount}
+                  rowCount={this.list.size}
+                  rowHeight={rowHeight}
+                  width={this.totalTableWidth}
+                />
+              </div>
             </div>
-            <div className="RightColumn">
-              <Grid
-                cellRenderer={this.renderGridCell}
-                columnCount={orderedColumnKeys.length}
-                columnWidth={getColumnWidth}
-                height={totalTableHeight - rowHeight}
-                onScroll={onScroll}
-                overscanColumnCount={overscanColumnCount}
-                overscanRowCount={overscanRowCount}
-                rowCount={this.list.size}
-                rowHeight={rowHeight}
-                width={this.totalTableWidth}
-              />
-            </div>
-          </div>
-        )}
-      </ScrollSync>
+          )}
+        </ScrollSync>
+      </StyledFilterableTable>
     );
   }
 
@@ -550,7 +558,7 @@ export default class FilterableTable extends PureComponent<
     const rowGetter = ({ index }: { index: number }) =>
       this.getDatum(sortedAndFilteredList, index);
     return (
-      <div
+      <StyledFilterableTable
         style={{ height }}
         className="filterable-table-container"
         ref={this.container}
@@ -585,7 +593,7 @@ export default class FilterableTable extends PureComponent<
             ))}
           </Table>
         )}
-      </div>
+      </StyledFilterableTable>
     );
   }
 

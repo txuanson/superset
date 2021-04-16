@@ -79,10 +79,10 @@ class TestBaseViz(SupersetTestCase):
         datasource.type = "table"
         test_viz = viz.BaseViz(datasource, form_data)
         expect_metric_labels = [
-            u"sum__SP_POP_TOTL",
-            u"SUM(SE_PRM_NENR_MA)",
-            u"SUM(SP_URB_TOTL)",
-            u"count",
+            "sum__SP_POP_TOTL",
+            "SUM(SE_PRM_NENR_MA)",
+            "SUM(SP_URB_TOTL)",
+            "count",
         ]
         self.assertEqual(test_viz.metric_labels, expect_metric_labels)
         self.assertEqual(test_viz.all_metrics, expect_metric_labels)
@@ -165,7 +165,18 @@ class TestBaseViz(SupersetTestCase):
 
         datasource.database.cache_timeout = None
         test_viz = viz.BaseViz(datasource, form_data={})
+        self.assertEqual(
+            app.config["DATA_CACHE_CONFIG"]["CACHE_DEFAULT_TIMEOUT"],
+            test_viz.cache_timeout,
+        )
+
+        data_cache_timeout = app.config["DATA_CACHE_CONFIG"]["CACHE_DEFAULT_TIMEOUT"]
+        app.config["DATA_CACHE_CONFIG"]["CACHE_DEFAULT_TIMEOUT"] = None
+        datasource.database.cache_timeout = None
+        test_viz = viz.BaseViz(datasource, form_data={})
         self.assertEqual(app.config["CACHE_DEFAULT_TIMEOUT"], test_viz.cache_timeout)
+        # restore DATA_CACHE_CONFIG timeout
+        app.config["DATA_CACHE_CONFIG"]["CACHE_DEFAULT_TIMEOUT"] = data_cache_timeout
 
 
 class TestTableViz(SupersetTestCase):
@@ -489,6 +500,7 @@ class TestDistBarViz(SupersetTestCase):
             {"x": "2.0", "y": 29},
             {"x": NULL_STRING, "y": 3},
         ]
+
         self.assertEqual(expected_values, data["values"])
 
     def test_column_nulls(self):
@@ -518,6 +530,92 @@ class TestDistBarViz(SupersetTestCase):
                 "values": [{"x": "pepperoni", "y": 5}, {"x": "cheese", "y": 3}],
             },
         ]
+        self.assertEqual(expected, data)
+
+    def test_column_metrics_in_order(self):
+        form_data = {
+            "metrics": ["z_column", "votes", "a_column"],
+            "adhoc_filters": [],
+            "groupby": ["toppings"],
+            "columns": [],
+        }
+        datasource = self.get_datasource_mock()
+        df = pd.DataFrame(
+            {
+                "toppings": ["cheese", "pepperoni", "cheese", "pepperoni"],
+                "role": ["engineer", "engineer", None, None],
+                "votes": [3, 5, 1, 2],
+                "a_column": [3, 5, 1, 2],
+                "z_column": [3, 5, 1, 2],
+            }
+        )
+        test_viz = viz.DistributionBarViz(datasource, form_data)
+        data = test_viz.get_data(df)
+
+        expected = [
+            {
+                "key": "z_column",
+                "values": [{"x": "pepperoni", "y": 3.5}, {"x": "cheese", "y": 2.0}],
+            },
+            {
+                "key": "votes",
+                "values": [{"x": "pepperoni", "y": 3.5}, {"x": "cheese", "y": 2.0}],
+            },
+            {
+                "key": "a_column",
+                "values": [{"x": "pepperoni", "y": 3.5}, {"x": "cheese", "y": 2.0}],
+            },
+        ]
+
+        self.assertEqual(expected, data)
+
+    def test_column_metrics_in_order_with_breakdowns(self):
+        form_data = {
+            "metrics": ["z_column", "votes", "a_column"],
+            "adhoc_filters": [],
+            "groupby": ["toppings"],
+            "columns": ["role"],
+        }
+        datasource = self.get_datasource_mock()
+        df = pd.DataFrame(
+            {
+                "toppings": ["cheese", "pepperoni", "cheese", "pepperoni"],
+                "role": ["engineer", "engineer", None, None],
+                "votes": [3, 5, 1, 2],
+                "a_column": [3, 5, 1, 2],
+                "z_column": [3, 5, 1, 2],
+            }
+        )
+        test_viz = viz.DistributionBarViz(datasource, form_data)
+        data = test_viz.get_data(df)
+
+        expected = [
+            {
+                "key": f"z_column, {NULL_STRING}",
+                "values": [{"x": "pepperoni", "y": 2}, {"x": "cheese", "y": 1}],
+            },
+            {
+                "key": "z_column, engineer",
+                "values": [{"x": "pepperoni", "y": 5}, {"x": "cheese", "y": 3}],
+            },
+            {
+                "key": f"votes, {NULL_STRING}",
+                "values": [{"x": "pepperoni", "y": 2}, {"x": "cheese", "y": 1}],
+            },
+            {
+                "key": "votes, engineer",
+                "values": [{"x": "pepperoni", "y": 5}, {"x": "cheese", "y": 3}],
+            },
+            {
+                "key": f"a_column, {NULL_STRING}",
+                "values": [{"x": "pepperoni", "y": 2}, {"x": "cheese", "y": 1}],
+            },
+            {
+                "key": "a_column, engineer",
+                "values": [{"x": "pepperoni", "y": 5}, {"x": "cheese", "y": 3}],
+            },
+        ]
+
         self.assertEqual(expected, data)
 
 
@@ -1168,18 +1266,18 @@ class TestTimeSeriesViz(SupersetTestCase):
         viz_data = test_viz.get_data(df)
         expected = [
             {
-                u"values": [
-                    {u"y": 4, u"x": u"2018-02-20T00:00:00"},
-                    {u"y": 4, u"x": u"2018-03-09T00:00:00"},
+                "values": [
+                    {"y": 4, "x": "2018-02-20T00:00:00"},
+                    {"y": 4, "x": "2018-03-09T00:00:00"},
                 ],
-                u"key": (u"Real Madrid Basket",),
+                "key": ("Real Madrid Basket",),
             },
             {
-                u"values": [
-                    {u"y": 2, u"x": u"2018-02-20T00:00:00"},
-                    {u"y": 2, u"x": u"2018-03-09T00:00:00"},
+                "values": [
+                    {"y": 2, "x": "2018-02-20T00:00:00"},
+                    {"y": 2, "x": "2018-03-09T00:00:00"},
                 ],
-                u"key": (u"Real Madrid C.F.\U0001f1fa\U0001f1f8\U0001f1ec\U0001f1e7",),
+                "key": ("Real Madrid C.F.\U0001f1fa\U0001f1f8\U0001f1ec\U0001f1e7",),
             },
         ]
         self.assertEqual(expected, viz_data)
@@ -1384,60 +1482,3 @@ class TestPivotTableViz(SupersetTestCase):
     def test_format_datetime_from_int(self):
         assert viz.PivotTableViz._format_datetime(123) == 123
         assert viz.PivotTableViz._format_datetime(123.0) == 123.0
-
-
-class TestDistributionPieViz(SupersetTestCase):
-    base_df = pd.DataFrame(
-        data={
-            "intcol": [1, 2, 3, 4, None],
-            "floatcol": [1.0, 0.2, 0.3, 0.4, None],
-            "strcol_a": ["a", "a", "a", "a", None],
-            "strcol": ["a", "b", "c", None, "d"],
-        }
-    )
-
-    @staticmethod
-    def get_cols(data: List[Dict[str, Any]]) -> Set[str]:
-        return set([row["x"] for row in data])
-
-    def test_bool_groupby(self):
-        datasource = self.get_datasource_mock()
-        df = pd.DataFrame(data={"intcol": [1, 2, None], "boolcol": [True, None, False]})
-
-        pie_viz = viz.DistributionPieViz(
-            datasource, {"metrics": ["intcol"], "groupby": ["boolcol"]},
-        )
-        data = pie_viz.get_data(df)
-        assert self.get_cols(data) == {"True", "False", "<NULL>"}
-
-    def test_string_groupby(self):
-        datasource = self.get_datasource_mock()
-        pie_viz = viz.DistributionPieViz(
-            datasource, {"metrics": ["floatcol"], "groupby": ["strcol"]},
-        )
-        data = pie_viz.get_data(self.base_df)
-        assert self.get_cols(data) == {"<NULL>", "a", "b", "c", "d"}
-
-    def test_int_groupby(self):
-        datasource = self.get_datasource_mock()
-        pie_viz = viz.DistributionPieViz(
-            datasource, {"metrics": ["floatcol"], "groupby": ["intcol"]},
-        )
-        data = pie_viz.get_data(self.base_df)
-        assert self.get_cols(data) == {"<NULL>", "1", "2", "3", "4"}
-
-    def test_float_groupby(self):
-        datasource = self.get_datasource_mock()
-        pie_viz = viz.DistributionPieViz(
-            datasource, {"metrics": ["intcol"], "groupby": ["floatcol"]},
-        )
-        data = pie_viz.get_data(self.base_df)
-        assert self.get_cols(data) == {"<NULL>", "1", "0.2", "0.3", "0.4"}
-
-    def test_multi_groupby(self):
-        datasource = self.get_datasource_mock()
-        pie_viz = viz.DistributionPieViz(
-            datasource, {"metrics": ["floatcol"], "groupby": ["intcol", "strcol"]},
-        )
-        data = pie_viz.get_data(self.base_df)
-        assert self.get_cols(data) == {"1, a", "2, b", "3, c", "4, <NULL>", "<NULL>, d"}

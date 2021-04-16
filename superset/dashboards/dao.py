@@ -18,13 +18,18 @@ import json
 import logging
 from typing import Any, Dict, List, Optional
 
+from flask_appbuilder.models.sqla.interface import SQLAInterface
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import contains_eager
 
 from superset.dao.base import BaseDAO
+from superset.dashboards.commands.exceptions import DashboardNotFoundError
 from superset.dashboards.filters import DashboardFilter
 from superset.extensions import db
-from superset.models.dashboard import Dashboard
+from superset.models.core import FavStar, FavStarClassName
+from superset.models.dashboard import Dashboard, id_or_slug_filter
 from superset.models.slice import Slice
+from superset.utils import core
 from superset.utils.dashboard_filter_scopes_converter import copy_filter_scopes
 
 logger = logging.getLogger(__name__)
@@ -33,6 +38,67 @@ logger = logging.getLogger(__name__)
 class DashboardDAO(BaseDAO):
     model_cls = Dashboard
     base_filter = DashboardFilter
+
+    @staticmethod
+    def get_by_id_or_slug(id_or_slug: str) -> Dashboard:
+        query = (
+            db.session.query(Dashboard)
+            .filter(id_or_slug_filter(id_or_slug))
+            .outerjoin(Slice, Dashboard.slices)
+            .outerjoin(Slice.table)
+            .outerjoin(Dashboard.owners)
+            .outerjoin(Dashboard.roles)
+        )
+        # Apply dashboard base filters
+        query = DashboardFilter("id", SQLAInterface(Dashboard, db.session)).apply(
+            query, None
+        )
+        dashboard = query.one_or_none()
+        if not dashboard:
+            raise DashboardNotFoundError()
+        return dashboard
+
+    @staticmethod
+    def get_datasets_for_dashboard(id_or_slug: str) -> List[Any]:
+        query = (
+            db.session.query(Dashboard)
+            .filter(id_or_slug_filter(id_or_slug))
+            .outerjoin(Slice, Dashboard.slices)
+            .outerjoin(Slice.table)
+        )
+        # Apply dashboard base filters
+        query = DashboardFilter("id", SQLAInterface(Dashboard, db.session)).apply(
+            query, None
+        )
+        dashboard = query.one_or_none()
+        if not dashboard:
+            raise DashboardNotFoundError()
+        datasource_slices = core.indexed(dashboard.slices, "datasource")
+        data = [
+            datasource.data_for_slices(slices)
+            for datasource, slices in datasource_slices.items()
+            if datasource
+        ]
+        return data
+
+    @staticmethod
+    def get_charts_for_dashboard(id_or_slug: str) -> List[Slice]:
+        query = (
+            db.session.query(Dashboard)
+            .outerjoin(Slice, Dashboard.slices)
+            .outerjoin(Slice.table)
+            .filter(id_or_slug_filter(id_or_slug))
+            .options(contains_eager(Dashboard.slices))
+        )
+        # Apply dashboard base filters
+        query = DashboardFilter("id", SQLAInterface(Dashboard, db.session)).apply(
+            query, None
+        )
+
+        dashboard = query.one_or_none()
+        if not dashboard:
+            raise DashboardNotFoundError()
+        return dashboard.slices
 
     @staticmethod
     def validate_slug_uniqueness(slug: str) -> bool:
@@ -81,7 +147,7 @@ class DashboardDAO(BaseDAO):
             raise ex
 
     @staticmethod
-    def set_dash_metadata(  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+    def set_dash_metadata(
         dashboard: Dashboard,
         data: Dict[Any, Any],
         old_to_new_slice_ids: Optional[Dict[int, int]] = None,
@@ -98,6 +164,17 @@ class DashboardDAO(BaseDAO):
         current_slices = session.query(Slice).filter(Slice.id.in_(slice_ids)).all()
 
         dashboard.slices = current_slices
+
+        # add UUID to positions
+        uuid_map = {slice.id: str(slice.uuid) for slice in current_slices}
+        for obj in positions.values():
+            if (
+                isinstance(obj, dict)
+                and obj["type"] == "CHART"
+                and obj["meta"]["chartId"]
+            ):
+                chart_id = obj["meta"]["chartId"]
+                obj["meta"]["uuid"] = uuid_map.get(chart_id)
 
         # remove leading and trailing white spaces in the dumped json
         dashboard.position_json = json.dumps(
@@ -143,3 +220,19 @@ class DashboardDAO(BaseDAO):
         if data.get("label_colors"):
             md["label_colors"] = data.get("label_colors")
         dashboard.json_metadata = json.dumps(md)
+
+    @staticmethod
+    def favorited_ids(
+        dashboards: List[Dashboard], current_user_id: int
+    ) -> List[FavStar]:
+        ids = [dash.id for dash in dashboards]
+        return [
+            star.obj_id
+            for star in db.session.query(FavStar.obj_id)
+            .filter(
+                FavStar.class_name == FavStarClassName.DASHBOARD,
+                FavStar.obj_id.in_(ids),
+                FavStar.user_id == current_user_id,
+            )
+            .all()
+        ]

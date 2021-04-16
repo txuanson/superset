@@ -16,9 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { TimeRangeEndpoints } from '@superset-ui/query';
+import { TimeRangeEndpoints } from '@superset-ui/core';
 
-const SEPARATOR = ' : ';
+export const SEPARATOR = ' : ';
 
 export const buildTimeRangeString = (since: string, until: string): string =>
   `${since}${SEPARATOR}${until}`;

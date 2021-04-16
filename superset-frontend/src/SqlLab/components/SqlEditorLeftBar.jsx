@@ -19,13 +19,14 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import Button from 'src/components/Button';
-import { t } from '@superset-ui/translation';
+import { t, styled, css } from '@superset-ui/core';
+import Collapse from 'src/common/components/Collapse';
 import TableElement from './TableElement';
 import TableSelector from '../../components/TableSelector';
 
 const propTypes = {
   queryEditor: PropTypes.object.isRequired,
-  height: PropTypes.number.isRequired,
+  height: PropTypes.number,
   tables: PropTypes.array,
   actions: PropTypes.object,
   database: PropTypes.object,
@@ -39,6 +40,15 @@ const defaultProps = {
   tables: [],
 };
 
+const StyledScrollbarContainer = styled.div`
+  flex: 1 1 auto;
+  overflow: auto;
+`;
+
+const StyledScrollbarContent = styled.div`
+  height: ${props => props.contentHeight}px;
+`;
+
 export default class SqlEditorLeftBar extends React.PureComponent {
   constructor(props) {
     super(props);
@@ -49,28 +59,49 @@ export default class SqlEditorLeftBar extends React.PureComponent {
     this.onDbChange = this.onDbChange.bind(this);
     this.getDbList = this.getDbList.bind(this);
     this.onTableChange = this.onTableChange.bind(this);
+    this.onToggleTable = this.onToggleTable.bind(this);
   }
+
   onSchemaChange(schema) {
     this.props.actions.queryEditorSetSchema(this.props.queryEditor, schema);
   }
+
   onSchemasLoad(schemas) {
     this.props.actions.queryEditorSetSchemaOptions(
       this.props.queryEditor,
       schemas,
     );
   }
+
   onTablesLoad(tables) {
     this.props.actions.queryEditorSetTableOptions(
       this.props.queryEditor,
       tables,
     );
   }
+
   onDbChange(db) {
     this.props.actions.queryEditorSetDb(this.props.queryEditor, db.id);
+    this.props.actions.queryEditorSetFunctionNames(
+      this.props.queryEditor,
+      db.id,
+    );
   }
+
   onTableChange(tableName, schemaName) {
     this.props.actions.addTable(this.props.queryEditor, tableName, schemaName);
   }
+
+  onToggleTable(tables) {
+    this.props.tables.forEach(table => {
+      if (!tables.includes(table.id.toString()) && table.expanded) {
+        this.props.actions.collapseTable(table);
+      } else if (tables.includes(table.id.toString()) && !table.expanded) {
+        this.props.actions.expandTable(table);
+      }
+    });
+  }
+
   getDbList(dbs) {
     this.props.actions.setDatabases(dbs);
   }
@@ -92,6 +123,7 @@ export default class SqlEditorLeftBar extends React.PureComponent {
   resetState() {
     this.props.actions.resetState();
   }
+
   changeTable(tableOpt) {
     if (!tableOpt) {
       return;
@@ -102,9 +134,6 @@ export default class SqlEditorLeftBar extends React.PureComponent {
     this.props.actions.addTable(this.props.queryEditor, tableName, schemaName);
   }
 
-  closePopover(ref) {
-    this.refs[ref].hide();
-  }
   render() {
     const shouldShowReset = window.location.search === '?reset=1';
     const tableMetaDataHeight = this.props.height - 130; // 130 is the height of the selects above
@@ -112,40 +141,67 @@ export default class SqlEditorLeftBar extends React.PureComponent {
     return (
       <div className="SqlEditorLeftBar">
         <TableSelector
+          database={this.props.database}
           dbId={qe.dbId}
-          schema={qe.schema}
+          getDbList={this.getDbList}
+          handleError={this.props.actions.addDangerToast}
           onDbChange={this.onDbChange}
           onSchemaChange={this.onSchemaChange}
           onSchemasLoad={this.onSchemasLoad}
-          onTablesLoad={this.onTablesLoad}
-          getDbList={this.getDbList}
           onTableChange={this.onTableChange}
+          onTablesLoad={this.onTablesLoad}
+          schema={qe.schema}
+          sqlLabMode
           tableNameSticky={false}
-          database={this.props.database}
-          handleError={this.props.actions.addDangerToast}
         />
         <div className="divider" />
-        <div className="scrollbar-container">
-          <div
-            className="scrollbar-content"
-            style={{ height: tableMetaDataHeight }}
-          >
-            {this.props.tables.map(table => (
-              <TableElement
-                table={table}
-                key={table.id}
-                actions={this.props.actions}
-              />
-            ))}
-          </div>
-        </div>
+        <StyledScrollbarContainer>
+          <StyledScrollbarContent contentHeight={tableMetaDataHeight}>
+            <Collapse
+              activeKey={this.props.tables
+                .filter(({ expanded }) => expanded)
+                .map(({ id }) => id)}
+              css={theme => css`
+                .ant-collapse-item {
+                  margin-bottom: ${theme.gridUnit * 3}px;
+                }
+                .ant-collapse-header {
+                  padding: 0px !important;
+                  display: flex;
+                  align-items: center;
+                }
+                .ant-collapse-content-box {
+                  padding: 0px ${theme.gridUnit * 4}px 0px 0px !important;
+                }
+                .ant-collapse-arrow {
+                  top: ${theme.gridUnit * 2}px !important;
+                  color: ${theme.colors.primary.dark1} !important;
+                  &: hover {
+                    color: ${theme.colors.primary.dark2} !important;
+                  }
+                }
+              `}
+              expandIconPosition="right"
+              ghost
+              onChange={this.onToggleTable}
+            >
+              {this.props.tables.map(table => (
+                <TableElement
+                  table={table}
+                  key={table.id}
+                  actions={this.props.actions}
+                />
+              ))}
+            </Collapse>
+          </StyledScrollbarContent>
+        </StyledScrollbarContainer>
         {shouldShowReset && (
           <Button
             buttonSize="small"
             buttonStyle="danger"
             onClick={this.resetState}
           >
-            <i className="fa fa-bomb" /> {t('Reset State')}
+            <i className="fa fa-bomb" /> {t('Reset state')}
           </Button>
         )}
       </div>

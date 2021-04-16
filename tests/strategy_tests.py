@@ -16,11 +16,21 @@
 # under the License.
 # isort:skip_file
 """Unit tests for Superset cache warmup"""
+import datetime
 import json
 from unittest.mock import MagicMock
+from tests.fixtures.birth_names_dashboard import load_birth_names_dashboard_with_slices
 
-import tests.test_app
+from sqlalchemy import String, Date, Float
+
+import pytest
+import pandas as pd
+
+from superset.models.slice import Slice
+from superset.utils.core import get_example_database
+
 from superset import db
+
 from superset.models.core import Log
 from superset.models.tags import get_tag, ObjectTypes, TaggedObject, TagTypes
 from superset.tasks.cache import (
@@ -30,6 +40,8 @@ from superset.tasks.cache import (
 )
 
 from .base_tests import SupersetTestCase
+from .dashboard_utils import create_dashboard, create_slice, create_table_for_dashboard
+from .fixtures.unicode_dashboard import load_unicode_dashboard_with_slice
 
 URL_PREFIX = "http://0.0.0.0:8081"
 
@@ -173,6 +185,7 @@ class TestCacheWarmUp(SupersetTestCase):
         }
         self.assertEqual(result, expected)
 
+    @pytest.mark.usefixtures("load_birth_names_dashboard_with_slices")
     def test_top_n_dashboards_strategy(self):
         # create a top visited dashboard
         db.session.query(Log).delete()
@@ -193,6 +206,9 @@ class TestCacheWarmUp(SupersetTestCase):
                 db.session.delete(o)
             db.session.commit()
 
+    @pytest.mark.usefixtures(
+        "load_unicode_dashboard_with_slice", "load_birth_names_dashboard_with_slices"
+    )
     def test_dashboard_tags(self):
         tag1 = get_tag("tag1", db.session, TagTypes.custom)
         # delete first to make test idempotent

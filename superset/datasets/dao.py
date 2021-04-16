@@ -31,7 +31,7 @@ from superset.views.base import DatasourceFilter
 logger = logging.getLogger(__name__)
 
 
-class DatasetDAO(BaseDAO):
+class DatasetDAO(BaseDAO):  # pylint: disable=too-many-public-methods
     model_cls = SqlaTable
     base_filter = DatasourceFilter
 
@@ -74,18 +74,22 @@ class DatasetDAO(BaseDAO):
         return dict(charts=charts, dashboards=dashboards)
 
     @staticmethod
-    def validate_table_exists(database: Database, table_name: str, schema: str) -> bool:
+    def validate_table_exists(
+        database: Database, table_name: str, schema: Optional[str]
+    ) -> bool:
         try:
             database.get_table(table_name, schema=schema)
             return True
         except SQLAlchemyError as ex:  # pragma: no cover
-            logger.error("Got an error %s validating table: %s", str(ex), table_name)
+            logger.warning("Got an error %s validating table: %s", str(ex), table_name)
             return False
 
     @staticmethod
-    def validate_uniqueness(database_id: int, name: str) -> bool:
+    def validate_uniqueness(database_id: int, schema: Optional[str], name: str) -> bool:
         dataset_query = db.session.query(SqlaTable).filter(
-            SqlaTable.table_name == name, SqlaTable.database_id == database_id
+            SqlaTable.table_name == name,
+            SqlaTable.schema == schema,
+            SqlaTable.database_id == database_id,
         )
         return not db.session.query(dataset_query.exists()).scalar()
 
@@ -139,39 +143,111 @@ class DatasetDAO(BaseDAO):
         return len(dataset_query) == 0
 
     @classmethod
-    def update(
-        cls, model: SqlaTable, properties: Dict[str, Any], commit: bool = True
+    def update(  # pylint: disable=W:279
+        cls,
+        model: SqlaTable,
+        properties: Dict[str, Any],
+        commit: bool = True,
+        override_columns: bool = False,
     ) -> Optional[SqlaTable]:
         """
         Updates a Dataset model on the metadata DB
         """
         if "columns" in properties:
-            new_columns = list()
-            for column in properties.get("columns", []):
-                if column.get("id"):
-                    column_obj = db.session.query(TableColumn).get(column.get("id"))
-                    column_obj = DatasetDAO.update_column(
-                        column_obj, column, commit=commit
-                    )
-                else:
-                    column_obj = DatasetDAO.create_column(column, commit=commit)
-                new_columns.append(column_obj)
-            properties["columns"] = new_columns
-
+            properties["columns"] = cls.update_columns(
+                model, properties.get("columns", []), commit=commit
+            )
         if "metrics" in properties:
-            new_metrics = list()
-            for metric in properties.get("metrics", []):
-                if metric.get("id"):
-                    metric_obj = db.session.query(SqlMetric).get(metric.get("id"))
-                    metric_obj = DatasetDAO.update_metric(
-                        metric_obj, metric, commit=commit
-                    )
-                else:
-                    metric_obj = DatasetDAO.create_metric(metric, commit=commit)
-                new_metrics.append(metric_obj)
-            properties["metrics"] = new_metrics
+            properties["metrics"] = cls.update_metrics(
+                model, properties.get("metrics", []), commit=commit
+            )
 
-        return super().update(model, properties, commit=commit)
+        if override_columns:
+            # remove columns initially for full refresh
+            original_properties = properties["columns"]
+            properties["columns"] = []
+            super().update(model, properties, commit=commit)
+            properties["columns"] = original_properties
+
+        return super().update(model, properties, commit=False)
+
+    @classmethod
+    def update_columns(
+        cls,
+        model: SqlaTable,
+        property_columns: List[Dict[str, Any]],
+        commit: bool = True,
+    ) -> List[TableColumn]:
+        """
+        Creates/updates and/or deletes a list of columns, based on a
+        list of Dict.
+
+        - If a column Dict has an `id` property then we update.
+        - If a column Dict does not have an `id` then we create a new metric.
+        - If there are extra columns on the metadata db that are not defined on the List
+        then we delete.
+        """
+        new_columns = []
+        for column in property_columns:
+            column_id = column.get("id")
+
+            if column_id:
+                column_obj = db.session.query(TableColumn).get(column_id)
+                column_obj = DatasetDAO.update_column(column_obj, column, commit=commit)
+            else:
+                column_obj = DatasetDAO.create_column(column, commit=commit)
+            new_columns.append(column_obj)
+        # Checks if an exiting column is missing from properties and delete it
+        for existing_column in model.columns:
+            if existing_column.id not in [column.id for column in new_columns]:
+                DatasetDAO.delete_column(existing_column)
+        return new_columns
+
+    @classmethod
+    def update_metrics(
+        cls,
+        model: SqlaTable,
+        property_metrics: List[Dict[str, Any]],
+        commit: bool = True,
+    ) -> List[SqlMetric]:
+        """
+        Creates/updates and/or deletes a list of metrics, based on a
+        list of Dict.
+
+        - If a metric Dict has an `id` property then we update.
+        - If a metric Dict does not have an `id` then we create a new metric.
+        - If there are extra metrics on the metadata db that are not defined on the List
+        then we delete.
+        """
+        new_metrics = list()
+        for metric in property_metrics:
+            metric_id = metric.get("id")
+            if metric.get("id"):
+                metric_obj = db.session.query(SqlMetric).get(metric_id)
+                metric_obj = DatasetDAO.update_metric(metric_obj, metric, commit=commit)
+            else:
+                metric_obj = DatasetDAO.create_metric(metric, commit=commit)
+            new_metrics.append(metric_obj)
+
+        # Checks if an exiting column is missing from properties and delete it
+        for existing_metric in model.metrics:
+            if existing_metric.id not in [metric.id for metric in new_metrics]:
+                DatasetDAO.delete_metric(existing_metric)
+        return new_metrics
+
+    @classmethod
+    def find_dataset_column(
+        cls, dataset_id: int, column_id: int
+    ) -> Optional[TableColumn]:
+        # We want to apply base dataset filters
+        dataset = DatasetDAO.find_by_id(dataset_id)
+        if not dataset:
+            return None
+        return (
+            db.session.query(TableColumn)
+            .filter(TableColumn.table_id == dataset_id, TableColumn.id == column_id)
+            .one_or_none()
+        )
 
     @classmethod
     def update_column(
@@ -189,6 +265,34 @@ class DatasetDAO(BaseDAO):
         return DatasetColumnDAO.create(properties, commit=commit)
 
     @classmethod
+    def delete_column(
+        cls, model: TableColumn, commit: bool = True
+    ) -> Optional[TableColumn]:
+        """
+        Deletes a Dataset column
+        """
+        return cls.delete(model, commit=commit)
+
+    @classmethod
+    def find_dataset_metric(
+        cls, dataset_id: int, metric_id: int
+    ) -> Optional[SqlMetric]:
+        # We want to apply base dataset filters
+        dataset = DatasetDAO.find_by_id(dataset_id)
+        if not dataset:
+            return None
+        return db.session.query(SqlMetric).get(metric_id)
+
+    @classmethod
+    def delete_metric(
+        cls, model: SqlMetric, commit: bool = True
+    ) -> Optional[TableColumn]:
+        """
+        Deletes a Dataset metric
+        """
+        return cls.delete(model, commit=commit)
+
+    @classmethod
     def update_metric(
         cls, model: SqlMetric, properties: Dict[str, Any], commit: bool = True
     ) -> Optional[SqlMetric]:
@@ -202,6 +306,32 @@ class DatasetDAO(BaseDAO):
         Creates a Dataset model on the metadata DB
         """
         return DatasetMetricDAO.create(properties, commit=commit)
+
+    @staticmethod
+    def bulk_delete(models: Optional[List[SqlaTable]], commit: bool = True) -> None:
+        item_ids = [model.id for model in models] if models else []
+        # bulk delete, first delete related data
+        if models:
+            for model in models:
+                model.owners = []
+                db.session.merge(model)
+            db.session.query(SqlMetric).filter(SqlMetric.table_id.in_(item_ids)).delete(
+                synchronize_session="fetch"
+            )
+            db.session.query(TableColumn).filter(
+                TableColumn.table_id.in_(item_ids)
+            ).delete(synchronize_session="fetch")
+        # bulk delete itself
+        try:
+            db.session.query(SqlaTable).filter(SqlaTable.id.in_(item_ids)).delete(
+                synchronize_session="fetch"
+            )
+            if commit:
+                db.session.commit()
+        except SQLAlchemyError as ex:
+            if commit:
+                db.session.rollback()
+            raise ex
 
 
 class DatasetColumnDAO(BaseDAO):

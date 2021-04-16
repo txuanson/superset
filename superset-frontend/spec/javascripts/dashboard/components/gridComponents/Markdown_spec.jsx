@@ -18,21 +18,24 @@
  */
 import { Provider } from 'react-redux';
 import React from 'react';
-import { mount } from 'enzyme';
+import { styledMount as mount } from 'spec/helpers/theming';
 import sinon from 'sinon';
-import AceEditor from 'react-ace';
 import ReactMarkdown from 'react-markdown';
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 
+import { act } from 'react-dom/test-utils';
+import { MarkdownEditor } from 'src/components/AsyncAceEditor';
 import Markdown from 'src/dashboard/components/gridComponents/Markdown';
 import MarkdownModeDropdown from 'src/dashboard/components/menu/MarkdownModeDropdown';
 import DeleteComponentButton from 'src/dashboard/components/DeleteComponentButton';
+import waitForComponentToPaint from 'spec/helpers/waitForComponentToPaint';
 import DragDroppable from 'src/dashboard/components/dnd/DragDroppable';
 import WithPopoverMenu from 'src/dashboard/components/menu/WithPopoverMenu';
 import ResizableContainer from 'src/dashboard/components/resizable/ResizableContainer';
 
-import { mockStore } from '../../fixtures/mockStore';
-import { dashboardLayout as mockLayout } from '../../fixtures/mockDashboardLayout';
-import WithDragDropContext from '../../helpers/WithDragDropContext';
+import { mockStore } from 'spec/fixtures/mockStore';
+import { dashboardLayout as mockLayout } from 'spec/fixtures/mockDashboardLayout';
 
 describe('Markdown', () => {
   const props = {
@@ -45,6 +48,8 @@ describe('Markdown', () => {
     editMode: false,
     availableColumnCount: 12,
     columnWidth: 50,
+    redoLength: 0,
+    undoLength: 0,
     onResizeStart() {},
     onResize() {},
     onResizeStop() {},
@@ -52,6 +57,7 @@ describe('Markdown', () => {
     updateComponents() {},
     deleteComponent() {},
     logEvent() {},
+    addDangerToast() {},
   };
 
   function setup(overrideProps) {
@@ -59,9 +65,9 @@ describe('Markdown', () => {
     // otherwise we cannot assert on DragDroppable children
     const wrapper = mount(
       <Provider store={mockStore}>
-        <WithDragDropContext>
+        <DndProvider backend={HTML5Backend}>
           <Markdown {...props} {...overrideProps} />
-        </WithDragDropContext>
+        </DndProvider>
       </Provider>,
     );
     return wrapper;
@@ -105,23 +111,26 @@ describe('Markdown', () => {
 
   it('should render an Markdown when NOT focused', () => {
     const wrapper = setup();
-    expect(wrapper.find(AceEditor)).not.toExist();
+    expect(wrapper.find(MarkdownEditor)).not.toExist();
     expect(wrapper.find(ReactMarkdown)).toExist();
   });
 
-  it('should render an AceEditor when focused and editMode=true and editorMode=edit', () => {
+  it('should render an AceEditor when focused and editMode=true and editorMode=edit', async () => {
     const wrapper = setup({ editMode: true });
-    expect(wrapper.find(AceEditor)).not.toExist();
+    expect(wrapper.find(MarkdownEditor)).not.toExist();
     expect(wrapper.find(ReactMarkdown)).toExist();
-    wrapper.find(WithPopoverMenu).simulate('click'); // focus + edit
-    expect(wrapper.find(AceEditor)).toExist();
+    act(() => {
+      wrapper.find(WithPopoverMenu).simulate('click'); // focus + edit
+    });
+    await waitForComponentToPaint(wrapper);
+    expect(wrapper.find(MarkdownEditor)).toExist();
     expect(wrapper.find(ReactMarkdown)).not.toExist();
   });
 
   it('should render a ReactMarkdown when focused and editMode=true and editorMode=preview', () => {
     const wrapper = setup({ editMode: true });
     wrapper.find(WithPopoverMenu).simulate('click'); // focus + edit
-    expect(wrapper.find(AceEditor)).toExist();
+    expect(wrapper.find(MarkdownEditor)).toExist();
     expect(wrapper.find(ReactMarkdown)).not.toExist();
 
     // we can't call setState on Markdown bc it's not the root component, so call
@@ -131,7 +140,7 @@ describe('Markdown', () => {
     wrapper.update();
 
     expect(wrapper.find(ReactMarkdown)).toExist();
-    expect(wrapper.find(AceEditor)).not.toExist();
+    expect(wrapper.find(MarkdownEditor)).not.toExist();
   });
 
   it('should call updateComponents when editMode changes from edit => preview, and there are markdownSource changes', () => {
@@ -148,7 +157,7 @@ describe('Markdown', () => {
     dropdown.prop('onChange')('edit');
     // because we can't call setState on Markdown, change it through the editor
     // then go back to preview mode to invoke updateComponents
-    const editor = wrapper.find(AceEditor);
+    const editor = wrapper.find(MarkdownEditor);
     editor.prop('onChange')('new markdown!');
     dropdown.prop('onChange')('preview');
     expect(updateComponents.callCount).toBe(1);
