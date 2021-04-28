@@ -19,6 +19,7 @@
 import '@cypress/code-coverage/support';
 
 const BASE_EXPLORE_URL = '/superset/explore/?form_data=';
+const PresetLoginEnabled = Cypress.env('presetLoginEnabled');
 
 /* eslint-disable consistent-return */
 Cypress.on('uncaught:exception', err => {
@@ -32,13 +33,24 @@ Cypress.on('uncaught:exception', err => {
 /* eslint-enable consistent-return */
 
 Cypress.Commands.add('login', () => {
-  cy.request({
-    method: 'POST',
-    url: '/login/',
-    body: { username: 'admin', password: 'general' },
-  }).then(response => {
-    expect(response.status).to.eq(200);
-  });
+  if (PresetLoginEnabled) {
+    cy.visit('https://manage.app-dev.preset.io/login/');
+    cy.get('input[name="email"]').type('admin@preset.zone');
+    cy.get('button[type="submit"]').click();
+    cy.get('input[name="password"]').type('maxlikespizza!');
+    cy.get('button[type="submit"]').click();
+    cy.wait(500);
+    cy.get('div[title="automation test"]').click({ force: true });
+    cy.wait(500);
+  } else {
+    cy.request({
+      method: 'POST',
+      url: '/login/',
+      body: { username: 'admin', password: 'admin' },
+    }).then(response => {
+      expect(response.status).to.eq(200);
+    });
+  }
 });
 
 Cypress.Commands.add('visitChartByName', name => {
