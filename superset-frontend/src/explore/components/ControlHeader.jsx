@@ -25,7 +25,7 @@ import FormLabel from 'src/components/FormLabel';
 
 const propTypes = {
   name: PropTypes.string,
-  label: PropTypes.string,
+  label: PropTypes.oneOfType([PropTypes.element, PropTypes.string]),
   description: PropTypes.string,
   validationErrors: PropTypes.array,
   renderTrigger: PropTypes.bool,

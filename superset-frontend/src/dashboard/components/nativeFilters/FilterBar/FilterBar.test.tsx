@@ -57,7 +57,12 @@ class MainPreset extends Preset {
 }
 
 fetchMock.get(`glob:*/api/v1/dataset/${datasourceId}`, {
-  result: [mockDatasource[fullDatasourceId]],
+  result: mockDatasource[fullDatasourceId],
+});
+
+fetchMock.get('glob:*/api/v1/time_range/?q=%27No%20filter%27', {
+  result: { since: '', until: '', timeRange: 'No filter' },
+  overwriteRoutes: true,
 });
 
 const getTestId = testWithId<string>(FILTER_BAR_TEST_ID, true);
@@ -315,8 +320,7 @@ describe('FilterBar', () => {
     expect(screen.getByTestId(getTestId('apply-button'))).toBeDisabled();
   });
 
-  // TODO: fix flakiness and re-enable
-  it.skip('add and apply filter set', async () => {
+  it('add and apply filter set', async () => {
     // @ts-ignore
     global.featureFlags = {
       [FeatureFlag.DASHBOARD_NATIVE_FILTERS_SET]: true,
@@ -357,8 +361,7 @@ describe('FilterBar', () => {
     expect(screen.getByTestId(getTestId('apply-button'))).toBeDisabled();
   });
 
-  // TODO: fix flakiness and re-enable
-  it.skip('add and edit filter set', async () => {
+  it('add and edit filter set', async () => {
     // @ts-ignore
     global.featureFlags = {
       [FeatureFlag.DASHBOARD_NATIVE_FILTERS_SET]: true,

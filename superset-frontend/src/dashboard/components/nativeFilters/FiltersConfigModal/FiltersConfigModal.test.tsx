@@ -34,6 +34,10 @@ import {
   FILTERS_CONFIG_MODAL_TEST_ID,
   FiltersConfigModal,
 } from './FiltersConfigModal';
+import mockDatasource, {
+  datasourceId as fullDatasourceId,
+  id as datasourceId,
+} from 'spec/fixtures/mockDatasource';
 
 jest.useFakeTimers();
 
@@ -50,6 +54,15 @@ class MainPreset extends Preset {
 }
 
 const getTestId = testWithId<string>(FILTERS_CONFIG_MODAL_TEST_ID, true);
+
+fetchMock.get(`glob:*/api/v1/dataset/${datasourceId}`, {
+  result: mockDatasource[fullDatasourceId],
+});
+
+fetchMock.get('glob:*/api/v1/time_range/?q=%27No%20filter%27', {
+  result: { since: '', until: '', timeRange: 'No filter' },
+  overwriteRoutes: true,
+});
 
 describe('FilterConfigModal', () => {
   new MainPreset().register();
@@ -140,8 +153,7 @@ describe('FilterConfigModal', () => {
     jest.clearAllMocks();
   });
 
-  // TODO: fix and unskip
-  it.skip('Create Select Filter (with datasource and columns) with specific filter scope', async () => {
+  it('Create Select Filter (with datasource and columns) with specific filter scope', async () => {
     renderWrapper();
 
     const FILTER_NAME = 'Select Filter 1';
