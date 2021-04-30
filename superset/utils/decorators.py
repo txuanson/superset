@@ -16,7 +16,7 @@
 # under the License.
 import time
 from functools import wraps
-from typing import Any, Callable, Dict, Iterator, Union
+from typing import Any, Callable, Dict, Iterator, Sequence, Union
 
 from contextlib2 import contextmanager
 from flask import current_app, Response
@@ -103,3 +103,46 @@ def check_dashboard_access(
         return wrapper
 
     return decorator
+
+
+def conditionally_expose(
+    url: str = "/",
+    methods: Sequence[str] = ("GET",),
+    cond: Callable[[], bool] = lambda: True,
+) -> Any:
+    """
+        Use this decorator to conditionally expose routes.
+        If the callable `cond` arg is True, then the underlying
+        handler will be invoked. Otherwise, the application will
+        respond with a 404 Not Found.
+
+        Example:
+
+            @conditionally_expose("/route", cond=lambda: my_feature_is_enabled())
+
+        :param url:
+            Relative URL for the endpoint
+        :param methods:
+            Allowed HTTP methods. By default only GET is allowed.
+        :param only_when:
+            Test callable that returns a boolean and determines if
+            the route should proceed or respond with a 404.
+    """
+
+    def wrap(f: Callable[..., Any]) -> Callable[..., Any]:
+        def wrapped(self: Any, *args: Sequence[Any], **kwargs: Dict[Any, Any]) -> Any:
+            if cond() is not True:
+                message = (
+                    "404 Not Found: The requested URL was not found on the server. "
+                    "If you entered the URL manually please check your spelling and try again."
+                )
+                return self.response(404, message=message)
+            return f(self, *args, **kwargs)
+
+        urls = f._urls if hasattr(f, "_urls") else []  # type: ignore
+        urls.append((url, methods))
+        wrapped._urls = urls  # type: ignore
+
+        return wrapped
+
+    return wrap

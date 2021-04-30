@@ -75,6 +75,7 @@ from superset.utils.core import (
     ChartDataResultType,
     json_int_dttm_ser,
 )
+from superset.utils.decorators import conditionally_expose
 from superset.utils.screenshots import ChartScreenshot
 from superset.utils.urls import get_url_path
 from superset.views.base_api import (
@@ -103,6 +104,9 @@ class ChartRestApi(BaseSupersetModelRestApi):
         "data_from_cache",
         "viz_types",
         "favorite_status",
+        "thumbnail",
+        "screenshot",
+        "cache_screenshot",
     }
     class_permission_name = "Chart"
     method_permission_name = MODEL_API_RW_METHOD_PERMISSION_MAP
@@ -211,15 +215,6 @@ class ChartRestApi(BaseSupersetModelRestApi):
     }
 
     allowed_rel_fields = {"owners", "created_by"}
-
-    def __init__(self) -> None:
-        if is_feature_enabled("THUMBNAILS"):
-            self.include_route_methods = self.include_route_methods | {
-                "thumbnail",
-                "screenshot",
-                "cache_screenshot",
-            }
-        super().__init__()
 
     @expose("/", methods=["POST"])
     @protect()
@@ -649,7 +644,11 @@ class ChartRestApi(BaseSupersetModelRestApi):
 
         return self.get_data_response(command, True)
 
-    @expose("/<pk>/cache_screenshot/", methods=["GET"])
+    @conditionally_expose(
+        "/<pk>/cache_screenshot/",
+        methods=["GET"],
+        cond=lambda: is_feature_enabled("THUMBNAILS"),
+    )
     @protect()
     @rison(screenshot_query_schema)
     @safe
@@ -726,7 +725,11 @@ class ChartRestApi(BaseSupersetModelRestApi):
 
         return trigger_celery()
 
-    @expose("/<pk>/screenshot/<digest>/", methods=["GET"])
+    @conditionally_expose(
+        "/<pk>/screenshot/<digest>/",
+        methods=["GET"],
+        cond=lambda: is_feature_enabled("THUMBNAILS"),
+    )
     @protect()
     @safe
     @statsd_metrics
@@ -782,7 +785,11 @@ class ChartRestApi(BaseSupersetModelRestApi):
         # TODO: return an empty image
         return self.response_404()
 
-    @expose("/<pk>/thumbnail/<digest>/", methods=["GET"])
+    @conditionally_expose(
+        "/<pk>/thumbnail/<digest>/",
+        methods=["GET"],
+        cond=lambda: is_feature_enabled("THUMBNAILS"),
+    )
     @protect()
     @rison(thumbnail_query_schema)
     @safe
