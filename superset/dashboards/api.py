@@ -73,6 +73,7 @@ from superset.extensions import event_logger
 from superset.models.dashboard import Dashboard
 from superset.tasks.thumbnails import cache_dashboard_thumbnail
 from superset.utils.cache import etag_cache
+from superset.utils.decorators import conditionally_expose
 from superset.utils.screenshots import DashboardScreenshot
 from superset.utils.urls import get_url_path
 from superset.views.base import generate_download_headers
@@ -96,6 +97,7 @@ class DashboardRestApi(BaseSupersetModelRestApi):
         "favorite_status",
         "get_charts",
         "get_datasets",
+        "thumbnail",
     }
     resource_name = "dashboard"
     allow_browser_login = True
@@ -205,11 +207,6 @@ class DashboardRestApi(BaseSupersetModelRestApi):
     }
     openapi_spec_methods = openapi_spec_methods_override
     """ Overrides GET methods OpenApi descriptions """
-
-    def __init__(self) -> None:
-        if is_feature_enabled("THUMBNAILS"):
-            self.include_route_methods = self.include_route_methods | {"thumbnail"}
-        super().__init__()
 
     def __repr__(self) -> str:
         """Deterministic string representation of the API instance for etag_cache."""
@@ -740,7 +737,11 @@ class DashboardRestApi(BaseSupersetModelRestApi):
         ]
         return resp
 
-    @expose("/<pk>/thumbnail/<digest>/", methods=["GET"])
+    @conditionally_expose(
+        "/<pk>/thumbnail/<digest>/",
+        methods=["GET"],
+        cond=lambda: is_feature_enabled("THUMBNAILS"),
+    )
     @protect()
     @safe
     @rison(thumbnail_query_schema)
