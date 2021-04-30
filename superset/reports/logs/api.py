@@ -18,13 +18,15 @@ import logging
 from typing import Any, Dict
 
 from flask import Response
-from flask_appbuilder.api import expose, permission_name, protect, rison, safe
+from flask_appbuilder.api import permission_name, protect, rison, safe
 from flask_appbuilder.api.schemas import get_item_schema, get_list_schema
 from flask_appbuilder.models.sqla.interface import SQLAInterface
 
+from superset import is_feature_enabled
 from superset.constants import MODEL_API_RW_METHOD_PERMISSION_MAP, RouteMethod
 from superset.models.reports import ReportExecutionLog
 from superset.reports.logs.schemas import openapi_spec_methods_override
+from superset.utils.decorators import conditionally_expose
 from superset.views.base_api import BaseSupersetModelRestApi
 
 logger = logging.getLogger(__name__)
@@ -83,7 +85,11 @@ class ReportExecutionLogRestApi(BaseSupersetModelRestApi):
             {"col": "report_schedule", "opr": "rel_o_m", "value": layer_id}
         )
 
-    @expose("/<int:pk>/log/", methods=["GET"])
+    @conditionally_expose(
+        "/<int:pk>/log/",
+        methods=["GET"],
+        cond=lambda: is_feature_enabled("ALERT_REPORTS"),
+    )
     @protect()
     @safe
     @permission_name("get")
@@ -144,7 +150,11 @@ class ReportExecutionLogRestApi(BaseSupersetModelRestApi):
         self._apply_layered_relation_to_rison(pk, kwargs["rison"])
         return self.get_list_headless(**kwargs)
 
-    @expose("/<int:pk>/log/<int:log_id>", methods=["GET"])
+    @conditionally_expose(
+        "/<int:pk>/log/<int:log_id>",
+        methods=["GET"],
+        cond=lambda: is_feature_enabled("ALERT_REPORTS"),
+    )
     @protect()
     @safe
     @permission_name("get")

@@ -18,11 +18,12 @@ import logging
 from typing import Any
 
 from flask import g, request, Response
-from flask_appbuilder.api import expose, permission_name, protect, rison, safe
+from flask_appbuilder.api import permission_name, protect, rison, safe
 from flask_appbuilder.models.sqla.interface import SQLAInterface
 from flask_babel import ngettext
 from marshmallow import ValidationError
 
+from superset import is_feature_enabled
 from superset.charts.filters import ChartFilter
 from superset.constants import MODEL_API_RW_METHOD_PERMISSION_MAP, RouteMethod
 from superset.dashboards.filters import DashboardAccessFilter
@@ -48,6 +49,7 @@ from superset.reports.schemas import (
     ReportSchedulePostSchema,
     ReportSchedulePutSchema,
 )
+from superset.utils.decorators import conditionally_expose
 from superset.views.base_api import (
     BaseSupersetModelRestApi,
     RelatedFieldFilter,
@@ -191,7 +193,11 @@ class ReportScheduleRestApi(BaseSupersetModelRestApi):
     openapi_spec_tag = "Report Schedules"
     openapi_spec_methods = openapi_spec_methods_override
 
-    @expose("/<int:pk>", methods=["DELETE"])
+    @conditionally_expose(
+        "/<int:pk>",
+        methods=["DELETE"],
+        cond=lambda: is_feature_enabled("ALERT_REPORTS"),
+    )
     @protect()
     @safe
     @statsd_metrics
@@ -243,7 +249,9 @@ class ReportScheduleRestApi(BaseSupersetModelRestApi):
             )
             return self.response_422(message=str(ex))
 
-    @expose("/", methods=["POST"])
+    @conditionally_expose(
+        "/", methods=["POST"], cond=lambda: is_feature_enabled("ALERT_REPORTS")
+    )
     @protect()
     @safe
     @statsd_metrics
@@ -305,7 +313,9 @@ class ReportScheduleRestApi(BaseSupersetModelRestApi):
             )
             return self.response_422(message=str(ex))
 
-    @expose("/<int:pk>", methods=["PUT"])
+    @conditionally_expose(
+        "/<int:pk>", methods=["PUT"], cond=lambda: is_feature_enabled("ALERT_REPORTS")
+    )
     @protect()
     @safe
     @statsd_metrics
@@ -377,7 +387,9 @@ class ReportScheduleRestApi(BaseSupersetModelRestApi):
             )
             return self.response_422(message=str(ex))
 
-    @expose("/", methods=["DELETE"])
+    @conditionally_expose(
+        "/", methods=["DELETE"], cond=lambda: is_feature_enabled("ALERT_REPORTS")
+    )
     @protect()
     @safe
     @statsd_metrics
