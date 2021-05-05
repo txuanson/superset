@@ -22,6 +22,7 @@ const loadModule = () => {
   try {
     // @ts-ignore
     module = require('../../../superset_text'); // eslint-disable-line import/no-unresolved
+    console.log('loaded superset_text module', module);
   } catch (e) {
     module = {};
   }
