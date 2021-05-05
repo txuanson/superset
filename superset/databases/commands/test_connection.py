@@ -45,6 +45,7 @@ class TestConnectionDatabaseCommand(BaseCommand):
         self._model: Optional[Database] = None
 
     def run(self) -> None:
+        raise Exception('oops')
         self.validate()
         uri = self._properties.get("sqlalchemy_uri", "")
         if self._model and uri == self._model.safe_sqlalchemy_uri():
