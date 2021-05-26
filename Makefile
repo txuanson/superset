@@ -74,3 +74,6 @@ py-format: pre-commit
 
 js-format:
 	cd superset-frontend; npm run prettier
+
+pytest:
+	docker-compose -f docker-compose.test.yml run superset-tests-with-postgres
