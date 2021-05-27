@@ -60,7 +60,6 @@ services:
     image: superset-tests-image
     container_name: superset_test_worker
     command: ["celery", "worker", "--app=superset.tasks.celery_app:app", "-Ofair", "-c", "2"]
-    restart: unless-stopped
     networks:
       - test-network
     user: "root"
@@ -81,7 +80,6 @@ services:
     image: superset-tests-image
     container_name: superset_test_app
     command: ["pytest", "tests"]
-    restart: unless-stopped
     networks:
       - test-network
     user: "root"
