@@ -74,6 +74,7 @@ from superset.translations.utils import get_language_pack
 from superset.typing import FlaskResponse
 from superset.utils import core as utils
 
+from ..utils.pandas_postprocessing import get_prophet_version
 from .utils import bootstrap_user_data
 
 if TYPE_CHECKING:
@@ -87,6 +88,7 @@ FRONTEND_CONF_KEYS = (
     "SUPERSET_DASHBOARD_PERIODICAL_REFRESH_LIMIT",
     "SUPERSET_DASHBOARD_PERIODICAL_REFRESH_WARNING_MESSAGE",
     "DISABLE_DATASET_SOURCE_EDIT",
+    "DRUID_IS_ACTIVE",
     "ENABLE_JAVASCRIPT_CONTROLS",
     "DEFAULT_SQLLAB_LIMIT",
     "DEFAULT_VIZ_TYPE",
@@ -102,7 +104,6 @@ FRONTEND_CONF_KEYS = (
 )
 logger = logging.getLogger(__name__)
 
-logger = logging.getLogger(__name__)
 config = superset_app.config
 
 
@@ -332,6 +333,17 @@ def menu_data() -> Dict[str, Any]:
     }
 
 
+def get_python_extra_libraries() -> Dict[str, str]:
+    """
+    Returns list of optional python libraries
+    """
+    libs: Dict[str, str] = {}
+    prophet_version = get_prophet_version()
+    if prophet_version:
+        libs["prophet"] = prophet_version
+    return libs
+
+
 def common_bootstrap_payload() -> Dict[str, Any]:
     """Common data always sent to the client"""
     messages = get_flashed_messages(with_categories=True)
@@ -347,6 +359,7 @@ def common_bootstrap_payload() -> Dict[str, Any]:
         "extra_categorical_color_schemes": conf["EXTRA_CATEGORICAL_COLOR_SCHEMES"],
         "theme_overrides": conf["THEME_OVERRIDES"],
         "menu_data": menu_data(),
+        "python_extra_libraries": get_python_extra_libraries(),
     }
 
 

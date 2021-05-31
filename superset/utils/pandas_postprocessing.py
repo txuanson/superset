@@ -634,14 +634,10 @@ def _prophet_fit_and_predict(  # pylint: disable=too-many-arguments
     Fit a prophet model and return a DataFrame with predicted results.
     """
     try:
-        prophet_logger = logging.getLogger("prophet.plot")
-
-        prophet_logger.setLevel(logging.CRITICAL)
-        from prophet import Prophet  # pylint: disable=import-error
-
-        prophet_logger.setLevel(logging.NOTSET)
+        from prophet import Prophet
     except ModuleNotFoundError:
         raise QueryObjectValidationError(_("`prophet` package not installed"))
+
     model = Prophet(
         interval_width=confidence_interval,
         yearly_seasonality=yearly_seasonality,
@@ -654,6 +650,19 @@ def _prophet_fit_and_predict(  # pylint: disable=too-many-arguments
     future = model.make_future_dataframe(periods=periods, freq=freq)
     forecast = model.predict(future)[["ds", "yhat", "yhat_lower", "yhat_upper"]]
     return forecast.join(df.set_index("ds"), on="ds").set_index(["ds"])
+
+
+def get_prophet_version() -> Optional[str]:
+    try:
+        prophet_logger = logging.getLogger("prophet.plot")
+
+        prophet_logger.setLevel(logging.CRITICAL)
+        import prophet as prophet_lib  # pylint: disable=import-error
+
+        prophet_logger.setLevel(logging.NOTSET)
+        return prophet_lib.__version__
+    except ModuleNotFoundError:
+        return None
 
 
 def prophet(  # pylint: disable=too-many-arguments
@@ -690,6 +699,9 @@ def prophet(  # pylint: disable=too-many-arguments
            automatically detect seasonality.
     :return: DataFrame with contributions, with temporal column at beginning if present
     """
+    if not get_prophet_version():
+        raise QueryObjectValidationError(_("`prophet` package not installed"))
+
     # validate inputs
     if not time_grain:
         raise QueryObjectValidationError(_("Time grain missing"))
