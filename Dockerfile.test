@@ -41,6 +41,8 @@ RUN mkdir -p ${SUPERSET_HOME} ${PYTHONPATH} \
         && rm -rf /var/lib/apt/lists/*
 
 COPY ./requirements/*.txt  /app/requirements/
+COPY setup.py MANIFEST.in README.md /app/
+COPY superset-frontend/package.json /app/superset-frontend/
 RUN cd /app \
     && mkdir -p superset/static \
     && touch superset/static/version_info.json \
@@ -53,7 +55,6 @@ RUN mv /usr/local/bin/flask /usr/bin
 RUN mv /usr/local/bin/pytest /usr/bin
 
 COPY superset /app/superset
-COPY setup.py MANIFEST.in README.md /app/
 
 COPY tests /app/tests
 COPY pytest.ini /app
