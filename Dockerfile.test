@@ -65,8 +65,5 @@ COPY ./docker/*.sh /app/docker/
 
 WORKDIR /app
 
-RUN superset db upgrade
-RUN superset init
-
 # Override this in docker-compose file
 ENTRYPOINT [ "/app/docker/docker-run-tests.sh" ]

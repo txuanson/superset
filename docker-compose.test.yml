@@ -48,7 +48,7 @@ services:
     expose:
       - "5432"
     volumes:
-      - db_home:/var/lib/postgresql/data
+      - test_db_home:/var/lib/postgresql/data
 
   superset-tests-base:
     build:
@@ -100,7 +100,7 @@ services:
 volumes:
   superset_home:
     external: false
-  db_home:
+  test_db_home:
     external: false
   redis:
     external: false

@@ -21,7 +21,8 @@ set -e
 export SUPERSET_CONFIG=${SUPERSET_CONFIG:-tests.superset_test_config}
 export SUPERSET_TESTENV=true
 
-echo Running $@
+superset db upgrade
+superset init
 
 if [[ "${1}" == "celery" ]]; then
   echo "Starting Celery worker..."
