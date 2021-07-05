@@ -50,6 +50,7 @@ def get_admin_user() -> User:
             "Please, check if test users are properly loaded "
             "(`superset load_test_users`)."
         )
+    return admin
 
 
 def gen_filter(
