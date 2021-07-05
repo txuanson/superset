@@ -30,15 +30,23 @@ from superset.models.slice import Slice
 BASE_URL = "https://github.com/apache-superset/examples-data/blob/master/"
 
 # Shortcuts
-DB = models.Database
+# DB = models.Database
+#
+# TBL = ConnectorRegistry.sources["table"]
+#
+# config = app.config
 
-TBL = ConnectorRegistry.sources["table"]
-
-config = app.config
-
-EXAMPLES_FOLDER = os.path.join(config["BASE_DIR"], "examples")
+# EXAMPLES_FOLDER = os.path.join(config["BASE_DIR"], "examples")
 
 misc_dash_slices: Set[str] = set()  # slices assembled in a 'Misc Chart' dashboard
+
+
+def get_table_connector_registry() -> Any:
+    return ConnectorRegistry.sources["table"]
+
+
+def get_examples_folder() -> str:
+    return os.path.join(app.config["BASE_DIR"], "examples")
 
 
 def update_slice_ids(layout_dict: Dict[Any, Any], slices: List[Slice]) -> None:
