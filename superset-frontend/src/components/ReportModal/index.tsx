@@ -215,15 +215,14 @@ const ReportModal: FunctionComponent<ReportProps> = ({
       creation_method: props.props.creationMethod,
       active: true,
       report_format: currentReport?.report_format,
+      timezone: currentReport?.timezone,
     };
 
     // setLoading(true);
     if (isEditMode) {
-      await dispatch(
-        editReport(currentReport?.id, newReportValues as ReportObject),
-      );
+      dispatch(editReport(currentReport?.id, newReportValues as ReportObject));
     } else {
-      await dispatch(addReport(newReportValues as ReportObject));
+      dispatch(addReport(newReportValues as ReportObject));
     }
 
     if (onReportAdd) {
