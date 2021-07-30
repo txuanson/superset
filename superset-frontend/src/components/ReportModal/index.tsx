@@ -25,14 +25,12 @@ import React, {
   FunctionComponent,
 } from 'react';
 import { t, SupersetTheme } from '@superset-ui/core';
-import { bindActionCreators } from 'redux';
-import { connect, useDispatch, useSelector } from 'react-redux';
-import { addReport, editReport } from 'src/reports/actions/reports';
-import { AlertObject } from 'src/views/CRUD/alert/types';
+import { useDispatch, useSelector } from 'react-redux';
+import { addReport } from 'src/reports/actions/reportState';
+
 import LabeledErrorBoundInput from 'src/components/Form/LabeledErrorBoundInput';
 import TimezoneSelector from 'src/components/TimezoneSelector';
 import Icons from 'src/components/Icons';
-import withToasts from 'src/messageToasts/enhancers/withToasts';
 import { CronPicker, CronError } from 'src/components/CronPicker';
 import {
   StyledModal,
@@ -70,7 +68,6 @@ interface ReportObject {
 interface ReportProps {
   addDangerToast: (msg: string) => void;
   addSuccessToast: (msg: string) => void;
-  addReport: (report?: ReportObject) => {};
   onHide: () => {};
   onReportAdd: (report?: ReportObject) => {};
   show: boolean;
@@ -78,8 +75,7 @@ interface ReportProps {
   userEmail: string;
   dashboardId?: number;
   chartId?: number;
-  creationMethod: string;
-  props: any;
+  creationMethod: 'charts' | 'dashboards';
 }
 
 enum ActionType {
@@ -133,13 +129,13 @@ const reportReducer = (
   }
 };
 
-const ReportModal: FunctionComponent<ReportProps> = ({
-  // addDangerToast,
+const ReportModal: FunctionComponent = ({
   onReportAdd,
   onHide,
   show = false,
-  ...props
-}) => {
+  dashboardId,
+  chartId,
+}: ReportProps) => {
   const [currentReport, setCurrentReport] = useReducer<
     Reducer<Partial<ReportObject> | null, ReportActionType>
   >(reportReducer, null);
@@ -149,6 +145,11 @@ const ReportModal: FunctionComponent<ReportProps> = ({
   const [error, setError] = useState<CronError>();
   // const [isLoading, setLoading] = useState<boolean>(false);
   const dispatch = useDispatch();
+
+  const { id: userId, email: userEmail } = useSelector(
+    state => state.user || state.explore?.user,
+  );
+
   // Report fetch logic
   const reports = useSelector<any, AlertObject>(state => state.reports);
   const isEditMode = reports && Object.keys(reports).length;
@@ -174,20 +175,19 @@ const ReportModal: FunctionComponent<ReportProps> = ({
     // Create new Report
     const newReportValues: Partial<ReportObject> = {
       crontab: currentReport?.crontab,
-      dashboard: props.props.dashboardId,
-      chart: props.props.chartId,
+      dashboard: dashboardId,
+      chart: chartId,
       description: currentReport?.description,
       name: currentReport?.name,
-      owners: [props.props.userId],
+      owners: [userId],
       recipients: [
         {
-          recipient_config_json: { target: props.props.userEmail },
+          recipient_config_json: { target: userEmail },
           type: 'Email',
         },
       ],
       type: 'Report',
-      creation_method: props.props.creationMethod,
-      active: true,
+      creation_method: dashboardId !== undefined ? 'dashboards' : 'charts',
     };
 
     // setLoading(true);
@@ -321,8 +321,4 @@ const ReportModal: FunctionComponent<ReportProps> = ({
     </StyledModal>
   );
 };
-
-const mapDispatchToProps = (dispatch: any) =>
-  bindActionCreators({ addReport, editReport }, dispatch);
-
-export default connect(null, mapDispatchToProps)(withToasts(ReportModal));
+export default ReportModal;

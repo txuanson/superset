@@ -16,47 +16,97 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, { useState } from 'react';
-import { useSelector } from 'react-redux';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { t, SupersetTheme, css } from '@superset-ui/core';
 import Icons from 'src/components/Icons';
 import { Switch } from 'src/components/Switch';
 import { AlertObject } from 'src/views/CRUD/alert/types';
+import { UserWithPermissionsAndRoles } from 'src/types/bootstrapTypes';
 import { Menu, NoAnimationDropdown } from 'src/common/components';
 
 import DeleteModal from 'src/components/DeleteModal';
+import {
+  fetchUISpecificReport,
+  toggleActive,
+  deleteActiveReport,
+} from 'src/reports/actions/reportState';
+import ReportModal from '..';
 
 const deleteColor = (theme: SupersetTheme) => css`
   color: ${theme.colors.error.base};
 `;
 
 export default function HeaderReportActionsDropDown({
-  showReportModal,
-  toggleActive,
-  deleteActiveReport,
+  chartId,
+  dashboardId,
 }: {
-  showReportModal: () => void;
-  toggleActive: (data: AlertObject, checked: boolean) => void;
-  deleteActiveReport: (data: AlertObject) => void;
+  chartId?: number;
+  dashboardId?: number;
 }) {
-  const reports = useSelector<any, AlertObject>(state => state.reports);
-  const reportsIds = Object.keys(reports);
-  const report = reports[reportsIds[0]];
+  const { reports, user } = useSelector<
+    any,
+    { reports: [AlertObject]; user: UserWithPermissionsAndRoles }
+  >(state => ({
+    reports: state.reports,
+    user: state.user || state.explore?.user,
+  }));
+  const [reportId] = Object.keys(reports);
+  const report = reports[reportId];
   const [
     currentReportDeleting,
     setCurrentReportDeleting,
   ] = useState<AlertObject | null>(null);
 
+  const dispatch = useDispatch();
+
+  const [showAddModal, setShowAddModal] = useState(false);
+
   const toggleActiveKey = async (data: AlertObject, checked: boolean) => {
     if (data?.id) {
-      toggleActive(data, checked);
+      dispatch(toggleActive(data, checked));
     }
   };
 
   const handleReportDelete = (report: AlertObject) => {
-    deleteActiveReport(report);
+    dispatch(deleteActiveReport(report));
     setCurrentReportDeleting(null);
   };
+
+  const canAddReports = useMemo(() => {
+    if (!user) {
+      // this is in the case that there is an anonymous user.
+      return false;
+    }
+    const roles = Object.keys(user.roles || []);
+    const permissions = roles.map(key =>
+      user.roles[key].filter(
+        perms => perms[0] === 'can_add' && perms[1] === 'AlertModelView',
+      ),
+    );
+    return (
+      isFeatureEnabled(FeatureFlag.ALERT_REPORTS) && permissions[0].length > 0
+    );
+  }, [user]);
+
+  useEffect(() => {
+    if (canAddReports) {
+      const { userId } = user;
+      // this is in case there is an anonymous user.
+      if (dashboardId) {
+        dispatch(
+          fetchUISpecificReport(
+            userId,
+            'dashboard_id',
+            'dashboards',
+            dashboardId,
+          ),
+        );
+      } else if (chartId) {
+        dispatch(fetchUISpecificReport(userId, 'chart_id', 'charts', chartId));
+      }
+    }
+  }, [user, canAddReports]);
 
   const menu = () => (
     <Menu selectable={false}>
@@ -79,36 +129,57 @@ export default function HeaderReportActionsDropDown({
     </Menu>
   );
 
-  return (
-    <>
-      <NoAnimationDropdown
-        // ref={ref}
-        overlay={menu()}
-        trigger={['click']}
-        getPopupContainer={(triggerNode: any) =>
-          triggerNode.closest('.action-button')
-        }
-      >
-        <span role="button" className="action-button" tabIndex={0}>
+  return canAddReports ? (
+    report ? (
+      <>
+        <NoAnimationDropdown
+          // ref={ref}
+          overlay={menu()}
+          trigger={['click']}
+          getPopupContainer={(triggerNode: any) =>
+            triggerNode.closest('.action-button')
+          }
+        >
+          <span role="button" className="action-button" tabIndex={0}>
+            <Icons.Calendar />
+          </span>
+        </NoAnimationDropdown>
+        {currentReportDeleting && (
+          <DeleteModal
+            description={t(
+              'This action will permanently delete %s.',
+              currentReportDeleting.name,
+            )}
+            onConfirm={() => {
+              if (currentReportDeleting) {
+                handleReportDelete(currentReportDeleting);
+              }
+            }}
+            onHide={() => setCurrentReportDeleting(null)}
+            open
+            title={t('Delete Report?')}
+          />
+        )}
+      </>
+    ) : (
+      <>
+        <span
+          role="button"
+          title={t('Schedule email report')}
+          tabIndex={0}
+          className="action-button"
+          onClick={() => setShowAddModal(true)}
+        >
           <Icons.Calendar />
         </span>
-      </NoAnimationDropdown>
-      {currentReportDeleting && (
-        <DeleteModal
-          description={t(
-            'This action will permanently delete %s.',
-            currentReportDeleting.name,
-          )}
-          onConfirm={() => {
-            if (currentReportDeleting) {
-              handleReportDelete(currentReportDeleting);
-            }
-          }}
-          onHide={() => setCurrentReportDeleting(null)}
-          open
-          title={t('Delete Report?')}
+
+        <ReportModal
+          show={showAddModal}
+          onHide={() => setShowAddModal(false)}
+          dashboardId={dashboardId}
+          chartId={chartId}
         />
-      )}
-    </>
-  );
+      </>
+    )
+  ) : null;
 }
