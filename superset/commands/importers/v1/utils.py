@@ -66,6 +66,7 @@ def load_metadata(contents: Dict[str, str]) -> Dict[str, str]:
     except ValidationError as exc:
         # if the version doesn't match raise an exception so that the
         # dispatcher can try a different command version
+        logger.exception("Error validating %s: %s", METADATA_FILE_NAME, exc.messages)
         if "version" in exc.messages:
             raise IncorrectVersionError(exc.messages["version"][0])
 
