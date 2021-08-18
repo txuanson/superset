@@ -143,7 +143,8 @@ const reportReducer = (
   action: ReportActionType,
 ): Partial<ReportObject> | null => {
   const initialState = {
-    name: 'Weekly Report',
+    name: state?.name || 'Weekly Report',
+    ...(state || {}),
   };
 
   switch (action.type) {
@@ -179,7 +180,7 @@ const ReportModal: FunctionComponent<ReportProps> = ({
       : NOTIFICATION_FORMATS.PNG;
   const [currentReport, setCurrentReport] = useReducer<
     Reducer<Partial<ReportObject> | null, ReportActionType>
-  >(reportReducer, null);
+  >(reportReducer, { report_format: defaultNotificationFormat });
   const onChange = useCallback((type: any, payload: any) => {
     setCurrentReport({ type, payload });
   }, []);
