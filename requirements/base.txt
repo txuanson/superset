@@ -166,7 +166,7 @@ numpy==1.19.4
     # via
     #   pandas
     #   pyarrow
-packaging==20.4
+packaging==21.0
     # via
     #   bleach
     #   deprecation
