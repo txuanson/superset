@@ -113,6 +113,10 @@ class AsyncQueryManager:
 
         @app.after_request
         def validate_session(response: Response) -> Response:
+            logger.info("#### validate_session")
+            logger.info(session)
+            logger.info(g.user)
+
             user_id = None
 
             try:
@@ -121,12 +125,16 @@ class AsyncQueryManager:
             except Exception:  # pylint: disable=broad-except
                 pass
 
+            logger.info(f"#### user_id {user_id}")
+
             reset_token = (
                 not request.cookies.get(self._jwt_cookie_name)
                 or "async_channel_id" not in session
                 or "async_user_id" not in session
                 or user_id != session["async_user_id"]
             )
+
+            logger.info(f"#### reset_token {reset_token}")
 
             if reset_token:
                 async_channel_id = str(uuid.uuid4())
@@ -135,6 +143,10 @@ class AsyncQueryManager:
 
                 sub = str(user_id) if user_id else None
                 token = self.generate_jwt({"channel": async_channel_id, "sub": sub})
+
+                logger.info(
+                    f"#### cookie: {token}, {self._jwt_cookie_name}, {self._jwt_cookie_domain}"
+                )
 
                 response.set_cookie(
                     self._jwt_cookie_name,
