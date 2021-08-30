@@ -606,6 +606,10 @@ class Superset(BaseSupersetView):  # pylint: disable=too-many-public-methods
 
         form_data = get_form_data()[0]
         try:
+            # debug
+            gaq_enabled = is_feature_enabled("GLOBAL_ASYNC_QUERIES")
+            logger.info(f"*** GAQ enabled (explore_json): {gaq_enabled}")
+
             datasource_id, datasource_type = get_datasource_info(
                 datasource_id, datasource_type, form_data
             )

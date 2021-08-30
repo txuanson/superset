@@ -688,6 +688,10 @@ class ChartRestApi(BaseSupersetModelRestApi):
             500:
               $ref: '#/components/responses/500'
         """
+
+        gaq_enabled = is_feature_enabled("GLOBAL_ASYNC_QUERIES")
+        logger.info(f"*** GAQ enabled (chart data): {gaq_enabled}")
+
         json_body = None
         if request.is_json:
             json_body = request.json
