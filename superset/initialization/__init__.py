@@ -703,11 +703,7 @@ class SupersetAppInitializer:
                 csrf.exempt(ex)
 
     def configure_async_queries(self) -> None:
-        gaq_enabled = feature_flag_manager.is_feature_enabled("GLOBAL_ASYNC_QUERIES")
-        logger.info(f"*** GAQ enabled (app init): {gaq_enabled}")
-
-        if gaq_enabled:
-            async_query_manager.init_app(self.superset_app)
+        async_query_manager.init_app(self.superset_app)
 
     def register_blueprints(self) -> None:
         for bp in self.config["BLUEPRINTS"]:
