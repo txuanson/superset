@@ -100,7 +100,6 @@ class AsyncQueryManager:
         def validate_session(response: Response) -> Response:
             logger.info("#### validate_session")
             logger.info(session)
-            logger.info(g.user)
 
             if not is_feature_enabled("GLOBAL_ASYNC_QUERIES"):
                 return response
