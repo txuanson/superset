@@ -50,6 +50,8 @@ const propTypes = {
     removeSliceFromDashboard: PropTypes.func.isRequired,
     triggerQuery: PropTypes.func.isRequired,
     logEvent: PropTypes.func.isRequired,
+    updateCss: PropTypes.func.isRequired,
+    onChange: PropTypes.func.isRequired,
   }).isRequired,
   dashboardInfo: dashboardInfoPropShape.isRequired,
   dashboardState: dashboardStatePropShape.isRequired,
@@ -64,6 +66,7 @@ const propTypes = {
   initMessages: PropTypes.array,
   timeout: PropTypes.number,
   userId: PropTypes.string,
+  customCss: PropTypes.string,
 };
 
 const defaultProps = {
@@ -290,7 +293,7 @@ class Dashboard extends React.PureComponent {
     return (
       <>
         <OmniContainer />
-        <DashboardBuilder />
+        <DashboardBuilder updateCss={this.props.actions.updateCss} onChange={this.props.actions.onChange} customCss={this.props.customCss}/>
       </>
     );
   }

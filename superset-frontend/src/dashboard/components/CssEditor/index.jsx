@@ -17,12 +17,15 @@
  * under the License.
  */
 import React from 'react';
+import { SupersetClient } from '@superset-ui/core';
 import PropTypes from 'prop-types';
 import { Menu, Dropdown } from 'src/common/components';
 import Button from 'src/components/Button';
 import { t, styled } from '@superset-ui/core';
 import ModalTrigger from 'src/components/ModalTrigger';
 import { CssEditor as AceCssEditor } from 'src/components/AsyncAceEditor';
+import injectCustomCss from 'src/dashboard/util/injectCustomCss';
+
 
 const StyledWrapper = styled.div`
   ${({ theme }) => `
@@ -47,6 +50,7 @@ const propTypes = {
   triggerNode: PropTypes.node.isRequired,
   onChange: PropTypes.func,
   templates: PropTypes.array,
+  updateCss: PropTypes.func,
 };
 
 const defaultProps = {
@@ -54,11 +58,39 @@ const defaultProps = {
   onChange: () => {},
 };
 
+
+
+
+
+// constructor(props) {
+//   super(props);
+//   this.state = {
+//     css: props.customCss,
+//     cssTemplates: [],
+//   };
+
+//   this.changeCss = this.changeCss.bind(this);
+//   this.changeRefreshInterval = this.changeRefreshInterval.bind(this);
+//   this.handleMenuClick = this.handleMenuClick.bind(this);
+// }
+
+
+// changeCss(css) {
+//   this.setState({ css }, () => {
+//     injectCustomCss(css);
+//   });
+//   this.props.onChange();
+//   this.props.updateCss(css);
+// }
+
+
+
 class CssEditor extends React.PureComponent {
   constructor(props) {
     super(props);
     this.state = {
       css: props.initialCss,
+      templates: [],
     };
     this.changeCss = this.changeCss.bind(this);
     this.changeCssTemplate = this.changeCssTemplate.bind(this);
@@ -71,6 +103,8 @@ class CssEditor extends React.PureComponent {
   changeCss(css) {
     this.setState({ css }, () => {
       this.props.onChange(css);
+      this.props.updateCss(css);
+      injectCustomCss(css);
     });
   }
 
@@ -78,11 +112,30 @@ class CssEditor extends React.PureComponent {
     this.changeCss(key);
   }
 
+  UNSAFE_componentWillMount() {
+    injectCustomCss(this.state.css);
+    SupersetClient.get({ endpoint: '/csstemplateasyncmodelview/api/read' })
+      .then(({ json }) => {
+        const templates = json.result.map(row => ({
+          value: row.template_name,
+          css: row.css,
+          label: row.template_name,
+        }));
+        this.setState({ templates });
+      })
+      .catch(() => {
+        this.props.addDangerToast(
+          t('An error occurred while fetching available CSS templates'),
+        );
+      });
+  }
+
+
   renderTemplateSelector() {
-    if (this.props.templates) {
+    if (this.state.templates) {
       const menu = (
         <Menu onClick={this.changeCssTemplate}>
-          {this.props.templates.map(template => (
+          {this.state.templates.map(template => (
             <Menu.Item key={template.css}>{template.label}</Menu.Item>
           ))}
         </Menu>
@@ -99,29 +152,23 @@ class CssEditor extends React.PureComponent {
 
   render() {
     return (
-      <ModalTrigger
-        triggerNode={this.props.triggerNode}
-        modalTitle={t('CSS')}
-        modalBody={
-          <StyledWrapper>
-            <div className="css-editor-header">
-              <h5>{t('Live CSS editor')}</h5>
-              {this.renderTemplateSelector()}
-            </div>
-            <AceCssEditor
-              className="css-editor"
-              minLines={12}
-              maxLines={30}
-              onChange={this.changeCss}
-              height="200px"
-              width="100%"
-              editorProps={{ $blockScrolling: true }}
-              enableLiveAutocompletion
-              value={this.state.css || ''}
-            />
-          </StyledWrapper>
-        }
-      />
+        <StyledWrapper>
+          <div className="css-editor-header">
+            <h5>{t('Live CSS editor')}</h5>
+            {this.renderTemplateSelector()}
+          </div>
+          <AceCssEditor
+            className="css-editor"
+            minLines={12}
+            maxLines={30}
+            onChange={this.changeCss}
+            height="200px"
+            width="100%"
+            editorProps={{ $blockScrolling: true }}
+            enableLiveAutocompletion
+            value={this.state.css || ''}
+          />
+        </StyledWrapper>
     );
   }
 }

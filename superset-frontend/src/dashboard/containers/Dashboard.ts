@@ -22,7 +22,9 @@ import { RootState } from 'src/dashboard/types';
 import Dashboard from 'src/dashboard/components/Dashboard';
 import {
   addSliceToDashboard,
+  onChange,
   removeSliceFromDashboard,
+  updateCss,
 } from 'src/dashboard/actions/dashboardState';
 import { setDatasources } from 'src/dashboard/actions/datasources';
 
@@ -74,6 +76,7 @@ function mapStateToProps(state: RootState) {
     ownDataCharts: getRelevantDataMask(dataMask, 'ownState'),
     slices: sliceEntities.slices,
     layout: dashboardLayout.present,
+    customCss: dashboardState.css,
     impressionId,
   };
 }
@@ -87,6 +90,8 @@ function mapDispatchToProps(dispatch: Dispatch) {
         removeSliceFromDashboard,
         triggerQuery,
         logEvent,
+        updateCss,
+        onChange,
       },
       dispatch,
     ),

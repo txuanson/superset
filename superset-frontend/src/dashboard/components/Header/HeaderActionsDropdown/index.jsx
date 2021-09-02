@@ -298,17 +298,6 @@ class HeaderActionsDropdown extends React.PureComponent {
           </Menu.Item>
         )}
 
-        {editMode && (
-          <Menu.Item key={MENU_KEYS.EDIT_CSS}>
-            <CssEditor
-              triggerNode={<span>{t('Edit CSS')}</span>}
-              initialCss={this.state.css}
-              templates={this.state.cssTemplates}
-              onChange={this.changeCss}
-            />
-          </Menu.Item>
-        )}
-
         {!editMode && (
           <Menu.Item key={MENU_KEYS.DOWNLOAD_AS_IMAGE}>
             {t('Download as image')}

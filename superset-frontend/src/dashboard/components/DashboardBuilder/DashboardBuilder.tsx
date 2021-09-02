@@ -61,7 +61,11 @@ const OPEN_FILTER_BAR_WIDTH = 260;
 const FILTER_BAR_HEADER_HEIGHT = 80;
 const FILTER_BAR_TABS_HEIGHT = 46;
 
-type DashboardBuilderProps = {};
+type DashboardBuilderProps = {
+  updateCss: () => void;
+  onChange: () => void;
+  customCss: string;
+};
 
 const StyledDiv = styled.div`
   display: grid;
@@ -142,7 +146,7 @@ const StyledDashboardContent = styled.div<{
   }
 `;
 
-const DashboardBuilder: FC<DashboardBuilderProps> = () => {
+const DashboardBuilder: FC<DashboardBuilderProps> = ({updateCss, onChange, customCss}) => {
   const dispatch = useDispatch();
   const dashboardLayout = useSelector<RootState, DashboardLayout>(
     state => state.dashboardLayout.present,
@@ -307,7 +311,7 @@ const DashboardBuilder: FC<DashboardBuilderProps> = () => {
             ) : (
               <Loading />
             )}
-            {editMode && <BuilderComponentPane topOffset={barTopOffset} />}
+            {editMode && <BuilderComponentPane topOffset={barTopOffset} updateCss={updateCss} customCss={customCss} onChange={onChange}/>}
           </StyledDashboardContent>
         </div>
       </StyledContent>

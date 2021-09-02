@@ -31,9 +31,13 @@ import NewRow from './gridComponents/new/NewRow';
 import NewTabs from './gridComponents/new/NewTabs';
 import NewMarkdown from './gridComponents/new/NewMarkdown';
 import SliceAdder from '../containers/SliceAdder';
+import CssEditor from './CssEditor';
 
 export interface BCPProps {
   topOffset: number;
+  updateCss: () => void;
+  onChange: () => void;
+  customCss: string;
 }
 
 const SUPERSET_HEADER_HEIGHT = 59;
@@ -43,7 +47,7 @@ const BuilderComponentPaneTabs = styled(Tabs)`
   margin-top: ${({ theme }) => theme.gridUnit * 2}px;
 `;
 
-const BuilderComponentPane: React.FC<BCPProps> = ({ topOffset = 0 }) => (
+const BuilderComponentPane: React.FC<BCPProps> = ({ topOffset = 0, updateCss, onChange, customCss }) => (
   <div
     className="dashboard-builder-sidepane"
     style={{
@@ -79,6 +83,18 @@ const BuilderComponentPane: React.FC<BCPProps> = ({ topOffset = 0 }) => (
                   >
                     <SliceAdder
                       height={height + (isSticky ? SUPERSET_HEADER_HEIGHT : 0)}
+                    />
+                  </Tabs.TabPane>
+                  <Tabs.TabPane
+                    key={3}
+                    tab={t('CSS')}
+                    className="tab-css"
+                  >
+                    <CssEditor
+                      triggerNode={<span>{t('Edit CSS')}</span>}
+                      initialCss={customCss}
+                      onChange={onChange}
+                      updateCss={updateCss}
                     />
                   </Tabs.TabPane>
                 </BuilderComponentPaneTabs>
