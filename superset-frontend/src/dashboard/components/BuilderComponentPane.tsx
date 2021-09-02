@@ -52,6 +52,7 @@ const GeneralTabs = styled(Tabs)`
 const SpecificTabs = styled(Tabs)`
   line-height: inherit;
   background: white;
+  padding: 8px;
 `;
 
 const BuilderComponentPane: React.FC<BCPProps> = ({ topOffset = 0, updateCss, onChange, customCss }) => (
