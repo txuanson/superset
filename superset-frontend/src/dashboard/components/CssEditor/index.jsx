@@ -154,7 +154,6 @@ class CssEditor extends React.PureComponent {
     return (
         <StyledWrapper>
           <div className="css-editor-header">
-            <h5>{t('Live CSS editor')}</h5>
             {this.renderTemplateSelector()}
           </div>
           <AceCssEditor

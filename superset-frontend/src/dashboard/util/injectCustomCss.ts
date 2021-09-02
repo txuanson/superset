@@ -34,6 +34,7 @@ type MysteryStyleElement = {
 };
 
 export default function injectCustomCss(css: string) {
+  // TODO: use emotion to nest this under a class that limits css effects to the dashboard
   const className = 'CssEditor-css';
   const head = document.head || document.getElementsByTagName('head')[0];
   const style: HTMLStyleElement =

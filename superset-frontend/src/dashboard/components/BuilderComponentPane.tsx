@@ -42,9 +42,16 @@ export interface BCPProps {
 
 const SUPERSET_HEADER_HEIGHT = 59;
 
-const BuilderComponentPaneTabs = styled(Tabs)`
+const GeneralTabs = styled(Tabs)`
   line-height: inherit;
-  margin-top: ${({ theme }) => theme.gridUnit * 2}px;
+  >.ant-tabs-nav {
+    margin: 0;
+    width: fit-content;
+  }
+`;
+const SpecificTabs = styled(Tabs)`
+  line-height: inherit;
+  background: white;
 `;
 
 const BuilderComponentPane: React.FC<BCPProps> = ({ topOffset = 0, updateCss, onChange, customCss }) => (
@@ -63,41 +70,60 @@ const BuilderComponentPane: React.FC<BCPProps> = ({ topOffset = 0, updateCss, on
                 className="viewport"
                 style={isSticky ? { ...style, top: topOffset } : null}
               >
-                <BuilderComponentPaneTabs
-                  id="tabs"
-                  className="tabs-components"
-                  data-test="dashboard-builder-component-pane-tabs-navigation"
-                >
-                  <Tabs.TabPane key={1} tab={t('Components')}>
-                    <NewTabs />
-                    <NewRow />
-                    <NewColumn />
-                    <NewHeader />
-                    <NewMarkdown />
-                    <NewDivider />
-                  </Tabs.TabPane>
-                  <Tabs.TabPane
-                    key={2}
-                    tab={t('Charts')}
-                    className="tab-charts"
+              <h5 style={{
+                margin: "12px 6px",
+                fontSize: "14px",
+              }}>{t('Edit Dashboard')}</h5>
+              <GeneralTabs type="card">
+                <Tabs.TabPane key={1} tab={t('Content')}>
+                  <SpecificTabs
+                    id="tabs"
+                    className="tabs-components"
+                    data-test="dashboard-builder-component-pane-tabs-navigation"
                   >
-                    <SliceAdder
-                      height={height + (isSticky ? SUPERSET_HEADER_HEIGHT : 0)}
-                    />
-                  </Tabs.TabPane>
-                  <Tabs.TabPane
-                    key={3}
-                    tab={t('CSS')}
-                    className="tab-css"
-                  >
-                    <CssEditor
-                      triggerNode={<span>{t('Edit CSS')}</span>}
-                      initialCss={customCss}
-                      onChange={onChange}
-                      updateCss={updateCss}
-                    />
-                  </Tabs.TabPane>
-                </BuilderComponentPaneTabs>
+                    <Tabs.TabPane key={1} tab={t('Components')}>
+                      <NewTabs />
+                      <NewRow />
+                      <NewColumn />
+                      <NewHeader />
+                      <NewMarkdown />
+                      <NewDivider />
+                    </Tabs.TabPane>
+                    <Tabs.TabPane
+                      key={2}
+                      tab={t('Charts')}
+                      className="tab-charts"
+                    >
+                      <SliceAdder
+                        height={height + (isSticky ? SUPERSET_HEADER_HEIGHT : 0)}
+                      />
+                    </Tabs.TabPane>
+                  </SpecificTabs>
+                </Tabs.TabPane>
+                <Tabs.TabPane key={2} tab={t('Customize')}>
+                  <SpecificTabs>
+                    <Tabs.TabPane
+                      key={1}
+                      tab={t('Properties')}
+                    >
+                      {"'Edit dashboard properties' modal content here"}
+                    </Tabs.TabPane>
+                    <Tabs.TabPane
+                      key={2}
+                      tab={t('CSS')}
+                    >
+                      <CssEditor
+                        triggerNode={<span>{t('Edit CSS')}</span>}
+                        initialCss={customCss}
+                        onChange={onChange}
+                        updateCss={updateCss}
+                      />
+                    </Tabs.TabPane>
+
+                  </SpecificTabs>
+                </Tabs.TabPane>
+
+              </GeneralTabs>
               </div>
             )}
           </Sticky>
