@@ -115,6 +115,9 @@ export default class AdhocMetricEditPopover extends React.PureComponent {
     };
 
     this.validateQueryDebounced = debounce(query => {
+      if (!this.canValidateQuery()) {
+        return;
+      }
       const validationQuery = `SELECT ${query} FROM ${this.props.datasource.name}`;
       const postPayload = {
         sql: validationQuery,
@@ -389,7 +392,8 @@ export default class AdhocMetricEditPopover extends React.PureComponent {
       type: 'error',
       row: err.line_number - 1,
       column: err.start_column - 1,
-      text: `${err.message}\n\n${t('Validation query: ')}\n\n${this.state.validationQuery}`,
+      text: err.message,
+      // text: `${err.message}\n\n${t('Validation query: ')}\n\n${this.state.validationQuery}`,
     }));
 
     return (
@@ -477,7 +481,7 @@ export default class AdhocMetricEditPopover extends React.PureComponent {
                 height={`${this.state.height - 80}px`}
                 onChange={this.onSqlExpressionChange}
                 width="100%"
-                showGutter={this.state.validationResult?.length}
+                showGutter={this.canValidateQuery()}
                 value={
                   adhocMetric.sqlExpression || adhocMetric.translateToSql()
                 }

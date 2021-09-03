@@ -154,7 +154,6 @@ export default function AsyncAceEditor(
           };
           langTools.setCompleters([completer]);
         }
-        console.log('!!!', props);
         return (
           <ReactAceEditor
             ref={ref}

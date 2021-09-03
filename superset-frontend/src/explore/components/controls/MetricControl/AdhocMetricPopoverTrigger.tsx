@@ -57,7 +57,6 @@ class AdhocMetricPopoverTrigger extends React.PureComponent<
 > {
   constructor(props: AdhocMetricPopoverTriggerProps) {
     super(props);
-    console.log('^^^', props);
     this.onPopoverResize = this.onPopoverResize.bind(this);
     this.onLabelChange = this.onLabelChange.bind(this);
     this.closePopover = this.closePopover.bind(this);
