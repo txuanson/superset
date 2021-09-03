@@ -17,7 +17,7 @@
  * under the License.
  */
 /* eslint-env browser */
-import React from 'react';
+import React, { useState } from 'react';
 import Tabs from 'src/components/Tabs';
 import { StickyContainer, Sticky } from 'react-sticky';
 import { ParentSize } from '@vx/responsive';
@@ -169,14 +169,6 @@ type chartData = {
   meta: chartMetadata;
 };
 
-const copySelector = (selector: string) => {
-  const fleshedOutSelector = `${selector} {
-  
-}`;
-  copyTextToClipboard(fleshedOutSelector).then(() => {
-    // addSuccessToast(t('Copied to clipboard!'));
-  });
-};
 
 const BuilderComponentPane: React.FC<BCPProps> = ({
   topOffset = 0,
@@ -186,6 +178,20 @@ const BuilderComponentPane: React.FC<BCPProps> = ({
   dashboardLayout,
 }) => {
   const chartSelectors: { label: string; value: string }[] = [];
+  const [selected, setSelected] = useState()
+
+  const copySelector = (selector: string) => {
+    const fleshedOutSelector = `${selector} {
+    
+  }`;
+    setSelected(selector)
+
+    copyTextToClipboard(fleshedOutSelector).then(() => {
+      // addSuccessToast(t('Copied to clipboard!'));
+      setSelected(undefined)
+    });
+  };
+  
   Object.entries(dashboardLayout).forEach(
     ([key, value]: [string, chartData]) => {
       // console.log(`${key} ${value}`); // "a 5", "b 7", "c 9"
@@ -263,6 +269,7 @@ const BuilderComponentPane: React.FC<BCPProps> = ({
                             options={chartSelectors}
                             placeholder="Select a chart to copy CSS selector"
                             onChange={copySelector}
+                            value={selected}
                           />
                           <br />
                           <CssEditor
