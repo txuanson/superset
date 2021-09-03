@@ -383,6 +383,7 @@ export const DndMetricSelect = (props: any) => {
         columns={props.columns}
         savedMetricsOptions={newSavedMetricOptions}
         savedMetric={EMPTY_OBJECT as savedMetricType}
+        datasource={props.datasource}
         datasourceType={props.datasourceType}
         isControlledComponent
         visible={newMetricPopoverVisible}

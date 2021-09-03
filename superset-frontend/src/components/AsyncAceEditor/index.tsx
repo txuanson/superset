@@ -78,7 +78,14 @@ export type AsyncAceEditorProps = AceEditorProps & {
 
 export type AceEditorMode = 'sql';
 export type AceEditorTheme = 'textmate' | 'github';
+export type ValidationResult = {
+  end_column?: number | null;
+  line_number?: number | null;
+  message: string;
+  start_column?: number | null;
+};
 export type AsyncAceEditorOptions = {
+  validationResult?: ValidationResult[];
   defaultMode?: AceEditorMode;
   defaultTheme?: AceEditorTheme;
   defaultTabSize?: number;
@@ -97,6 +104,7 @@ export default function AsyncAceEditor(
     defaultTheme,
     defaultTabSize = 2,
     placeholder,
+    validationResult,
   }: AsyncAceEditorOptions = {},
 ) {
   return AsyncEsmComponent(async () => {
@@ -146,6 +154,7 @@ export default function AsyncAceEditor(
           };
           langTools.setCompleters([completer]);
         }
+        console.log('!!!', props);
         return (
           <ReactAceEditor
             ref={ref}

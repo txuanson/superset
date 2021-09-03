@@ -17,7 +17,7 @@
  * under the License.
  */
 import React, { ReactNode } from 'react';
-import { Metric } from '@superset-ui/core';
+import { Datasource, Metric } from '@superset-ui/core';
 import Popover from 'src/components/Popover';
 import AdhocMetricEditPopoverTitle from 'src/explore/components/controls/MetricControl/AdhocMetricEditPopoverTitle';
 import { ExplorePopoverContent } from 'src/explore/components/ExploreContentPopover';
@@ -33,6 +33,7 @@ export type AdhocMetricPopoverTriggerProps = {
   columns: { column_name: string; type: string }[];
   savedMetricsOptions: savedMetricType[];
   savedMetric: savedMetricType;
+  datasource: Datasource;
   datasourceType: string;
   children: ReactNode;
   isControlledComponent?: boolean;
@@ -56,6 +57,7 @@ class AdhocMetricPopoverTrigger extends React.PureComponent<
 > {
   constructor(props: AdhocMetricPopoverTriggerProps) {
     super(props);
+    console.log('^^^', props);
     this.onPopoverResize = this.onPopoverResize.bind(this);
     this.onLabelChange = this.onLabelChange.bind(this);
     this.closePopover = this.closePopover.bind(this);
@@ -170,6 +172,7 @@ class AdhocMetricPopoverTrigger extends React.PureComponent<
       savedMetric,
       columns,
       savedMetricsOptions,
+      datasource,
       datasourceType,
       isControlledComponent,
     } = this.props;
@@ -204,6 +207,7 @@ class AdhocMetricPopoverTrigger extends React.PureComponent<
           columns={columns}
           savedMetricsOptions={savedMetricsOptions}
           savedMetric={savedMetric}
+          datasource={datasource}
           datasourceType={datasourceType}
           onResize={this.onPopoverResize}
           onClose={closePopover}

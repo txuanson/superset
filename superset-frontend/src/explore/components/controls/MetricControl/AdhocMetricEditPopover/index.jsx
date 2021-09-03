@@ -19,15 +19,17 @@
 /* eslint-disable camelcase */
 import React from 'react';
 import PropTypes from 'prop-types';
+import { debounce } from 'lodash';
 import Tabs from 'src/components/Tabs';
 import Button from 'src/components/Button';
 import { NativeSelect as Select } from 'src/components/Select';
-import { t, styled } from '@superset-ui/core';
+import { t, styled, SupersetClient } from '@superset-ui/core';
 
 import { Form, FormItem } from 'src/components/Form';
 import { SQLEditor } from 'src/components/AsyncAceEditor';
 import sqlKeywords from 'src/SqlLab/utils/sqlKeywords';
 import { noOp } from 'src/utils/common';
+import { SLOW_DEBOUNCE } from 'src/constants';
 
 import { AGGREGATES_OPTIONS } from 'src/explore/constants';
 import columnType from 'src/explore/components/controls/MetricControl/columnType';
@@ -39,6 +41,8 @@ import {
   StyledMetricOption,
   StyledColumnOption,
 } from 'src/explore/components/optionRenderers';
+import { getClientErrorObject } from 'src/utils/getClientErrorObject';
+import COMMON_ERR_MESSAGES from 'src/utils/errorMessages';
 
 const propTypes = {
   onChange: PropTypes.func.isRequired,
@@ -50,6 +54,7 @@ const propTypes = {
   columns: PropTypes.arrayOf(columnType),
   savedMetricsOptions: PropTypes.arrayOf(savedMetricType),
   savedMetric: savedMetricType,
+  datasource: PropTypes.object,
   datasourceType: PropTypes.string,
 };
 
@@ -98,15 +103,59 @@ export default class AdhocMetricEditPopover extends React.PureComponent {
     this.onTabChange = this.onTabChange.bind(this);
     this.handleAceEditorRef = this.handleAceEditorRef.bind(this);
     this.refreshAceEditor = this.refreshAceEditor.bind(this);
+    this.canValidateQuery = this.canValidateQuery.bind(this);
 
     this.state = {
       adhocMetric: this.props.adhocMetric,
       savedMetric: this.props.savedMetric,
       width: startingWidth,
       height: startingHeight,
+      validationQuery: '',
+      validationResult: [],
     };
 
+    this.validateQueryDebounced = debounce(query => {
+      const validationQuery = `SELECT ${query} FROM ${this.props.datasource.name}`;
+      const postPayload = {
+        sql: validationQuery,
+        database_id: this.props.datasource.database.id,
+        schema: this.props.datasource.schema,
+        xyz: 123,
+        datasource: this.props.datasource,
+      };
+      return SupersetClient.post({
+        endpoint: `/superset/validate_sql_json/`,
+        postPayload,
+        stringify: false,
+      })
+        .then(({ json }) => {
+          this.setState({ validationQuery, validationResult: json });
+        })
+        .catch(response =>
+          getClientErrorObject(response).then(error => {
+            let message = error.error || error.statusText || t('Unknown error');
+            if (message.includes('CSRF token')) {
+              message = t(COMMON_ERR_MESSAGES.SESSION_TIMED_OUT);
+            }
+            this.setState({ validationQuery: '', validationResult: [] });
+          }),
+        );
+
+    }, SLOW_DEBOUNCE);
+
     document.addEventListener('mouseup', this.onMouseUp);
+  }
+
+  canValidateQuery() {
+    // Check whether or not we can validate the current query based on whether
+    // or not the backend has a validator configured for it.
+    const validatorMap = window.featureFlags.SQL_VALIDATORS_BY_ENGINE;
+    if (this.props.datasource?.database && validatorMap != null) {
+      return validatorMap.hasOwnProperty(
+        this.props.datasource.database.backend,
+      );
+    }
+    return false;
   }
 
   componentDidMount() {
@@ -200,6 +249,7 @@ export default class AdhocMetricEditPopover extends React.PureComponent {
   }
 
   onSqlExpressionChange(sqlExpression) {
+    this.validateQueryDebounced(sqlExpression);
     this.setState(prevState => ({
       adhocMetric: prevState.adhocMetric.duplicateWith({
         sqlExpression,
@@ -335,6 +385,13 @@ export default class AdhocMetricEditPopover extends React.PureComponent {
       ) &&
         savedMetric?.metric_name !== propsSavedMetric?.metric_name);
 
+    const annotations = (this.state.validationResult || []).map(err => ({
+      type: 'error',
+      row: err.line_number - 1,
+      column: err.start_column - 1,
+      text: `${err.message}\n\n${t('Validation query: ')}\n\n${this.state.validationQuery}`,
+    }));
+
     return (
       <Form
         layout="vertical"
@@ -412,6 +469,7 @@ export default class AdhocMetricEditPopover extends React.PureComponent {
           >
             {this.props.datasourceType !== 'druid' ? (
               <SQLEditor
+                annotations={annotations}
                 data-test="sql-editor"
                 showLoadingForImport
                 ref={this.handleAceEditorRef}
@@ -419,7 +477,7 @@ export default class AdhocMetricEditPopover extends React.PureComponent {
                 height={`${this.state.height - 80}px`}
                 onChange={this.onSqlExpressionChange}
                 width="100%"
-                showGutter={false}
+                showGutter={this.state.validationResult?.length}
                 value={
                   adhocMetric.sqlExpression || adhocMetric.translateToSql()
                 }
