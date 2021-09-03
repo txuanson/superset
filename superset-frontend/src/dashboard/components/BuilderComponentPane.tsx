@@ -30,6 +30,7 @@ import { Select } from 'src/components';
 import { Form, FormItem } from 'src/components/Form';
 import { Input } from 'src/common/components';
 import Button from 'src/components/Button';
+import copyTextToClipboard from 'src/utils/copy';
 import NewColumn from './gridComponents/new/NewColumn';
 import NewDivider from './gridComponents/new/NewDivider';
 import NewHeader from './gridComponents/new/NewHeader';
@@ -44,6 +45,7 @@ export interface BCPProps {
   updateCss: () => void;
   onChange: () => void;
   customCss: string;
+  dashboardLayout: any;
 }
 
 const SUPERSET_HEADER_HEIGHT = 59;
@@ -67,7 +69,7 @@ const StyledJsonEditor = styled(JsonEditor)`
   border: 1px solid ${({ theme }) => theme.colors.secondary.light2};
 `;
 
-const BSProperties: React.FC<> = () => (
+const BSProperties = () => (
   <>
     {/* SMOKE AND MIRRORS */}
     <Form
@@ -158,93 +160,136 @@ const BSProperties: React.FC<> = () => (
   </>
 );
 
+type chartMetadata = {
+  chartId: number;
+  sliceName: string;
+};
+
+type chartData = {
+  meta: chartMetadata;
+};
+
+const copySelector = (selector: string) => {
+  const fleshedOutSelector = `${selector} {
+  
+}`;
+  copyTextToClipboard(fleshedOutSelector).then(() => {
+    // addSuccessToast(t('Copied to clipboard!'));
+  });
+};
+
 const BuilderComponentPane: React.FC<BCPProps> = ({
   topOffset = 0,
   updateCss,
   onChange,
   customCss,
-}) => (
-  <div
-    className="dashboard-builder-sidepane"
-    style={{
-      height: `calc(100vh - ${topOffset + SUPERSET_HEADER_HEIGHT}px)`,
-    }}
-  >
-    <ParentSize>
-      {({ height }) => (
-        <StickyContainer>
-          <Sticky topOffset={-topOffset} bottomOffset={Infinity}>
-            {({ style, isSticky }: { style: any; isSticky: boolean }) => (
-              <div
-                className="viewport"
-                style={isSticky ? { ...style, top: topOffset } : null}
-              >
-                <h5
-                  style={{
-                    margin: '12px 6px',
-                    fontSize: '14px',
-                  }}
+  dashboardLayout,
+}) => {
+  const chartSelectors: { label: string; value: string }[] = [];
+  Object.entries(dashboardLayout).forEach(
+    ([key, value]: [string, chartData]) => {
+      // console.log(`${key} ${value}`); // "a 5", "b 7", "c 9"
+      const chartID = value?.meta?.chartId;
+      if (key.startsWith('CHART-') && chartID) {
+        chartSelectors.push({
+          label: value.meta.sliceName,
+          value: `.dashboard-chart-id-${chartID}`,
+        });
+      }
+    },
+  );
+  // console.log('chartSelectors', chartSelectors);
+
+  return (
+    <div
+      className="dashboard-builder-sidepane"
+      style={{
+        height: `calc(100vh - ${topOffset + SUPERSET_HEADER_HEIGHT}px)`,
+      }}
+    >
+      <ParentSize>
+        {({ height }) => (
+          <StickyContainer>
+            <Sticky topOffset={-topOffset} bottomOffset={Infinity}>
+              {({ style, isSticky }: { style: any; isSticky: boolean }) => (
+                <div
+                  className="viewport"
+                  style={isSticky ? { ...style, top: topOffset } : null}
                 >
-                  {t('Edit Dashboard')}
-                </h5>
-                <GeneralTabs type="card">
-                  <Tabs.TabPane key={1} tab={t('Content')}>
-                    <SpecificTabs
-                      id="tabs"
-                      className="tabs-components"
-                      data-test="dashboard-builder-component-pane-tabs-navigation"
-                    >
-                      <Tabs.TabPane key={1} tab={t('Components')}>
-                        <NewTabs />
-                        <NewRow />
-                        <NewColumn />
-                        <NewHeader />
-                        <NewMarkdown />
-                        <NewDivider />
-                      </Tabs.TabPane>
-                      <Tabs.TabPane
-                        key={2}
-                        tab={t('Charts')}
-                        className="tab-charts"
+                  <h5
+                    style={{
+                      margin: '12px 6px',
+                      fontSize: '14px',
+                    }}
+                  >
+                    {t('Edit Dashboard')}
+                  </h5>
+                  <GeneralTabs type="card">
+                    <Tabs.TabPane key={1} tab={t('Content')}>
+                      <SpecificTabs
+                        id="tabs"
+                        className="tabs-components"
+                        data-test="dashboard-builder-component-pane-tabs-navigation"
                       >
-                        <SliceAdder
-                          height={
-                            height + (isSticky ? SUPERSET_HEADER_HEIGHT : 0)
-                          }
-                        />
-                      </Tabs.TabPane>
-                    </SpecificTabs>
-                  </Tabs.TabPane>
-                  <Tabs.TabPane key={2} tab={t('Customize')}>
-                    <SpecificTabs>
-                      <Tabs.TabPane key={1} tab={t('Properties')}>
-                        <BSProperties />
-                      </Tabs.TabPane>
-                      <Tabs.TabPane key={2} tab={t('CSS')}>
-                        <CssEditor
-                          triggerNode={<span>{t('Edit CSS')}</span>}
-                          initialCss={customCss}
-                          onChange={onChange}
-                          updateCss={updateCss}
-                          css={css`
-                            position: absolute;
-                            top: 0;
-                            right: 0;
-                            bottom: 0;
-                            left: 0;
-                          `}
-                        />
-                      </Tabs.TabPane>
-                    </SpecificTabs>
-                  </Tabs.TabPane>
-                </GeneralTabs>
-              </div>
-            )}
-          </Sticky>
-        </StickyContainer>
-      )}
-    </ParentSize>
-  </div>
-);
+                        <Tabs.TabPane key={1} tab={t('Components')}>
+                          <NewTabs />
+                          <NewRow />
+                          <NewColumn />
+                          <NewHeader />
+                          <NewMarkdown />
+                          <NewDivider />
+                        </Tabs.TabPane>
+                        <Tabs.TabPane
+                          key={2}
+                          tab={t('Charts')}
+                          className="tab-charts"
+                        >
+                          <SliceAdder
+                            height={
+                              height + (isSticky ? SUPERSET_HEADER_HEIGHT : 0)
+                            }
+                          />
+                        </Tabs.TabPane>
+                      </SpecificTabs>
+                    </Tabs.TabPane>
+                    <Tabs.TabPane key={2} tab={t('Customize')}>
+                      <SpecificTabs>
+                        <Tabs.TabPane key={1} tab={t('Properties')}>
+                          <BSProperties layout={dashboardLayout} />
+                        </Tabs.TabPane>
+                        <Tabs.TabPane key={2} tab={t('CSS')}>
+                          <Select
+                            ariaLabel="chart-selectors"
+                            options={chartSelectors}
+                            placeholder="Select a chart to copy CSS selector"
+                            onChange={copySelector}
+                          />
+                          <br />
+                          <CssEditor
+                            triggerNode={<span>{t('Edit CSS')}</span>}
+                            initialCss={customCss}
+                            onChange={onChange}
+                            updateCss={updateCss}
+                            css={css`
+                              position: absolute;
+                              top: 0;
+                              right: 0;
+                              bottom: 0;
+                              left: 0;
+                            `}
+                          />
+                        </Tabs.TabPane>
+                      </SpecificTabs>
+                    </Tabs.TabPane>
+                  </GeneralTabs>
+                </div>
+              )}
+            </Sticky>
+          </StickyContainer>
+        )}
+      </ParentSize>
+    </div>
+  );
+};
 
 export default BuilderComponentPane;

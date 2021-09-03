@@ -293,7 +293,11 @@ class Dashboard extends React.PureComponent {
     return (
       <>
         <OmniContainer />
-        <DashboardBuilder updateCss={this.props.actions.updateCss} onChange={this.props.actions.onChange} customCss={this.props.customCss}/>
+        <DashboardBuilder
+          updateCss={this.props.actions.updateCss}
+          onChange={this.props.actions.onChange}
+          customCss={this.props.customCss}
+        />
       </>
     );
   }

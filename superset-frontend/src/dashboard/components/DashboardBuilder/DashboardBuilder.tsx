@@ -146,7 +146,11 @@ const StyledDashboardContent = styled.div<{
   }
 `;
 
-const DashboardBuilder: FC<DashboardBuilderProps> = ({updateCss, onChange, customCss}) => {
+const DashboardBuilder: FC<DashboardBuilderProps> = ({
+  updateCss,
+  onChange,
+  customCss,
+}) => {
   const dispatch = useDispatch();
   const dashboardLayout = useSelector<RootState, DashboardLayout>(
     state => state.dashboardLayout.present,
@@ -311,7 +315,15 @@ const DashboardBuilder: FC<DashboardBuilderProps> = ({updateCss, onChange, custo
             ) : (
               <Loading />
             )}
-            {editMode && <BuilderComponentPane topOffset={barTopOffset} updateCss={updateCss} customCss={customCss} onChange={onChange}/>}
+            {editMode && (
+              <BuilderComponentPane
+                topOffset={barTopOffset}
+                updateCss={updateCss}
+                customCss={customCss}
+                onChange={onChange}
+                dashboardLayout={dashboardLayout}
+              />
+            )}
           </StyledDashboardContent>
         </div>
       </StyledContent>

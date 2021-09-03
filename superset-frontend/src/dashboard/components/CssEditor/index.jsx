@@ -17,15 +17,14 @@
  * under the License.
  */
 import React from 'react';
-import { SupersetClient } from '@superset-ui/core';
+import { SupersetClient, t, styled } from '@superset-ui/core';
 import PropTypes from 'prop-types';
 import { Menu, Dropdown } from 'src/common/components';
 import Button from 'src/components/Button';
-import { t, styled } from '@superset-ui/core';
+
 import ModalTrigger from 'src/components/ModalTrigger';
 import { CssEditor as AceCssEditor } from 'src/components/AsyncAceEditor';
 import injectCustomCss from 'src/dashboard/util/injectCustomCss';
-
 
 const StyledWrapper = styled.div`
   ${({ theme }) => `
@@ -58,10 +57,6 @@ const defaultProps = {
   onChange: () => {},
 };
 
-
-
-
-
 // constructor(props) {
 //   super(props);
 //   this.state = {
@@ -74,7 +69,6 @@ const defaultProps = {
 //   this.handleMenuClick = this.handleMenuClick.bind(this);
 // }
 
-
 // changeCss(css) {
 //   this.setState({ css }, () => {
 //     injectCustomCss(css);
@@ -82,8 +76,6 @@ const defaultProps = {
 //   this.props.onChange();
 //   this.props.updateCss(css);
 // }
-
-
 
 class CssEditor extends React.PureComponent {
   constructor(props) {
@@ -130,7 +122,6 @@ class CssEditor extends React.PureComponent {
       });
   }
 
-
   renderTemplateSelector() {
     if (this.state.templates) {
       const menu = (
@@ -152,22 +143,20 @@ class CssEditor extends React.PureComponent {
 
   render() {
     return (
-        <StyledWrapper>
-          <div className="css-editor-header">
-            {this.renderTemplateSelector()}
-          </div>
-          <AceCssEditor
-            className="css-editor"
-            minLines={12}
-            maxLines={30}
-            onChange={this.changeCss}
-            height="200px"
-            width="100%"
-            editorProps={{ $blockScrolling: true }}
-            enableLiveAutocompletion
-            value={this.state.css || ''}
-          />
-        </StyledWrapper>
+      <StyledWrapper>
+        <div className="css-editor-header">{this.renderTemplateSelector()}</div>
+        <AceCssEditor
+          className="css-editor"
+          minLines={12}
+          maxLines={30}
+          onChange={this.changeCss}
+          height="200px"
+          width="100%"
+          editorProps={{ $blockScrolling: true }}
+          enableLiveAutocompletion
+          value={this.state.css || ''}
+        />
+      </StyledWrapper>
     );
   }
 }
