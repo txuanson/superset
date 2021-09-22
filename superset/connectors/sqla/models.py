@@ -158,13 +158,7 @@ class AnnotationDatasource(BaseDatasource):
             status = utils.QueryStatus.FAILED
             logger.exception(ex)
             error_message = utils.error_msg_from_exception(ex)
-        return QueryResult(
-            status=status,
-            df=df,
-            duration=timedelta(0),
-            query="",
-            error_message=error_message,
-        )
+        return QueryResult(status=status, df=df, query="", error_message=error_message,)
 
     def get_query_str(self, query_obj: QueryObjectDict) -> str:
         raise NotImplementedError()

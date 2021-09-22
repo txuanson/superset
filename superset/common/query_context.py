@@ -247,10 +247,40 @@ class QueryContext:
         # support multiple queries from different data sources.
 
         # The datasource here can be different backend but the interface is common
-        result = self.datasource.query(query_object.to_dict())
-        query = result.query + ";\n\n"
 
-        df = result.df
+        # for time offsets, use the cached version if possible
+        if query_object.time_offsets or query_object.post_processing:
+            query_object_clone = copy.copy(query_object)
+            query_object_clone.time_offsets = []
+            query_object_clone.post_processing = []
+            cache_key = self.query_cache_key(query_object_clone)
+            cache = QueryCacheManager.get(cache_key, CacheRegion.DATA, self.force)
+            if cache.is_loaded:
+                result = QueryResult(df=cache.df, query=cache.query)
+                df = cache.df
+                query = cache.query + ";\n\n"
+            else:
+                result = self.datasource.query(query_object_clone.to_dict())
+                value = {
+                    "df": result.df,
+                    "query": result.query,
+                }
+                df = result.df
+                query = result.query + ";\n\n"
+                if not df.empty:
+                    df = self.normalize_df(df, query_object_clone)
+                cache.set(
+                    key=cache_key,
+                    value=value,
+                    timeout=self.cache_timeout,
+                    datasource_uid=self.datasource.uid,
+                    region=CacheRegion.DATA,
+                )
+        else:
+            result = self.datasource.query(query_object.to_dict())
+            query = result.query + ";\n\n"
+            df = result.df
+
         # Transform the timestamp we received from database to pandas supported
         # datetime format. If no python_date_format is specified, the pattern will
         # be considered as the default ISO date format

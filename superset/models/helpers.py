@@ -441,14 +441,14 @@ class QueryResult:  # pylint: disable=too-few-public-methods
         self,
         df: pd.DataFrame,
         query: str,
-        duration: timedelta,
         status: str = QueryStatus.SUCCESS,
+        duration: Optional[timedelta] = None,
         error_message: Optional[str] = None,
         errors: Optional[List[Dict[str, Any]]] = None,
     ) -> None:
         self.df = df
         self.query = query
-        self.duration = duration
+        self.duration = duration or timedelta(0)
         self.status = status
         self.error_message = error_message
         self.errors = errors or []
