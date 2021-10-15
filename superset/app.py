@@ -25,7 +25,7 @@ from superset.initialization import SupersetAppInitializer
 logger = logging.getLogger(__name__)
 
 
-def create_app() -> Flask:
+def create_app(celery_context: bool = False) -> Flask:
     app = SupersetApp(__name__)
 
     try:
@@ -34,7 +34,7 @@ def create_app() -> Flask:
         app.config.from_object(config_module)
 
         app_initializer = app.config.get("APP_INITIALIZER", SupersetAppInitializer)(app)
-        app_initializer.init_app()
+        app_initializer.init_app(celery_context=celery_context)
 
         return app
 

@@ -85,6 +85,21 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
         Called after any other init tasks
         """
 
+    @staticmethod
+    def celery_context_url_for(
+        error: Exception, endpoint: str, values: Dict[str, Any]
+    ) -> str:
+        celery_url_for_map = {
+            "Superset.slice": "/superset/slice/{slice_id}",
+            "Superset.dashboard": "/superset/dashboard/{dashboard_id_or_slug}",
+            "ChartRestApi.get_data": "/api/v1/chart/data/{pk}",
+        }
+        if endpoint in celery_url_for_map:
+            url_tmpl = celery_url_for_map.get(endpoint)
+            if url_tmpl:
+                return url_tmpl.format(**values)
+        raise error
+
     def configure_celery(self) -> None:
         celery_app.config_from_object(self.config["CELERY_CONFIG"])
         celery_app.set_default()
@@ -104,6 +119,7 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
                     return task_base.__call__(self, *args, **kwargs)
 
         celery_app.Task = AppContextTask
+        superset_app.url_build_error_handlers.append(self.celery_context_url_for)
 
     def init_views(self) -> None:
         #
@@ -550,7 +566,7 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
             "Data", cond=lambda: bool(self.config["DRUID_IS_ACTIVE"])
         )
 
-    def init_app_in_ctx(self) -> None:
+    def init_app_in_ctx(self, celery_context: bool = False) -> None:
         """
         Runs init logic in the context of the app
         """
@@ -565,10 +581,10 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
         flask_app_mutator = self.config["FLASK_APP_MUTATOR"]
         if flask_app_mutator:
             flask_app_mutator(self.superset_app)
+        if not celery_context:
+            self.init_views()
 
-        self.init_views()
-
-    def init_app(self) -> None:
+    def init_app(self, celery_context: bool = False) -> None:
         """
         Main entry point which will delegate to other methods in
         order to fully init the app
@@ -585,13 +601,14 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
         self.enable_profiling()
         self.setup_event_logger()
         self.setup_bundle_manifest()
-        self.register_blueprints()
-        self.configure_wtf()
+        if not celery_context:
+            self.register_blueprints()
+            self.configure_wtf()
         self.configure_middlewares()
         self.configure_cache()
 
         with self.superset_app.app_context():
-            self.init_app_in_ctx()
+            self.init_app_in_ctx(celery_context=celery_context)
 
         self.post_init()
 
