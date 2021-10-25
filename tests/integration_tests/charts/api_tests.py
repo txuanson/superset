@@ -1364,6 +1364,17 @@ class TestChartApi(SupersetTestCase, ApiOwnersTestCaseMixin, InsertChartMixin):
         result = response_payload["result"][0]
         self.assertEqual(result["rowcount"], 10)
 
+    @pytest.mark.usefixtures("load_birth_names_dashboard_with_slices")
+    def test_chart_data_incorrect_time_range(self):
+        """
+        Chart data API: Ensure incorrect time range returns a 400 status code
+        """
+        self.login(username="admin")
+        request_payload = get_query_context("birth_names")
+        request_payload["queries"][0]["time_range"] = "2021 : 2020"
+        rv = self.post_assert_metric(CHART_DATA_URI, request_payload, "data")
+        self.assertEqual(rv.status_code, 400)
+
     @unittest.skip("Failing due to timezone difference")
     @pytest.mark.usefixtures("load_birth_names_dashboard_with_slices")
     def test_chart_data_dttm_filter(self):

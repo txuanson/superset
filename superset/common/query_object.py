@@ -163,16 +163,19 @@ class QueryObject:  # pylint: disable=too-many-instance-attributes
         ]
         self.applied_time_extras = applied_time_extras or {}
         self.granularity = granularity
-        self.from_dttm, self.to_dttm = get_since_until(
-            relative_start=extras.get(
-                "relative_start", config["DEFAULT_RELATIVE_START_TIME"]
-            ),
-            relative_end=extras.get(
-                "relative_end", config["DEFAULT_RELATIVE_END_TIME"]
-            ),
-            time_range=time_range,
-            time_shift=time_shift,
-        )
+        try:
+            self.from_dttm, self.to_dttm = get_since_until(
+                relative_start=extras.get(
+                    "relative_start", config["DEFAULT_RELATIVE_START_TIME"]
+                ),
+                relative_end=extras.get(
+                    "relative_end", config["DEFAULT_RELATIVE_END_TIME"]
+                ),
+                time_range=time_range,
+                time_shift=time_shift,
+            )
+        except ValueError as exc:
+            raise QueryObjectValidationError(str(exc))
         # is_timeseries is True if time column is in either columns or groupby
         # (both are dimensions)
         self.is_timeseries = (

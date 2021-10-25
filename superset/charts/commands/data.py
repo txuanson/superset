@@ -28,7 +28,7 @@ from superset.charts.commands.exceptions import (
 from superset.charts.schemas import ChartDataQueryContextSchema
 from superset.commands.base import BaseCommand
 from superset.common.query_context import QueryContext
-from superset.exceptions import CacheLoadError
+from superset.exceptions import CacheLoadError, QueryObjectValidationError
 from superset.extensions import async_query_manager
 from superset.tasks.async_queries import load_chart_data_into_cache
 
