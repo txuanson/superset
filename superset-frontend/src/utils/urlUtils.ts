@@ -30,6 +30,7 @@ export function getUrlParam(param: UrlParam & { type: 'object' }): object;
 export function getUrlParam(param: UrlParam & { type: 'rison' }): object;
 export function getUrlParam({ name, type }: UrlParam): unknown {
   const urlParam = new URLSearchParams(window.location.search).get(name);
+  console.log('urlParams', urlParam)
   switch (type) {
     case 'number':
       if (!urlParam) {

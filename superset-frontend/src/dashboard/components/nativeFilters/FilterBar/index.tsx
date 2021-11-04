@@ -20,8 +20,10 @@
 /* eslint-disable no-param-reassign */
 import { DataMask, HandlerFunction, styled, t } from '@superset-ui/core';
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { useDispatch } from 'react-redux';
 import cx from 'classnames';
+import { postUuid } from './testuuid';
 import Icons from 'src/components/Icons';
 import { Tabs } from 'src/common/components';
 import { useHistory } from 'react-router-dom';
@@ -200,11 +202,31 @@ const FilterBar: React.FC<FiltersBarProps> = ({
         }
       });
 
-      newParams.set(
+      /*newParams.set(
         URL_PARAMS.nativeFilters.name,
         rison.encode(replaceUndefinedByNull(dataMaskSelected)),
-      );
+      );*/
+      console.log('newParam', newParams.toString())
+      /*
+      console.log('dataMaskSelected', dataMaskSelected);
+      const uuid = uuidv4();
+      newParams.set(URL_PARAMS.nativeFilters.name, uuid);
+      console.log('newParams', newParams.toString());
+      // get all parameters
+      // generate uuid -> post to server side to state
+      // publish uuid
+      try {
+        const obj = {
+          uuid,
+          value: rison.encode(replaceUndefinedByNull(dataMaskSelected)),
+        };
+        const postNativeFilters = postUuid(obj);
+        // uuidv4()
+      } catch (err) {
+        console.log('err', err);
+      } */
 
+      // console.log('to string --->', obj.value.toString());
       history.replace({
         search: newParams.toString(),
       });
