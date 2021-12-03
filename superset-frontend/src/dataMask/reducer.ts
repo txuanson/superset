@@ -26,6 +26,7 @@ import { HYDRATE_DASHBOARD } from 'src/dashboard/actions/hydrate';
 import { isFeatureEnabled } from 'src/featureFlags';
 import { getUrlParam } from 'src/utils/urlUtils';
 import { URL_PARAMS } from 'src/constants';
+import { getFilterValue } from 'src/dashboard/components/nativeFilters/FilterBar/getUuid';
 import { DataMaskStateWithId, DataMaskWithId } from './types';
 import {
   AnyDataMaskAction,
@@ -63,13 +64,26 @@ export function getInitialDataMask(
   } as DataMaskWithId;
 }
 
-function fillNativeFilters(
+async function fillNativeFilters(
   filterConfig: FilterConfiguration,
   mergedDataMask: DataMaskStateWithId,
   draftDataMask: DataMaskStateWithId,
   currentFilters?: Filters,
+  dashboardId?: string,
 ) {
+  console.log('fill nativefilters');
+  // let dataMaskFromUrl: object | {};
   const dataMaskFromUrl = getUrlParam(URL_PARAMS.nativeFilters) || {};
+  /*try {
+    const key = getUrlParam(URL_PARAMS.nativeFilters) || {};
+    console.log('key', key);
+    const dataMaskFromUrlTest = await getFilterValue(key, dashboardId);
+    console.log('dataMask from url test', dataMaskFromUrlTest)
+  } catch (err) {
+    console.log('err', err);
+  }*/
+  // console.log('dataMaskFromUrl', dataMaskFromUrl);
+  // const checkParms = getUrlParam
   filterConfig.forEach((filter: Filter) => {
     mergedDataMask[filter.id] = {
       ...getInitialDataMask(filter.id), // take initial data
@@ -125,15 +139,19 @@ const dataMaskReducer = produce(
             };
           });
         }
+        console.log('action.data', action.data);
         fillNativeFilters(
           // @ts-ignore
           action.data.dashboardInfo?.metadata?.native_filter_configuration ??
             [],
           cleanState,
           draft,
+          // @ts-ignore
+          action.data.dashboardInfo?.id,
         );
         return cleanState;
       case SET_DATA_MASK_FOR_FILTER_CONFIG_COMPLETE:
+        console.log('SET_DATA_Mask filter complete ****!!!')
         fillNativeFilters(
           action.filterConfig ?? [],
           cleanState,

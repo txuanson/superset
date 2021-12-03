@@ -20,7 +20,7 @@
 /* eslint-disable no-param-reassign */
 import { DataMask, HandlerFunction, styled, t } from '@superset-ui/core';
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import cx from 'classnames';
 import Icons from 'src/components/Icons';
 import { Tabs } from 'src/common/components';
@@ -41,6 +41,7 @@ import Loading from 'src/components/Loading';
 import { getInitialDataMask } from 'src/dataMask/reducer';
 import { URL_PARAMS } from 'src/constants';
 import replaceUndefinedByNull from 'src/dashboard/util/replaceUndefinedByNull';
+import { getUrlParam } from 'src/utils/urlUtils';
 import { checkIsApplyDisabled, TabIds } from './utils';
 import FilterSets from './FilterSets';
 import {
@@ -53,6 +54,7 @@ import {
 import EditSection from './FilterSets/EditSection';
 import Header from './Header';
 import FilterControls from './FilterControls/FilterControls';
+import { createFilterKey, updateFilter } from './getUuid';
 
 export const FILTER_BAR_TEST_ID = 'filter-bar';
 export const getFilterBarTestId = testWithId(FILTER_BAR_TEST_ID);
@@ -161,6 +163,9 @@ const FilterBar: React.FC<FiltersBarProps> = ({
   const previousFilters = usePrevious(filters);
   const filterValues = Object.values<Filter>(filters);
 
+  const dashboardId = useSelector<any, string>(
+    ({ dashboardInfo }) => dashboardInfo?.id,
+  );
   const handleFilterSelectionChange = useCallback(
     (
       filter: Pick<Filter, 'id'> & Partial<Filter>,
@@ -186,8 +191,19 @@ const FilterBar: React.FC<FiltersBarProps> = ({
     [dataMaskSelected, dispatch, setDataMaskSelected, tab],
   );
 
+  const getFilterKeyForUrl = async (value: DataMaskStateWithId) => {
+    let key;
+    try {
+      key = await createFilterKey(dashboardId, value);
+    } catch(err) {
+      console.log(err);
+    }
+    return key;
+  };
+
   const publishDataMask = useCallback(
-    (dataMaskSelected: DataMaskStateWithId) => {
+    async (dataMaskSelected: DataMaskStateWithId) => {
+      console.log('-------- publish datamask get hit ------')
       const { location } = history;
       const { search } = location;
       const previousParams = new URLSearchParams(search);
@@ -198,12 +214,31 @@ const FilterBar: React.FC<FiltersBarProps> = ({
           newParams.append(key, value);
         }
       });
-
-      newParams.set(
-        URL_PARAMS.nativeFilters.name,
-        rison.encode(replaceUndefinedByNull(dataMaskSelected)),
-      );
-
+      // const key = JSON.stringify(getUrlParam(URL_PARAMS.nativeFilters));
+      const isLongUrl = search.indexOf('NATIVE_FILTER');
+      console.log('islongurl', typeof isLongUrl)
+      if (isLongUrl > 0) {
+        console.log(' i hit')
+        const filters = JSON.stringify(getUrlParam(URL_PARAMS.nativeFilters));
+        const filterKey = await getFilterKeyForUrl(dataMaskSelected);
+        console.log('isLongUrl filter', filters);
+        newParams.set(
+          URL_PARAMS.nativeFilters.name,
+          filterKey // rison.encode(replaceUndefinedByNull(filterKey)),
+        );
+        getFilterKeyForUrl(filters);
+      } else {
+        console.log('hello did you hit in else')
+        const value = rison.encode(replaceUndefinedByNull(dataMaskSelected));
+        const key = getUrlParam(URL_PARAMS.nativeFilters);
+        console.log('key', key);
+        const updatedKey = await updateFilter(dashboardId, value, key);
+        console.log('datamaskselected', dataMaskSelected);
+        newParams.set(
+          URL_PARAMS.nativeFilters.name,
+          updatedKey // updatedK// rison.encode(replaceUndefinedByNull(dataMaskSelected)),
+        );
+      }
       history.replace({
         search: newParams.toString(),
       });

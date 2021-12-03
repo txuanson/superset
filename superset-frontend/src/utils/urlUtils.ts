@@ -28,6 +28,9 @@ export function getUrlParam(param: UrlParam & { type: 'number' }): number;
 export function getUrlParam(param: UrlParam & { type: 'boolean' }): boolean;
 export function getUrlParam(param: UrlParam & { type: 'object' }): object;
 export function getUrlParam(param: UrlParam & { type: 'rison' }): object;
+export function getUrlParam(
+  param: UrlParam & { type: 'rison | string' },
+): object | string;
 export function getUrlParam({ name, type }: UrlParam): unknown {
   const urlParam = new URLSearchParams(window.location.search).get(name);
   switch (type) {

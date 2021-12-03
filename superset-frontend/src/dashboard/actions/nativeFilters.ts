@@ -139,6 +139,7 @@ export const setFilterConfiguration =
     });
 
     try {
+      console.log('where am i called');
       const response = await updateDashboard({
         json_metadata: JSON.stringify({
           ...metadata,
