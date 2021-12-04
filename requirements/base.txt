@@ -7,7 +7,7 @@
 #
 -e file:.
     # via -r requirements/base.in
-aiohttp==3.7.4.post0
+aiohttp==3.8.0.post0
     # via slackclient
 alembic==1.6.5
     # via flask-migrate
@@ -261,7 +261,7 @@ sqlalchemy-utils==0.37.8
     # via
     #   apache-superset
     #   flask-appbuilder
-sqlparse==0.3.0
+sqlparse==0.4.2
     # via apache-superset
 tabulate==0.8.9
     # via apache-superset
@@ -281,7 +281,7 @@ werkzeug==1.0.1
     # via
     #   flask
     #   flask-jwt-extended
-wtforms==2.3.3
+wtforms==3.0.0a1
     # via
     #   flask-appbuilder
     #   flask-wtf
