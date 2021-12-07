@@ -916,6 +916,7 @@ class TestRolePermission(SupersetTestCase):
             ["Superset", "log"],
             ["Superset", "theme"],
             ["Superset", "welcome"],
+            ["Superset", "embedded"],
             ["SecurityApi", "login"],
             ["SecurityApi", "refresh"],
             ["SupersetIndexView", "index"],
