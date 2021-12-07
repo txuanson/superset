@@ -20,7 +20,6 @@ from superset.commands.exceptions import (
     CommandException,
     CreateFailedError,
     DeleteFailedError,
-    ForbiddenError,
     UpdateFailedError,
 )
 
@@ -39,7 +38,3 @@ class KeyValueDeleteFailedError(DeleteFailedError):
 
 class KeyValueUpdateFailedError(UpdateFailedError):
     message = _("An error occurred while updating the value.")
-
-
-class KeyValueAccessDeniedError(ForbiddenError):
-    message = _("You don't have permission to modify the value.")

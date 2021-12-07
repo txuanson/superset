@@ -29,7 +29,6 @@ from superset.dashboards.commands.exceptions import (
     DashboardNotFoundError,
 )
 from superset.exceptions import InvalidPayloadFormatError
-from superset.key_value.commands.exceptions import KeyValueAccessDeniedError
 from superset.key_value.schemas import KeyValuePostSchema, KeyValuePutSchema
 
 logger = logging.getLogger(__name__)
@@ -65,7 +64,7 @@ class KeyValueRestApi(BaseApi, ABC):
             return self.response(201, key=key)
         except ValidationError as error:
             return self.response_400(message=error.messages)
-        except (DashboardAccessDeniedError, KeyValueAccessDeniedError):
+        except DashboardAccessDeniedError:
             return self.response_403()
         except DashboardNotFoundError:
             return self.response_404()
@@ -81,7 +80,7 @@ class KeyValueRestApi(BaseApi, ABC):
             return self.response(200, message="Value updated successfully.")
         except ValidationError as error:
             return self.response_400(message=error.messages)
-        except (DashboardAccessDeniedError, KeyValueAccessDeniedError):
+        except DashboardAccessDeniedError:
             return self.response_403()
         except DashboardNotFoundError:
             return self.response_404()
@@ -92,7 +91,7 @@ class KeyValueRestApi(BaseApi, ABC):
             if not value:
                 return self.response_404()
             return self.response(200, value=value)
-        except (DashboardAccessDeniedError, KeyValueAccessDeniedError):
+        except DashboardAccessDeniedError:
             return self.response_403()
         except DashboardNotFoundError:
             return self.response_404()
@@ -103,7 +102,7 @@ class KeyValueRestApi(BaseApi, ABC):
             if not result:
                 return self.response_404()
             return self.response(200, message="Deleted successfully")
-        except (DashboardAccessDeniedError, KeyValueAccessDeniedError):
+        except DashboardAccessDeniedError:
             return self.response_403()
         except DashboardNotFoundError:
             return self.response_404()
