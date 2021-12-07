@@ -145,9 +145,6 @@ class ReportSchedule(Model, AuditMixinNullable):
     # (Alerts/Reports) Unlock a possible stalled working state
     working_timeout = Column(Integer, default=60 * 60 * 1)
 
-    # Store the selected dashboard tabs etc.
-    extra = Column(Text, default="{}")
-
     def __repr__(self) -> str:
         return str(self.name)
 
