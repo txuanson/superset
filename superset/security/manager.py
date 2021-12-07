@@ -18,6 +18,7 @@
 """A set of constants and methods to manage permissions and security"""
 import logging
 import re
+import time
 from collections import defaultdict
 from typing import (
     Any,
@@ -33,8 +34,8 @@ from typing import (
 )
 
 import jwt
-from flask import current_app, g, request, Request
-from flask_appbuilder import Model, AppBuilder
+from flask import current_app, Flask, g, Request
+from flask_appbuilder import Model
 from flask_appbuilder.models.sqla.interface import SQLAInterface
 from flask_appbuilder.security.sqla.manager import SecurityManager
 from flask_appbuilder.security.sqla.models import (
@@ -64,6 +65,13 @@ from superset.connectors.connector_registry import ConnectorRegistry
 from superset.constants import RouteMethod
 from superset.errors import ErrorLevel, SupersetError, SupersetErrorType
 from superset.exceptions import SupersetSecurityException
+from superset.security.guest_token import (
+    GuestToken,
+    GuestTokenResource,
+    GuestTokenResources,
+    GuestTokenUser,
+    GuestUser,
+)
 from superset.utils.core import DatasourceName, RowLevelSecurityFilterType
 
 if TYPE_CHECKING:
@@ -120,8 +128,6 @@ ViewMenuModelView.include_route_methods = {RouteMethod.LIST}
 RoleModelView.list_columns = ["name"]
 RoleModelView.edit_columns = ["name", "permissions", "user"]
 RoleModelView.related_views = []
-
-GuestToken = Dict[str, Any]
 
 
 class SupersetSecurityManager(  # pylint: disable=too-many-public-methods
@@ -225,10 +231,15 @@ class SupersetSecurityManager(  # pylint: disable=too-many-public-methods
         "all_query_access",
     )
 
-    def create_login_manager(self, app) -> LoginManager:
+    guest_user_cls = GuestUser
+
+    def create_login_manager(self, app: Flask) -> LoginManager:
+        # pylint: disable=import-outside-toplevel
+        from superset.extensions import feature_flag_manager
+
         lm = super().create_login_manager(app)
-        # todo put ff check here
-        lm.request_loader(self.get_guest_user)
+        if feature_flag_manager.is_feature_enabled("EMBEDDED_SUPERSET"):
+            lm.request_loader(self.get_guest_user)
         return lm
 
     def get_schema_perm(  # pylint: disable=no-self-use
@@ -268,7 +279,7 @@ class SupersetSecurityManager(  # pylint: disable=too-many-public-methods
         """
 
         user = g.user
-        if user.is_anonymous:
+        if user.is_anonymous and not self.is_guest_user(user):
             return self.is_item_public(permission_name, view_name)
         return self._has_view_access(user, permission_name, view_name)
 
@@ -1087,6 +1098,12 @@ class SupersetSecurityManager(  # pylint: disable=too-many-public-methods
     def get_anonymous_user(self) -> User:  # pylint: disable=no-self-use
         return AnonymousUserMixin()
 
+    def get_user_roles(self) -> List[Role]:
+        if g.user.is_anonymous:
+            public_role = current_app.config.get("AUTH_ROLE_PUBLIC")
+            return [self.get_public_role()] if public_role else []
+        return g.user.roles
+
     def get_rls_filters(self, table: "BaseDatasource") -> List[SqlaQuery]:
         """
         Retrieves the appropriate row level security filters for the current user and
@@ -1170,8 +1187,7 @@ class SupersetSecurityManager(  # pylint: disable=too-many-public-methods
         ids.sort()  # Combinations rather than permutations
         return ids
 
-    @staticmethod
-    def raise_for_dashboard_access(dashboard: "Dashboard") -> None:
+    def raise_for_dashboard_access(self, dashboard: "Dashboard") -> None:
         """
         Raise an exception if the user cannot access the dashboard.
 
@@ -1181,22 +1197,27 @@ class SupersetSecurityManager(  # pylint: disable=too-many-public-methods
         # pylint: disable=import-outside-toplevel
         from superset import is_feature_enabled
         from superset.dashboards.commands.exceptions import DashboardAccessDeniedError
-        from superset.views.base import get_user_roles, is_user_admin
+        from superset.views.base import is_user_admin
         from superset.views.utils import is_owner
+
+        has_rbac_access = True
 
         if is_feature_enabled("DASHBOARD_RBAC"):
             has_rbac_access = any(
-                dashboard_role.id in [user_role.id for user_role in get_user_roles()]
+                dashboard_role.id
+                in [user_role.id for user_role in self.get_user_roles()]
                 for dashboard_role in dashboard.roles
             )
-            can_access = (
-                is_user_admin()
-                or is_owner(dashboard, g.user)
-                or (dashboard.published and has_rbac_access)
-            )
 
-            if not can_access:
-                raise DashboardAccessDeniedError()
+        can_access = (
+            is_user_admin()
+            or is_owner(dashboard, g.user)
+            or (dashboard.published and has_rbac_access)
+            or (not dashboard.published and not dashboard.roles)
+        )
+
+        if not can_access:
+            raise DashboardAccessDeniedError()
 
     @staticmethod
     def can_access_based_on_dashboard(datasource: "BaseDatasource") -> bool:
@@ -1221,49 +1242,76 @@ class SupersetSecurityManager(  # pylint: disable=too-many-public-methods
         return exists
 
     @staticmethod
-    def create_guest_access_token(params: Dict[str, Any]):
+    def _get_current_epoch_time() -> float:
+        """ This is used so the tests can mock time """
+        return time.time()
+
+    def create_guest_access_token(
+        self, user: GuestTokenUser, resources: GuestTokenResources
+    ) -> bytes:
         secret = current_app.config["GUEST_TOKEN_JWT_SECRET"]
-        token = jwt.encode({ "data": params }, secret, algorithm="HS256")
+        # calculate expiration time
+        now = self._get_current_epoch_time()
+        exp = now + (current_app.config["GUEST_TOKEN_JWT_EXP_SECONDS"] * 1000)
+        claims = {
+            "user": user,
+            "resources": resources,
+            # standard jwt claims:
+            "iat": now,  # issued at
+            "exp": exp,  # expiration time
+        }
+        token = jwt.encode(claims, secret, algorithm="HS256")
         return token
 
-    def get_guest_user(self, req: Request):  # pylint: disable=unused-argument
+    def get_guest_user(self, req: Request) -> Optional[GuestUser]:
         """
-        If there is a guest token (used for embedded) in use,
+        If there is a guest token in the request (used for embedded),
         parses the token and returns the guest user.
         This is meant to be used as a request loader for the LoginManager.
         The LoginManager will only call this if an active session cannot be found.
 
         :return: A guest user object
         """
-        token = self.decode_guest_token()
-        if token is None:
+        raw_token = req.cookies.get(current_app.config["GUEST_TOKEN_COOKIE_NAME"])
+        if raw_token is None:
             return None
-        self.raise_for_invalid_guest_token(token)
-        user = token["data"]["user"]
-        return GuestUser(
-            user.get("username", "guest_user"),
-            user.get("first_name", "Guest"),
-            user.get("last_name", "User")
-        )
+
+        try:
+            token = self.parse_jwt_guest_token(raw_token)
+        except Exception as ex:  # pylint: disable=broad-except
+            # The login manager will handle sending 401s.
+            # We don't need to send a special error message.
+            logger.warning("Invalid guest token")
+            logger.warning(ex)
+            return None
+        else:
+            user = token["user"]
+            return self.guest_user_cls(
+                username=user.get("username", "guest_user"),
+                first_name=user.get("first_name", "Guest"),
+                last_name=user.get("last_name", "User"),
+                roles=[self.get_public_role()],
+                resources=token["resources"],
+            )
 
     @staticmethod
-    def decode_guest_token():
-        token = request.cookies.get(current_app.config['GUEST_TOKEN_COOKIE_NAME'])
-        if token is None:
-            return None
-        return jwt.decode(token, current_app.config["GUEST_TOKEN_JWT_SECRET"])
+    def parse_jwt_guest_token(raw_token: str) -> GuestToken:
+        """
+        Parses and validates a guest token.
+        Raises an error if the jwt is invalid:
+        if it is not signed with our secret,
+        or if required claims are not present.
+        :param raw_token: the token gotten from the request
+        :return: the same token that was passed in, tested but unchanged
+        """
+        secret = current_app.config["GUEST_TOKEN_JWT_SECRET"]
+        token = jwt.decode(raw_token, secret, algorithms=["HS256"])
+        if token.get("user") is None:
+            raise ValueError("Guest token does not contain a user claim")
+        if token.get("resources") is None:
+            raise ValueError("Guest token does not contain a resources claim")
+        return cast(GuestToken, token)
 
-    def raise_for_invalid_guest_token(self, token: GuestToken):
-        ...
-        # grab the token from the GUEST_TOKEN_COOKIE_NAME cookie
-        # check token age
-
-    def can_access_by_guest_token(self):
-        ...
-
-
-class GuestUser(AnonymousUserMixin):
-    def __init__(self, username, first_name, last_name):
-        self.username = username
-        self.first_name = first_name
-        self.last_name = last_name
+    @staticmethod
+    def is_guest_user(user: Any) -> bool:
+        return hasattr(user, "is_guest_user") and user.is_guest_user

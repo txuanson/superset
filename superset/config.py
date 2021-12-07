@@ -314,6 +314,7 @@ LANGUAGES = {
     "pt_BR": {"flag": "br", "name": "Brazilian Portuguese"},
     "ru": {"flag": "ru", "name": "Russian"},
     "ko": {"flag": "kr", "name": "Korean"},
+    "sk": {"flag": "sk", "name": "Slovak"},
     "sl": {"flag": "si", "name": "Slovenian"},
 }
 # Turning off i18n by default as translation in most languages are
@@ -386,6 +387,7 @@ DEFAULT_FEATURE_FLAGS: Dict[str, bool] = {
     # a custom security config could potentially give access to setting filters on
     # tables that users do not have access to.
     "ROW_LEVEL_SECURITY": True,
+    "EMBEDDED_SUPERSET": False,  # This requires that the public role be available
     # Enables Alerts and reports new implementation
     "ALERT_REPORTS": False,
     # Enable experimental feature to search for other dashboards
@@ -559,6 +561,15 @@ CACHE_CONFIG: CacheConfig = {"CACHE_TYPE": "null"}
 
 # Cache for datasource metadata and query results
 DATA_CACHE_CONFIG: CacheConfig = {"CACHE_TYPE": "null"}
+
+# Cache for filters state
+FILTER_STATE_CACHE_CONFIG: CacheConfig = {
+    "CACHE_TYPE": "filesystem",
+    "CACHE_DIR": os.path.join(DATA_DIR, "cache"),
+    "CACHE_DEFAULT_TIMEOUT": int(timedelta(days=90).total_seconds()),
+    "CACHE_THRESHOLD": 0,
+    "REFRESH_TIMEOUT_ON_RETRIEVAL": True,
+}
 
 # store cache keys by datasource UID (via CacheKey) for custom processing/invalidation
 STORE_CACHE_KEYS_IN_METADATA_DB = False
@@ -1246,8 +1257,9 @@ GLOBAL_ASYNC_QUERIES_POLLING_DELAY = int(
 GLOBAL_ASYNC_QUERIES_WEBSOCKET_URL = "ws://127.0.0.1:8080/"
 
 # Embedded config options
-GUEST_TOKEN_JWT_SECRET = "another-test-secret-change-me"
+GUEST_TOKEN_JWT_SECRET = "test-guest-secret-change-me"
 GUEST_TOKEN_COOKIE_NAME = "__guest_token__"
+GUEST_TOKEN_JWT_EXP_SECONDS = 300  # 5 minutes
 
 # A SQL dataset health check. Note if enabled it is strongly advised that the callable
 # be memoized to aid with performance, i.e.,

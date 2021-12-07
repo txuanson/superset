@@ -15,8 +15,10 @@
 # specific language governing permissions and limitations
 # under the License.
 # isort:skip_file
+import dataclasses
 import inspect
 import re
+import time
 import unittest
 from collections import namedtuple
 from unittest import mock
@@ -468,13 +470,13 @@ class TestRolePermission(SupersetTestCase):
         table.table_name = "tmp_perm_table_v2"
         session.commit()
         # TODO(bogdan): modify slice permissions on the table update.
-        self.assertNotEquals(slice.perm, table.perm)
+        self.assertNotEqual(slice.perm, table.perm)
         self.assertEqual(slice.perm, f"[tmp_database].[tmp_perm_table](id:{table.id})")
         self.assertEqual(
             table.perm, f"[tmp_database].[tmp_perm_table_v2](id:{table.id})"
         )
         # TODO(bogdan): modify slice schema permissions on the table update.
-        self.assertNotEquals(slice.schema_perm, table.schema_perm)
+        self.assertNotEqual(slice.schema_perm, table.schema_perm)
         self.assertIsNone(slice.schema_perm)
 
         # updating slice refreshes the permissions
@@ -968,9 +970,7 @@ class TestSecurityManager(SupersetTestCase):
 
         mock_raise_for_access.side_effect = SupersetSecurityException(
             SupersetError(
-                "dummy",
-                SupersetErrorType.TABLE_SECURITY_ACCESS_ERROR,
-                ErrorLevel.ERROR,
+                "dummy", SupersetErrorType.TABLE_SECURITY_ACCESS_ERROR, ErrorLevel.ERROR
             )
         )
 
@@ -1318,12 +1318,54 @@ class TestDatasources(SupersetTestCase):
         ]
 
 
-class TestGuestTokens(SupersetTestCase):
+class FakeRequest:
+    cookies: Any = {}
 
-    def test_create_guest_access_token(self):
-        params = {"any": "data"}
-        token = security_manager.create_guest_access_token(params)
+
+class TestGuestTokens(SupersetTestCase):
+    @patch("superset.security.SupersetSecurityManager._get_current_epoch_time")
+    def test_create_guest_access_token(self, get_time_mock):
+        now = time.time()
+        get_time_mock.return_value = now  # so we know what it should =
+        user = {"any": "data"}
+        resources = [{"some": "resource"}]
+
+        token = security_manager.create_guest_access_token(user, resources)
+        # unfortunately we cannot mock time in the jwt lib
+        decoded_token = jwt.decode(token, self.app.config["GUEST_TOKEN_JWT_SECRET"])
+
+        self.assertEqual(user, decoded_token["user"])
+        self.assertEqual(resources, decoded_token["resources"])
+        self.assertEqual(now, decoded_token["iat"])
         self.assertEqual(
-            {"data": params},
-            jwt.decode(token, self.app.config["GUEST_TOKEN_JWT_SECRET"])
+            now + (self.app.config["GUEST_TOKEN_JWT_EXP_SECONDS"] * 1000),
+            decoded_token["exp"],
         )
+
+    def test_get_guest_user(self):
+        user = {"username": "test_guest"}
+        resources = [{"type": "dashboard", "id": 1}]
+        token = security_manager.create_guest_access_token(user, resources)
+        fake_request = FakeRequest()
+        fake_request.cookies[current_app.config["GUEST_TOKEN_COOKIE_NAME"]] = token
+
+        guest_user = security_manager.get_guest_user(fake_request)
+
+        self.assertIsNotNone(guest_user)
+        self.assertEqual("test_guest", guest_user.username)
+
+    @patch("superset.security.SupersetSecurityManager._get_current_epoch_time")
+    def test_get_guest_user_expired_token(self, get_time_mock):
+        # make a just-expired token
+        get_time_mock.return_value = (
+            time.time() - (self.app.config["GUEST_TOKEN_JWT_EXP_SECONDS"] * 1000) - 1
+        )
+        user = {"username": "test_guest"}
+        resources = [{"type": "dashboard", "id": 1}]
+        token = security_manager.create_guest_access_token(user, resources)
+        fake_request = FakeRequest()
+        fake_request.cookies[current_app.config["GUEST_TOKEN_COOKIE_NAME"]] = token
+
+        guest_user = security_manager.get_guest_user(fake_request)
+
+        self.assertIsNone(guest_user)

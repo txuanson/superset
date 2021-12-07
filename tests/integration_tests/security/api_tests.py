@@ -59,7 +59,7 @@ class TestSecurityCsrfApi(SupersetTestCase):
 
 
 class TestSecurityGuestTokenApi(SupersetTestCase):
-    uri = f"api/v1/security/guest-token/"
+    uri = f"api/v1/security/guest_token/"
 
     def test_post_guest_token_unauthenticated(self):
         """
@@ -79,26 +79,16 @@ class TestSecurityGuestTokenApi(SupersetTestCase):
 
     def test_post_embed_token_authorized(self):
         self.login(username="admin")
-        params = {
-            "user": {
-                "username": "bob",
-                "first_name": "Bob",
-                "last_name": "Also Bob",
-            },
-            "resource": {
-                "type": "dashboard",
-                "id": "blah",
-                "rls": "1 = 1"
-            },
-        }
+        user = {"username": "bob", "first_name": "Bob", "last_name": "Also Bob"}
+        resource = {"type": "dashboard", "id": "blah", "rls": "1 = 1"}
+        params = {"user": user, "resource": resource}
+
         response = self.client.post(
-            self.uri,
-            data=json.dumps(params),
-            content_type="application/json",
+            self.uri, data=json.dumps(params), content_type="application/json"
         )
         self.assert200(response)
         token = json.loads(response.data)["token"]
-        self.assertEqual(
-            {"data":params},
-            jwt.decode(token, self.app.config["GUEST_TOKEN_JWT_SECRET"])
-        )
+        decoded_token = jwt.decode(token, self.app.config["GUEST_TOKEN_JWT_SECRET"])
+
+        self.assertEqual(user, decoded_token["user"])
+        self.assertEqual(resource, decoded_token["resources"][0])
