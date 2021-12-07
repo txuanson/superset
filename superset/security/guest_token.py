@@ -14,8 +14,10 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+from enum import Enum
 from typing import List, Optional, TypedDict, Union
 
+from flask_appbuilder.security.sqla.models import Role
 from flask_login import AnonymousUserMixin
 
 
@@ -25,17 +27,24 @@ class GuestTokenUser(TypedDict, total=False):
     last_name: str
 
 
+class GuestTokenResourceType(Enum):
+    DASHBOARD = "dashboard"
+
+
 class GuestTokenResource(TypedDict):
-    type: str
+    type: GuestTokenResourceType
     id: Union[str, int]
     rls: Optional[str]
+
+
+GuestTokenResources = List[GuestTokenResource]
 
 
 class GuestToken(TypedDict):
     iat: float
     exp: float
     user: GuestTokenUser
-    resources: List[GuestTokenResource]
+    resources: GuestTokenResources
 
 
 class GuestUser(AnonymousUserMixin):
@@ -45,7 +54,16 @@ class GuestUser(AnonymousUserMixin):
 
     is_guest_user = True
 
-    def __init__(self, username: str, first_name: str, last_name: str):
+    def __init__(
+        self,
+        username: str,
+        first_name: str,
+        last_name: str,
+        roles: List[Role],
+        resources: GuestTokenResources,
+    ):
         self.username = username
         self.first_name = first_name
         self.last_name = last_name
+        self.roles = roles
+        self.resources = resources
