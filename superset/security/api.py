@@ -22,6 +22,7 @@ from flask_appbuilder.api import BaseApi, safe
 from flask_appbuilder.security.decorators import permission_name, protect
 from flask_wtf.csrf import generate_csrf
 from marshmallow import fields, Schema, ValidationError
+from superset import is_feature_enabled
 
 from superset.extensions import event_logger
 
@@ -115,6 +116,8 @@ class SecurityRestApi(BaseApi):
             500:
               $ref: '#/components/responses/500'
         """
+        if not is_feature_enabled("EMBEDDED_SUPERSET"):
+            return Response(status=404)
         try:
             body = guest_token_create_schema.load(request.json)
             # validate stuff:
