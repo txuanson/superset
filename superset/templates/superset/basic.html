@@ -78,7 +78,8 @@
     {% endblock %}
 
     <!-- Modal for misc messages / alerts  -->
-    <div class="misc-modal modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <!-- display none so that it doesn't show up until $.show() is called on it -->
+    <div class="misc-modal modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" style="display: none;">
       <div class="modal-dialog" role="document">
         <div class="modal-content" data-test="modal-content">
           <div class="modal-header" data-test="modal-header">
