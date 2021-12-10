@@ -1339,7 +1339,7 @@ class SupersetSecurityManager(  # pylint: disable=too-many-public-methods
             return False
 
         for resource in user.resources:
-            if resource["type"] == resource_type and resource["id"] == id:
+            if resource["type"] == resource_type.value and str(resource["id"]) == str(id):
                 return True
         return False
 
