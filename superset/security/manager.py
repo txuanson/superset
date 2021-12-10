@@ -1295,7 +1295,7 @@ class SupersetSecurityManager(  # pylint: disable=too-many-public-methods
                 username=user.get("username", "guest_user"),
                 first_name=user.get("first_name", "Guest"),
                 last_name=user.get("last_name", "User"),
-                roles=[current_app.config["GUEST_ROLE_NAME"]],
+                roles=[self.find_role(current_app.config["GUEST_ROLE_NAME"])],
                 resources=token["resources"],
             )
 
