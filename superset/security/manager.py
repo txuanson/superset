@@ -67,10 +67,9 @@ from superset.errors import ErrorLevel, SupersetError, SupersetErrorType
 from superset.exceptions import SupersetSecurityException
 from superset.security.guest_token import (
     GuestToken,
-    GuestTokenResource,
     GuestTokenResources,
     GuestTokenUser,
-    GuestUser,
+    GuestUser, GuestTokenResourceType,
 )
 from superset.utils.core import DatasourceName, RowLevelSecurityFilterType
 
@@ -1068,11 +1067,16 @@ class SupersetSecurityManager(  # pylint: disable=too-many-public-methods
 
             assert datasource
 
+            should_check_dashboard_access = (
+                feature_flag_manager.is_feature_enabled("DASHBOARD_RBAC")
+                or feature_flag_manager.is_feature_enabled("EMBEDDED_SUPERSET")
+            )
+
             if not (
                 self.can_access_schema(datasource)
                 or self.can_access("datasource_access", datasource.perm or "")
                 or (
-                    feature_flag_manager.is_feature_enabled("DASHBOARD_RBAC")
+                    should_check_dashboard_access
                     and self.can_access_based_on_dashboard(datasource)
                 )
             ):
@@ -1213,6 +1217,7 @@ class SupersetSecurityManager(  # pylint: disable=too-many-public-methods
             is_user_admin()
             or is_owner(dashboard, g.user)
             or (dashboard.published and has_rbac_access)
+            or self.has_guest_access(GuestTokenResourceType.DASHBOARD, dashboard.id)
             or (not dashboard.published and not dashboard.roles)
         )
 
@@ -1315,3 +1320,26 @@ class SupersetSecurityManager(  # pylint: disable=too-many-public-methods
     @staticmethod
     def is_guest_user(user: Any) -> bool:
         return hasattr(user, "is_guest_user") and user.is_guest_user
+
+    def get_current_guest_user_if_guest(self) -> Optional[GuestUser]:
+        # pylint: disable=import-outside-toplevel
+        from superset.extensions import feature_flag_manager
+        if (
+            feature_flag_manager.is_feature_enabled("EMBEDDED_SUPERSET")
+            and self.is_guest_user(g.user)
+        ):
+            return g.user
+        return None
+
+    def has_guest_access(
+        self, resource_type: GuestTokenResourceType, id: Union[str, int]
+    ) -> bool:
+        user = self.get_current_guest_user_if_guest()
+        if not user:
+            return False
+
+        for resource in user.resources:
+            if resource["type"] == resource_type and resource["id"] == id:
+                return True
+        return False
+
