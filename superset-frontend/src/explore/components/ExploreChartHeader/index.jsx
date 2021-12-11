@@ -142,6 +142,7 @@ export class ExploreChartHeader extends React.PureComponent {
   }
 
   async fetchChartDashboardData() {
+    // todo figure out how to use dashboardInfo from redux if present
     const { dashboardId, slice } = this.props;
     const response = await SupersetClient.get({
       endpoint: `/api/v1/chart/${slice.slice_id}`,
