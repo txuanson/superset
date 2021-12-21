@@ -16,24 +16,28 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { useState, useEffect } from 'react';
-import { getShortUrl as getShortUrlUtil } from 'src/utils/urlUtils';
+import {
+  getItem,
+  setItem,
+  LocalStorageKeys,
+} from 'src/utils/localStorageHelpers';
 
-export function useUrlShortener(url: string): Function {
-  const [update, setUpdate] = useState(false);
-  const [shortUrl, setShortUrl] = useState('');
+describe('localStorageHelpers', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
 
-  async function getShortUrl(urlOverride?: string) {
-    if (update) {
-      const newShortUrl = await getShortUrlUtil(urlOverride || url);
-      setShortUrl(newShortUrl);
-      setUpdate(false);
-      return newShortUrl;
-    }
-    return shortUrl;
-  }
+  afterAll(() => {
+    localStorage.clear();
+  });
 
-  useEffect(() => setUpdate(true), [url]);
+  it('gets a value that was set', () => {
+    setItem(LocalStorageKeys.is_datapanel_open, false);
 
-  return getShortUrl;
-}
+    expect(getItem(LocalStorageKeys.is_datapanel_open, true)).toBe(false);
+  });
+
+  it('returns the default value for an unset value', () => {
+    expect(getItem(LocalStorageKeys.is_datapanel_open, true)).toBe(true);
+  });
+});
