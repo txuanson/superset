@@ -140,7 +140,7 @@ const dataMaskReducer = produce(
           cleanState,
           draft,
           // @ts-ignore
-          action.data.dataMask,
+          action.dataMask,
           action.filters,
         );
         return cleanState;
