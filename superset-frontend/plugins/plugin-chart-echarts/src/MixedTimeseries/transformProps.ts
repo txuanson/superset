@@ -235,7 +235,10 @@ export default function transformProps(
   const tooltipTimeFormatter = getTooltipTimeFormatter(tooltipTimeFormat);
   const xAxisFormatter = getXAxisFormatter(xAxisTimeFormat);
 
-  const addYAxisTitleOffset = !!(yAxisTitle || yAxisTitleSecondary);
+  const addYAxisTitleOffset = !!(
+    (yAxisTitle || yAxisTitleSecondary) &&
+    yAxisTitlePosition === 'Top'
+  );
   const addXAxisTitleOffset = !!xAxisTitle;
 
   const chartPadding = getPadding(
@@ -310,6 +313,8 @@ export default function transformProps(
         axisLabel: { formatter: formatterSecondary },
         scale: truncateYAxis,
         name: yAxisTitleSecondary,
+        nameGap: yAxisTitleMargin,
+        nameLocation: yAxisTitlePosition === 'Left' ? 'middle' : 'end',
         alignTicks,
       },
     ],
