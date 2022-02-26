@@ -109,6 +109,9 @@ class ChartDataRestApi(ChartRestApi):
             500:
               $ref: '#/components/responses/500'
         """
+        logging.warning(
+            f"!debugging! chart/data g.user: {g.user}"
+        )
         chart = self.datamodel.get(pk, self._base_filters)
         if not chart:
             return self.response_404()
