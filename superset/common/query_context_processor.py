@@ -377,6 +377,9 @@ class QueryContextProcessor:
                 {"data": self._query_context.cache_values},
                 self.get_cache_timeout(),
             )
+            logging.warning(
+                f"!debugging! get_payload cache: {self._query_context.cache_values}"
+            )
             return_value["cache_key"] = cache_key  # type: ignore
 
         return return_value
