@@ -577,7 +577,7 @@ IMG_UPLOAD_URL = "/static/uploads/"
 
 # Default cache timeout, applies to all cache backends unless specifically overridden in
 # each cache config.
-CACHE_DEFAULT_TIMEOUT = int(timedelta(days=1).total_seconds())
+CACHE_DEFAULT_TIMEOUT = int(timedelta(minutes=1).total_seconds())
 
 # Default cache for Superset objects
 CACHE_CONFIG: CacheConfig = {"CACHE_TYPE": "null"}
