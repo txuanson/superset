@@ -598,7 +598,7 @@ FILTER_STATE_CACHE_CONFIG: CacheConfig = {
 EXPLORE_FORM_DATA_CACHE_CONFIG: CacheConfig = {
     "CACHE_TYPE": "FileSystemCache",
     "CACHE_DIR": os.path.join(DATA_DIR, "cache"),
-    "CACHE_DEFAULT_TIMEOUT": int(timedelta(days=7).total_seconds()),
+    "CACHE_DEFAULT_TIMEOUT": int(timedelta(minutes=1).total_seconds()),
     "CACHE_THRESHOLD": 0,
     "REFRESH_TIMEOUT_ON_RETRIEVAL": True,
 }
