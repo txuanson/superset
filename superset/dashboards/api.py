@@ -143,6 +143,7 @@ class DashboardRestApi(BaseSupersetModelRestApi):
         "owners.username",
         "owners.first_name",
         "owners.last_name",
+        "owners.email",
         "roles.id",
         "roles.name",
     ]
