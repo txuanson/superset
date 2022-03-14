@@ -33,11 +33,8 @@ import {
   ChartMetadata,
   SupersetTheme,
   useTheme,
-  ChartLabel,
-  ChartLabelWeight,
 } from '@superset-ui/core';
 import { AntdCollapse } from 'src/components';
-import { Tooltip } from 'src/components/Tooltip';
 import { Input } from 'src/components/Input';
 import Label from 'src/components/Label';
 import { usePluginContext } from 'src/components/DynamicPlugins';
@@ -313,7 +310,6 @@ const Examples = styled.div`
 const thumbnailContainerCss = (theme: SupersetTheme) => css`
   cursor: pointer;
   width: ${theme.gridUnit * THUMBNAIL_GRID_UNITS}px;
-  position: relative;
 
   img {
     min-width: ${theme.gridUnit * THUMBNAIL_GRID_UNITS}px;
@@ -335,38 +331,6 @@ const thumbnailContainerCss = (theme: SupersetTheme) => css`
     margin-top: ${theme.gridUnit * 2}px;
     text-align: center;
   }
-`;
-
-const HighlightLabel = styled.div`
-  ${({ theme }) => `
-    border: 1px solid ${theme.colors.primary.dark1};
-    box-sizing: border-box;
-    border-radius: ${theme.gridUnit}px;
-    background: ${theme.colors.grayscale.light5};
-    line-height: ${theme.gridUnit * 2.5}px;
-    color: ${theme.colors.primary.dark1};
-    font-size: ${theme.typography.sizes.s}px;
-    font-weight: ${theme.typography.weights.bold};
-    text-align: center;
-    padding: ${theme.gridUnit * 0.5}px ${theme.gridUnit}px;
-    text-transform: uppercase;
-    cursor: pointer;
-
-    div {
-      transform: scale(0.83,0.83);
-    }
-  `}
-`;
-
-const ThumbnailLabelWrapper = styled.div`
-  position: absolute;
-  right: ${({ theme }) => theme.gridUnit}px;
-  top: ${({ theme }) => theme.gridUnit * 19}px;
-`;
-
-const TitleLabelWrapper = styled.div`
-  display: inline-block !important;
-  margin-left: ${({ theme }) => theme.gridUnit * 2}px;
 `;
 
 function vizSortFactor(entry: VizEntry) {
@@ -414,13 +378,6 @@ const Thumbnail: React.FC<ThumbnailProps> = ({
       >
         {type.name}
       </div>
-      {type.label?.name && (
-        <ThumbnailLabelWrapper>
-          <HighlightLabel>
-            <div>{t(type.label?.name)}</div>
-          </HighlightLabel>
-        </ThumbnailLabelWrapper>
-      )}
     </div>
   );
 };
@@ -503,8 +460,7 @@ export default function VizTypeGallery(props: VizTypeGalleryProps) {
       .map(([key, value]) => ({ key, value }))
       .filter(
         ({ value }) =>
-          nativeFilterGate(value.behaviors || []) &&
-          value.label?.name !== ChartLabel.DEPRECATED,
+          nativeFilterGate(value.behaviors || []) && !value.deprecated,
       );
     result.sort((a, b) => vizSortFactor(a) - vizSortFactor(b));
     return result;
@@ -589,18 +545,7 @@ export default function VizTypeGallery(props: VizTypeGalleryProps) {
     if (searchInputValue.trim() === '') {
       return [];
     }
-    return fuse
-      .search(searchInputValue)
-      .map(result => result.item)
-      .sort((a, b) => {
-        const aName = a.value?.label?.name;
-        const bName = b.value?.label?.name;
-        const aOrder =
-          aName && ChartLabelWeight[aName] ? ChartLabelWeight[aName].weight : 0;
-        const bOrder =
-          bName && ChartLabelWeight[bName] ? ChartLabelWeight[bName].weight : 0;
-        return bOrder - aOrder;
-      });
+    return fuse.search(searchInputValue).map(result => result.item);
   }, [searchInputValue, fuse]);
 
   const focusSearch = useCallback(() => {
@@ -794,23 +739,9 @@ export default function VizTypeGallery(props: VizTypeGalleryProps) {
             <SectionTitle
               css={css`
                 grid-area: viz-name;
-                position: relative;
               `}
             >
               {selectedVizMetadata?.name}
-              {selectedVizMetadata?.label?.name && (
-                <Tooltip
-                  id="viz-badge-tooltip"
-                  placement="top"
-                  title={selectedVizMetadata.label?.description}
-                >
-                  <TitleLabelWrapper>
-                    <HighlightLabel>
-                      <div>{t(selectedVizMetadata.label?.name)}</div>
-                    </HighlightLabel>
-                  </TitleLabelWrapper>
-                </Tooltip>
-              )}
             </SectionTitle>
             <TagsWrapper>
               {selectedVizMetadata?.tags.map(tag => (
