@@ -387,7 +387,7 @@ const Select = (
     selectedItem: string | number | AntdLabeledValue | undefined,
   ) => {
     if (isSingleMode) {
-      setSelectValue(selectedValue);
+      setSelectValue(selectedItem);
     } else {
       setSelectValue(previousState => {
         const array = ensureIsArray(previousState);
