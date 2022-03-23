@@ -21,7 +21,6 @@ import { render, screen } from 'spec/helpers/testing-library';
 import userEvent from '@testing-library/user-event';
 import fetchMock from 'fetch-mock';
 import { HeaderDropdownProps } from 'src/dashboard/components/Header/types';
-import injectCustomCss from 'src/dashboard/util/injectCustomCss';
 import HeaderActionsDropdown from '.';
 
 const createProps = () => ({
@@ -181,9 +180,7 @@ test('should NOT render the "Refresh dashboard" menu item as disabled', async ()
 
 test('should render with custom css', () => {
   const mockedProps = createProps();
-  const { customCss } = mockedProps;
   render(setup(mockedProps));
-  injectCustomCss(customCss);
   expect(screen.getByRole('button')).toHaveStyle('margin-left: 100px');
 });
 

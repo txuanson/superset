@@ -117,6 +117,8 @@ class HeaderActionsDropdown extends React.PureComponent {
   }
 
   UNSAFE_componentWillMount() {
+    injectCustomCss(this.state.css);
+
     SupersetClient.get({ endpoint: '/csstemplateasyncmodelview/api/read' })
       .then(({ json }) => {
         const cssTemplates = json.result.map(row => ({
