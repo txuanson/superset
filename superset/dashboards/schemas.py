@@ -299,3 +299,15 @@ class ImportV1DashboardSchema(Schema):
     position = fields.Dict()
     metadata = fields.Dict()
     version = fields.String(required=True)
+
+
+class EmbeddedDashboardConfigSchema(Schema):
+    allowed_domains = fields.List(fields.String(), required=True)
+
+
+class EmbeddedDashboardResponseSchema(Schema):
+    uuid = fields.String()
+    allowed_domains = fields.List(fields.String())
+    dashboard_id = fields.String()
+    changed_on = fields.DateTime()
+    changed_by = fields.Nested(UserSchema)
