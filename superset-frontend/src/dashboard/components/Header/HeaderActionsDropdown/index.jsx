@@ -64,6 +64,7 @@ const propTypes = {
   expandedSlices: PropTypes.object.isRequired,
   onSave: PropTypes.func.isRequired,
   showPropertiesModal: PropTypes.func.isRequired,
+  manageEmbedded: PropTypes.func.isRequired,
   refreshLimit: PropTypes.number,
   refreshWarning: PropTypes.string,
   lastModifiedTime: PropTypes.number.isRequired,
@@ -88,6 +89,7 @@ const MENU_KEYS = {
   EDIT_CSS: 'edit-css',
   DOWNLOAD_AS_IMAGE: 'download-as-image',
   TOGGLE_FULLSCREEN: 'toggle-fullscreen',
+  MANAGE_EMBEDDED: 'manage-embedded',
 };
 
 const DropdownButton = styled.div`
@@ -182,6 +184,10 @@ class HeaderActionsDropdown extends React.PureComponent {
           standalone: !getUrlParam(URL_PARAMS.standalone),
         });
         window.location.replace(url);
+        break;
+      }
+      case MENU_KEYS.MANAGE_EMBEDDED: {
+        this.props.manageEmbedded();
         break;
       }
       default:
@@ -312,6 +318,12 @@ class HeaderActionsDropdown extends React.PureComponent {
               templates={this.state.cssTemplates}
               onChange={this.changeCss}
             />
+          </Menu.Item>
+        )}
+
+        {!editMode && isFeatureEnabled(FeatureFlag.EMBEDDED_SUPERSET) && (
+          <Menu.Item key={MENU_KEYS.MANAGE_EMBEDDED}>
+            {t('Embed dashboard')}
           </Menu.Item>
         )}
 

@@ -53,6 +53,8 @@ import setPeriodicRunner, {
 } from 'src/dashboard/util/setPeriodicRunner';
 import { options as PeriodicRefreshOptions } from 'src/dashboard/components/RefreshIntervalModal';
 import { FILTER_BOX_MIGRATION_STATES } from 'src/explore/constants';
+import Modal from 'src/components/Modal';
+import { DashboardEmbedModal } from '../DashboardEmbedControls';
 
 const propTypes = {
   addSuccessToast: PropTypes.func.isRequired,
@@ -411,6 +413,14 @@ class Header extends React.PureComponent {
     this.setState({ showingReportModal: false });
   }
 
+  showEmbedModal = () => {
+    this.setState({ showingEmbedModal: true });
+  };
+
+  hideEmbedModal = () => {
+    this.setState({ showingEmbedModal: false });
+  };
+
   renderReportModal() {
     const attachedReportExists = !!Object.keys(this.props.reports).length;
     return attachedReportExists ? (
@@ -648,6 +658,14 @@ class Header extends React.PureComponent {
             />
           )}
 
+          {isFeatureEnabled(FeatureFlag.EMBEDDED_SUPERSET) && (
+            <DashboardEmbedModal
+              show={this.state.showingEmbedModal}
+              onHide={this.hideEmbedModal}
+              dashboardId={dashboardInfo.id}
+            />
+          )}
+
           <HeaderActionsDropdown
             addSuccessToast={this.props.addSuccessToast}
             addDangerToast={this.props.addDangerToast}
@@ -675,6 +693,7 @@ class Header extends React.PureComponent {
             userCanSave={userCanSaveAs}
             isLoading={isLoading}
             showPropertiesModal={this.showPropertiesModal}
+            manageEmbedded={this.showEmbedModal}
             refreshLimit={refreshLimit}
             refreshWarning={refreshWarning}
             lastModifiedTime={lastModifiedTime}

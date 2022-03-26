@@ -144,3 +144,9 @@ type ActiveFilter = {
 export type ActiveFilters = {
   [key: string]: ActiveFilter;
 };
+
+export type EmbeddedDashboard = {
+  uuid: string;
+  dashboard_id: string;
+  allowed_domains: string[];
+};
