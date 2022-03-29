@@ -662,7 +662,7 @@ class Header extends React.PureComponent {
             />
           )}
 
-          {isFeatureEnabled(FeatureFlag.EMBEDDED_SUPERSET) && (
+          {userCanCurate && (
             <DashboardEmbedModal
               show={this.state.showingEmbedModal}
               onHide={this.hideEmbedModal}
