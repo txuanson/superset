@@ -140,6 +140,7 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
         from superset.datasets.api import DatasetRestApi
         from superset.datasets.columns.api import DatasetColumnsRestApi
         from superset.datasets.metrics.api import DatasetMetricRestApi
+        from superset.embedded.view import EmbeddedView
         from superset.explore.form_data.api import ExploreFormDataRestApi
         from superset.queries.api import QueryRestApi
         from superset.queries.saved_queries.api import SavedQueryRestApi
@@ -169,7 +170,6 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
             Dashboard,
             DashboardModelView,
             DashboardModelViewAsync,
-            EmbeddedView,
         )
         from superset.views.database.views import (
             ColumnarToDatabaseView,
