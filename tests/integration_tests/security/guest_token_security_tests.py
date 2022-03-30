@@ -137,7 +137,10 @@ class TestGuestUserDashboardAccess(SupersetTestCase):
 
     def test_has_guest_access__unauthorized_guest_user__different_resource_id(self):
         g.user = security_manager.get_guest_user_from_token(
-            {"user": {}, "resources": [{"type": "dashboard", "id": "not-a-real-id"}],}
+            {
+                "user": {},
+                "resources": [{"type": "dashboard", "id": "not-a-real-id"}],
+            }
         )
         has_guest_access = security_manager.has_guest_access(self.dash)
         self.assertFalse(has_guest_access)
