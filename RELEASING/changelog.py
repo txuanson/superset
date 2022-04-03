@@ -25,6 +25,7 @@ from click.core import Context
 
 try:
     from github import BadCredentialsException, Github, PullRequest, Repository
+    from github.GithubException import UnknownObjectException
 except ModuleNotFoundError:
     print("PyGithub is a required package for this script")
     exit(1)
@@ -99,6 +100,8 @@ class GitChangeLog:
                 f" use access_token parameter or set GITHUB_TOKEN"
             )
             sys.exit(1)
+        except GithubException.UnknownObjectException:
+            print('!!!', pr_number)
 
         return pull_request
 
@@ -121,10 +124,14 @@ class GitChangeLog:
         return github_login
 
     def _has_commit_migrations(self, git_sha: str) -> bool:
-        commit = self._superset_repo.get_commit(sha=git_sha)
-        return any(
-            "superset/migrations/versions/" in file.filename for file in commit.files
-        )
+        try:
+            commit = self._superset_repo.get_commit(sha=git_sha)
+            return any(
+                "superset/migrations/versions/" in file.filename for file in commit.files
+            )
+        except Exception:
+            print('!!!', git_sha)
+            return False
 
     def _get_pull_request_details(self, git_log: GitLog) -> Dict[str, Any]:
         pr_number = git_log.pr_number
