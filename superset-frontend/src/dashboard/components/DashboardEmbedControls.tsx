@@ -160,11 +160,11 @@ export const DashboardEmbedControls = ({ dashboardId, onHide }: Props) => {
       <p>
         {t('For further instructions, consult the')}{' '}
         <a
-          href="https://www.npmjs.com/package/@superset-ui/embedded-sdk"
+          href="https://www.npmjs.com/package/@preset-sdk/embedded"
           target="_blank"
           rel="noreferrer"
         >
-          {t('Superset Embedded SDK documentation.')}
+          {t('Preset Frontend SDK documentation.')}
         </a>
       </p>
       <h3>Settings</h3>
