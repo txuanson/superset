@@ -14,7 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 from superset import app
 from superset.models.core import Database
@@ -101,23 +101,3 @@ def get_table_metadata(
         "indexes": keys,
         "comment": table_comment,
     }
-
-
-def make_url_safe(raw_url: Union[str, URL]) -> URL:
-    """
-    Wrapper for SQLAlchemy's make_url(), which tends to raise too detailed of
-    errors, which inevitably find their way into server logs. ArgumentErrors
-    tend to contain usernames and passwords, which makes them non-log-friendly
-    :param raw_url:
-    :return:
-    """
-
-    if isinstance(raw_url, str):
-        url = raw_url.strip()
-        try:
-            return make_url(url)  # noqa
-        except Exception:
-            raise DatabaseInvalidError()  # pylint: disable=raise-missing-from
-
-    else:
-        return raw_url
