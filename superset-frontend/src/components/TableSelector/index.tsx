@@ -80,6 +80,7 @@ const TableLabel = styled.span`
 interface TableSelectorProps {
   clearable?: boolean;
   database?: DatabaseObject;
+  emptyState?: ReactNode;
   formMode?: boolean;
   getDbList?: (arg0: any) => {};
   handleError: (msg: string) => void;
@@ -91,6 +92,7 @@ interface TableSelectorProps {
   onTablesLoad?: (options: Array<any>) => void;
   readOnly?: boolean;
   schema?: string;
+  onEmptyResults?: (searchText?: string) => void;
   sqlLabMode?: boolean;
   tableName?: string;
 }
@@ -143,6 +145,7 @@ const TableOption = ({ table }: { table: Table }) => {
 
 const TableSelector: FunctionComponent<TableSelectorProps> = ({
   database,
+  emptyState,
   formMode = false,
   getDbList,
   handleError,
@@ -153,6 +156,7 @@ const TableSelector: FunctionComponent<TableSelectorProps> = ({
   onTableChange,
   onTablesLoad,
   readOnly = false,
+  onEmptyResults,
   schema,
   sqlLabMode = true,
   tableName,
@@ -261,10 +265,12 @@ const TableSelector: FunctionComponent<TableSelectorProps> = ({
       <DatabaseSelector
         key={currentDatabase?.id}
         db={currentDatabase}
+        emptyState={emptyState}
         formMode={formMode}
         getDbList={getDbList}
         handleError={handleError}
         onDbChange={readOnly ? undefined : internalDbChange}
+        onEmptyResults={onEmptyResults}
         onSchemaChange={readOnly ? undefined : internalSchemaChange}
         onSchemasLoad={onSchemasLoad}
         schema={currentSchema}
