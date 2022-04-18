@@ -16,7 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, { useEffect, useRef, useCallback, Dispatch, SetStateAction, useState } from 'react';
+import React, {
+  useEffect,
+  useRef,
+  useCallback,
+  Dispatch,
+  SetStateAction,
+  useState,
+} from 'react';
 import Button from 'src/components/Button';
 import { t, styled, css, SupersetTheme } from '@superset-ui/core';
 import Collapse from 'src/components/Collapse';
