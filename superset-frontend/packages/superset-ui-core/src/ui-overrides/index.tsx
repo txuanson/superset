@@ -16,6 +16,5 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-.time-table {
-  overflow: auto;
-}
+
+export * from './UiOverrideRegistry';
