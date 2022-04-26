@@ -657,6 +657,7 @@ function ExploreViewContainer(props) {
             controls={props.controls}
             actions={props.actions}
             shouldForceUpdate={shouldForceUpdate}
+            user={props.user}
           />
         </Resizable>
         {isCollapsed ? (
