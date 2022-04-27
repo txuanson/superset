@@ -16,9 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { BrowserRouter as Router, Route } from 'react-router-dom';
+import {
+  BrowserRouter as Router,
+  Route,
+  RouteComponentProps,
+} from 'react-router-dom';
 import { t } from '@superset-ui/core';
 import { Switchboard } from '@superset-ui/switchboard';
 import { bootstrapData } from 'src/preamble';
@@ -45,7 +49,9 @@ const LazyDashboardPage = lazy(
     ),
 );
 
-const EmbeddedRoute = () => (
+type EmbeddedRouteProps = RouteComponentProps<{ id: string }>;
+
+const EmbeddedPage = () => (
   <Suspense fallback={<Loading />}>
     <RootContextProviders>
       <ErrorBoundary>
@@ -56,11 +62,47 @@ const EmbeddedRoute = () => (
   </Suspense>
 );
 
+const CustomAuthLanding: React.FC<EmbeddedRouteProps> = () => {
+  const { guestToken } = useEmbeddedState();
+
+  if (!guestToken) {
+    return <Loading />;
+  }
+
+  return <EmbeddedPage />;
+};
+
+const SSO_AUTH_URL = 'https://manager.local.preset.zone/embedded-auth/';
+
+const SSOLanding: React.FC<RouteComponentProps<{ id: string }>> = ({
+  match,
+}) => {
+  const { id } = match.params;
+
+  useEffect(() => {
+    window.open(
+      `${SSO_AUTH_URL}?resource=${id}`,
+      '_blank',
+      'width=400, height=600',
+    );
+  }, [id]);
+
+  const { guestToken } = useEmbeddedState();
+
+  // todo offer an option to re-open the popup window
+  // todo detect if popup window has been closed
+  if (!guestToken)
+    return <>Open the popup window and log in to view this dashboard.</>;
+
+  return <EmbeddedPage />;
+};
+
 const EmbeddedApp = () => (
   <Router>
     {/* todo (embedded) remove this line after uuids are deployed */}
-    <Route path="/dashboard/:idOrSlug/embedded/" component={EmbeddedRoute} />
-    <Route path="/embedded/:uuid/" component={EmbeddedRoute} />
+    <Route path="/dashboard/:idOrSlug/embedded/" component={SSOLanding} />
+    <Route path="/embedded/:id/" component={SSOLanding} />
+    <Route path="/embedded/standard/:id/" component={SSOLanding} />
   </Router>
 );
 
@@ -130,41 +172,51 @@ function validateMessageEvent(event: MessageEvent) {
   }
 }
 
-window.addEventListener('message', function embeddedPageInitializer(event) {
-  try {
-    validateMessageEvent(event);
-  } catch (err) {
-    log('ignoring message unrelated to embedded comms', err, event);
-    return;
-  }
+function useEmbeddedState() {
+  const [guestToken, setGuestToken] = useState<string>();
 
-  const port = event.ports?.[0];
-  if (event.data.handshake === 'port transfer' && port) {
-    log('message port received', event);
+  useEffect(() => {
+    // May be useful to later split out into multiple hooks
+    // that share some kind of embedded context or something.
+    // An embedded context could also be useful for enabling deeper integrations.
+    window.addEventListener('message', function embeddedPageInitializer(event) {
+      try {
+        validateMessageEvent(event);
+      } catch (err) {
+        log('ignoring message unrelated to embedded comms', err, event);
+        return;
+      }
 
-    const switchboard = new Switchboard({
-      port,
-      name: 'superset',
-      debug: debugMode,
-    });
+      const port = event.ports?.[0];
+      if (event.data.handshake === 'port transfer' && port) {
+        log('message port received', event);
 
-    let started = false;
+        const switchboard = new Switchboard({
+          port,
+          name: 'superset',
+          debug: debugMode,
+        });
 
-    switchboard.defineMethod('guestToken', ({ guestToken }) => {
-      setupGuestClient(guestToken);
-      if (!started) {
-        ReactDOM.render(<EmbeddedApp />, appMountPoint);
-        started = true;
+        switchboard.defineMethod('guestToken', ({ guestToken }) => {
+          setupGuestClient(guestToken);
+          setGuestToken(guestToken);
+        });
+
+        switchboard.defineMethod('getScrollSize', () => ({
+          width: document.body.scrollWidth,
+          height: document.body.scrollHeight,
+        }));
+
+        switchboard.start();
       }
     });
+  }, []);
 
-    switchboard.defineMethod('getScrollSize', () => ({
-      width: document.body.scrollWidth,
-      height: document.body.scrollHeight,
-    }));
+  log('embed page is ready to receive messages');
 
-    switchboard.start();
-  }
-});
+  return { guestToken };
+}
 
-log('embed page is ready to receive messages');
+console.log('this is a log message');
+
+ReactDOM.render(<EmbeddedApp />, appMountPoint);
