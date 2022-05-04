@@ -80,8 +80,16 @@ const BarWrapper = styled.div<{ width: number }>`
   & .ant-tabs-top > .ant-tabs-nav {
     margin: 0;
   }
+
   &.open {
     width: ${({ width }) => width}px; // arbitrary...
+  }
+  @media (max-width: 767px) {
+    width: 100%;
+    height: 100vh;
+    &.open {
+      width: 100%;
+    }
   }
 `;
 
@@ -125,11 +133,33 @@ const CollapsedBar = styled.div<{ offset: number }>`
   svg {
     cursor: pointer;
   }
+  @media (max-width: 767px) {
+    position: fixed;
+    /* top: auto; */
+    background: ${({ theme }) => theme.colors.primary.light3};
+    bottom: ${({ theme }) => theme.gridUnit * 4}px;
+    left: ${({ theme }) => theme.gridUnit * 4}px;
+    width: ${({ theme }) => theme.gridUnit * 10}px;
+    height: ${({ theme }) => theme.gridUnit * 10}px;
+    border-radius: ${({ theme }) => theme.gridUnit * 5}px;
+    box-shadow: ${({ theme }) => theme.gridUnit}px
+      ${({ theme }) => theme.gridUnit}px ${({ theme }) => theme.gridUnit}px
+      ${({ theme }) => theme.colors.primary.light2};
+    top: auto;
+    &.open {
+      flex-direction: row-reverse;
+      justify-content: center;
+    }
+  }
 `;
 
 const StyledCollapseIcon = styled(Icons.Collapse)`
   color: ${({ theme }) => theme.colors.primary.base};
   margin-bottom: ${({ theme }) => theme.gridUnit * 3}px;
+  @media (max-width: 767px) {
+    /* margin-bottom: auto; */
+    display: none;
+  }
 `;
 
 const StyledFilterIcon = styled(Icons.Filter)`

@@ -41,6 +41,7 @@ const ActionButtonsContainer = styled.div`
   ${({ theme }) => css`
     display: flex;
     flex-direction: column;
+
     align-items: center;
 
     position: fixed;
@@ -77,7 +78,24 @@ const ActionButtonsContainer = styled.div`
         color: ${theme.colors.grayscale.light1};
       }
     }
+
+    @media (max-width: 767px) {
+      flex-direction: row;
+      justify-content: center;
+      flex-wrap: wrap;
+
+      & > .filter-apply-button {
+        margin-bottom: 0;
+      }
+    }
   `};
+
+  @media (max-width: 767px) {
+    width: 100%;
+    /* bottom: auto;
+    position: relative;
+    background: purple; */
+  }
 `;
 
 export const ActionButtons = ({

@@ -68,6 +68,10 @@ const AddFiltersButtonContainer = styled.div`
     .ant-btn > .anticon + span {
       margin-left: 0;
     }
+    @media (max-width: 767px) {
+      // hide the add/edit filters button because the modal SUUUUUCKS.
+      display: none;
+    }
   `}
 `;
 
