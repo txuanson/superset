@@ -1271,7 +1271,8 @@ class SupersetSecurityManager(  # pylint: disable=too-many-public-methods
                 or (dashboard.published and has_rbac_access())
                 or (not dashboard.published and not dashboard.roles)
             )
-
+        if g.user.is_anonymous and not dashboard.embedded:
+            raise DashboardAccessDeniedError()
         if not can_access:
             raise DashboardAccessDeniedError()
 
