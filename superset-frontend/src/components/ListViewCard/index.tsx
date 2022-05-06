@@ -72,6 +72,11 @@ const StyledCard = styled(AntdCard)`
       transform: translateY(0);
     }
   }
+  @media (max-width: 767px) {
+    .ant-card-cover {
+      display: none;
+    }
+  }
 `;
 
 const Cover = styled.div`

@@ -41,6 +41,15 @@ const CardContainer = styled.div<{ showThumbnails?: boolean }>`
         ? `${theme.gridUnit * 8 + 3}px ${theme.gridUnit * 9}px`
         : `${theme.gridUnit * 8 + 1}px ${theme.gridUnit * 9}px`
     };
+    @media (max-width: 767px) {
+      grid-template-columns: none;
+      grid-gap: ${theme.gridUnit * 4}px;
+      padding: ${
+      showThumbnails
+        ? `${theme.gridUnit * 8 + 3}px ${theme.gridUnit * 2}px`
+        : `${theme.gridUnit * 8 + 1}px ${theme.gridUnit * 2}px`
+      };
+    }
   `}
 `;
 
