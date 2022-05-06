@@ -22,17 +22,19 @@ import {
   BrowserRouter as Router,
   Route,
   RouteComponentProps,
+  useParams,
 } from 'react-router-dom';
-import { t } from '@superset-ui/core';
+import { makeApi, t } from '@superset-ui/core';
 import { Switchboard } from '@superset-ui/switchboard';
 import { bootstrapData } from 'src/preamble';
 import setupClient from 'src/setup/setupClient';
 import { RootContextProviders } from 'src/views/RootContextProviders';
-import { store } from 'src/views/store';
+import { store, USER_LOADED } from 'src/views/store';
 import ErrorBoundary from 'src/components/ErrorBoundary';
 import Loading from 'src/components/Loading';
 import { addDangerToast } from 'src/components/MessageToasts/actions';
 import ToastContainer from 'src/components/MessageToasts/ToastContainer';
+import { UserWithPermissionsAndRoles } from 'src/types/bootstrapTypes';
 
 const debugMode = process.env.WEBPACK_MODE === 'development';
 
@@ -79,13 +81,13 @@ const SSOLanding: React.FC<RouteComponentProps<{ id: string }>> = ({
 }) => {
   const { id } = match.params;
 
-  useEffect(() => {
-    window.open(
-      `${SSO_AUTH_URL}?resource=${id}`,
-      '_blank',
-      'width=400, height=600',
-    );
-  }, [id]);
+  // useEffect(() => {
+  //   window.open(
+  //     `${SSO_AUTH_URL}?resource=${id}`,
+  //     '_blank',
+  //     'width=400, height=600',
+  //   );
+  // }, [id]);
 
   const { guestToken } = useEmbeddedState();
 
@@ -103,6 +105,7 @@ const EmbeddedApp = () => (
     <Route path="/dashboard/:idOrSlug/embedded/" component={SSOLanding} />
     <Route path="/embedded/:id/" component={SSOLanding} />
     <Route path="/embedded/standard/:id/" component={SSOLanding} />
+    <Route path="/embedded/public/:id/" component={SSOLanding} />
   </Router>
 );
 
@@ -111,8 +114,13 @@ const appMountPoint = document.getElementById('app')!;
 const MESSAGE_TYPE = '__embedded_comms__';
 
 if (!window.parent || window.parent === window) {
-  appMountPoint.innerHTML =
-    'This page is intended to be embedded in an iframe, but it looks like that is not the case.';
+  showFailureMessage(
+    'This page is intended to be embedded in an iframe, but it looks like that is not the case.',
+  );
+}
+
+function showFailureMessage(message: string) {
+  appMountPoint.innerHTML = message;
 }
 
 // if the page is embedded in an origin that hasn't
@@ -151,6 +159,34 @@ function guestUnauthorizedHandler() {
   );
 }
 
+function start() {
+  const getMeWithRole = makeApi<void, { result: UserWithPermissionsAndRoles }>({
+    method: 'GET',
+    endpoint: '/api/v1/me/roles/',
+  });
+
+  return getMeWithRole().then(
+    ({ result }) => {
+      // fill in some missing bootstrap data
+      // (because at pageload, we don't have any auth yet)
+      // this allows the frontend's permissions checks to work.
+      bootstrapData.user = result;
+      store.dispatch({
+        type: USER_LOADED,
+        user: result,
+      });
+      ReactDOM.render(<EmbeddedApp />, appMountPoint);
+    },
+    err => {
+      // something is most likely wrong with the guest token
+      console.error(err);
+      showFailureMessage(
+        'Something went wrong with embedded authentication. Check the dev console for details.',
+      );
+    },
+  );
+}
+
 /**
  * Configures SupersetClient with the correct settings for the embedded dashboard page.
  */
@@ -174,6 +210,7 @@ function validateMessageEvent(event: MessageEvent) {
 
 function useEmbeddedState() {
   const [guestToken, setGuestToken] = useState<string>();
+  const { id } = useParams<{ id: string }>();
 
   useEffect(() => {
     // May be useful to later split out into multiple hooks
@@ -211,6 +248,19 @@ function useEmbeddedState() {
       }
     });
   }, []);
+
+  useEffect(() => {
+    window.addEventListener('load', async function publicPageInitializer() {
+      const enableEmbedded = makeApi<void, any>({
+        method: 'GET',
+        endpoint: `/api/v1/security/public_token/${id}/`,
+      });
+      const { token } = await enableEmbedded();
+      setGuestToken(token);
+      setupGuestClient(token);
+      start();
+    });
+  }, [id]);
 
   log('embed page is ready to receive messages');
 

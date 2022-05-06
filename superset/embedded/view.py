@@ -34,6 +34,7 @@ class EmbeddedView(BaseSupersetView):
     route_base = "/embedded"
 
     @expose("/<uuid>")
+    @expose("/public/<uuid>")
     @event_logger.log_this_with_extra_payload
     def embedded(
         self,
