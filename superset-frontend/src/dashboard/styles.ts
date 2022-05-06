@@ -34,6 +34,9 @@ export const filterCardPopoverStyle = (theme: SupersetTheme) => css`
     .ant-popover-arrow {
       display: none;
     }
+    @media (max-width: 767px) {
+      display: none;
+    }
   }
 
   .filter-card-tooltip {
