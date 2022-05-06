@@ -147,6 +147,9 @@ const ViewModeContainer = styled.div`
     &:first-of-type {
       margin-right: ${({ theme }) => theme.gridUnit * 2}px;
     }
+    @media (max-width: 767px) {
+      display: none;
+    }
   }
 
   .active {
