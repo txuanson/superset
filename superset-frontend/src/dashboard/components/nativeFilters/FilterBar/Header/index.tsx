@@ -96,7 +96,7 @@ const Header: FC<HeaderProps> = ({ toggleFiltersBar }) => {
           buttonSize="xsmall"
           onClick={() => toggleFiltersBar(false)}
         >
-          <Icons.Expand iconColor={theme.colors.grayscale.base} />
+          <Icons.Close iconColor={theme.colors.grayscale.base} />
         </HeaderButton>
       </TitleArea>
       {canEdit && (
