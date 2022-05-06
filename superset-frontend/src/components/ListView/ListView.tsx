@@ -56,6 +56,9 @@ const ListViewStyles = styled.div`
         column-gap: ${({ theme }) => theme.gridUnit * 6}px;
         row-gap: ${({ theme }) => theme.gridUnit * 4}px;
       }
+      @media (max-width: 767px) {
+        display: none;
+      }
     }
 
     .body.empty table {
