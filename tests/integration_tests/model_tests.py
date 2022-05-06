@@ -16,6 +16,7 @@
 # under the License.
 # isort:skip_file
 import json
+from superset.utils.core import DatasourceType
 import textwrap
 import unittest
 from unittest import mock
@@ -610,7 +611,7 @@ class TestSqlaTableModel(SupersetTestCase):
         dashboard = self.get_dash_by_slug("births")
         slc = Slice(
             slice_name="slice with adhoc column",
-            datasource_type="table",
+            datasource_type=DatasourceType.TABLE,
             viz_type="table",
             params=json.dumps(
                 {

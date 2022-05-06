@@ -19,6 +19,7 @@ import json
 from superset import db
 from superset.models.dashboard import Dashboard
 from superset.models.slice import Slice
+from superset.utils.core import DatasourceType
 
 from .helpers import (
     get_slice_json,
@@ -206,7 +207,7 @@ def load_deck_dash() -> None:  # pylint: disable=too-many-statements
     slc = Slice(
         slice_name="Scatterplot",
         viz_type="deck_scatter",
-        datasource_type="table",
+        datasource_type=DatasourceType.TABLE,
         datasource_id=tbl.id,
         params=get_slice_json(slice_data),
     )
@@ -241,7 +242,7 @@ def load_deck_dash() -> None:  # pylint: disable=too-many-statements
     slc = Slice(
         slice_name="Screen grid",
         viz_type="deck_screengrid",
-        datasource_type="table",
+        datasource_type=DatasourceType.TABLE,
         datasource_id=tbl.id,
         params=get_slice_json(slice_data),
     )
@@ -277,7 +278,7 @@ def load_deck_dash() -> None:  # pylint: disable=too-many-statements
     slc = Slice(
         slice_name="Hexagons",
         viz_type="deck_hex",
-        datasource_type="table",
+        datasource_type=DatasourceType.TABLE,
         datasource_id=tbl.id,
         params=get_slice_json(slice_data),
     )
@@ -314,7 +315,7 @@ def load_deck_dash() -> None:  # pylint: disable=too-many-statements
     slc = Slice(
         slice_name="Grid",
         viz_type="deck_grid",
-        datasource_type="table",
+        datasource_type=DatasourceType.TABLE,
         datasource_id=tbl.id,
         params=get_slice_json(slice_data),
     )
@@ -403,7 +404,7 @@ def load_deck_dash() -> None:  # pylint: disable=too-many-statements
     slc = Slice(
         slice_name="Polygons",
         viz_type="deck_polygon",
-        datasource_type="table",
+        datasource_type=DatasourceType.TABLE,
         datasource_id=polygon_tbl.id,
         params=get_slice_json(slice_data),
     )
@@ -453,7 +454,7 @@ def load_deck_dash() -> None:  # pylint: disable=too-many-statements
     slc = Slice(
         slice_name="Arcs",
         viz_type="deck_arc",
-        datasource_type="table",
+        datasource_type=DatasourceType.TABLE,
         datasource_id=db.session.query(table)
         .filter_by(table_name="flights")
         .first()
@@ -505,7 +506,7 @@ def load_deck_dash() -> None:  # pylint: disable=too-many-statements
     slc = Slice(
         slice_name="Path",
         viz_type="deck_path",
-        datasource_type="table",
+        datasource_type=DatasourceType.TABLE,
         datasource_id=db.session.query(table)
         .filter_by(table_name="bart_lines")
         .first()

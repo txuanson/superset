@@ -29,6 +29,7 @@ from superset.connectors.sqla.models import SqlMetric
 from superset.models.dashboard import Dashboard
 from superset.models.slice import Slice
 from superset.utils import core as utils
+from superset.utils.core import DatasourceType
 
 from ..connectors.base.models import BaseDatasource
 from .helpers import (
@@ -173,7 +174,7 @@ def create_slices(tbl: BaseDatasource) -> List[Slice]:
         Slice(
             slice_name="Region Filter",
             viz_type="filter_box",
-            datasource_type="table",
+            datasource_type=DatasourceType.TABLE,
             datasource_id=tbl.id,
             params=get_slice_json(
                 defaults,
@@ -202,7 +203,7 @@ def create_slices(tbl: BaseDatasource) -> List[Slice]:
         Slice(
             slice_name="World's Population",
             viz_type="big_number",
-            datasource_type="table",
+            datasource_type=DatasourceType.TABLE,
             datasource_id=tbl.id,
             params=get_slice_json(
                 defaults,
@@ -216,7 +217,7 @@ def create_slices(tbl: BaseDatasource) -> List[Slice]:
         Slice(
             slice_name="Most Populated Countries",
             viz_type="table",
-            datasource_type="table",
+            datasource_type=DatasourceType.TABLE,
             datasource_id=tbl.id,
             params=get_slice_json(
                 defaults,
@@ -228,7 +229,7 @@ def create_slices(tbl: BaseDatasource) -> List[Slice]:
         Slice(
             slice_name="Growth Rate",
             viz_type="line",
-            datasource_type="table",
+            datasource_type=DatasourceType.TABLE,
             datasource_id=tbl.id,
             params=get_slice_json(
                 defaults,
@@ -242,7 +243,7 @@ def create_slices(tbl: BaseDatasource) -> List[Slice]:
         Slice(
             slice_name="% Rural",
             viz_type="world_map",
-            datasource_type="table",
+            datasource_type=DatasourceType.TABLE,
             datasource_id=tbl.id,
             params=get_slice_json(
                 defaults,
@@ -255,7 +256,7 @@ def create_slices(tbl: BaseDatasource) -> List[Slice]:
         Slice(
             slice_name="Life Expectancy VS Rural %",
             viz_type="bubble",
-            datasource_type="table",
+            datasource_type=DatasourceType.TABLE,
             datasource_id=tbl.id,
             params=get_slice_json(
                 defaults,
@@ -299,7 +300,7 @@ def create_slices(tbl: BaseDatasource) -> List[Slice]:
         Slice(
             slice_name="Rural Breakdown",
             viz_type="sunburst",
-            datasource_type="table",
+            datasource_type=DatasourceType.TABLE,
             datasource_id=tbl.id,
             params=get_slice_json(
                 defaults,
@@ -314,7 +315,7 @@ def create_slices(tbl: BaseDatasource) -> List[Slice]:
         Slice(
             slice_name="World's Pop Growth",
             viz_type="area",
-            datasource_type="table",
+            datasource_type=DatasourceType.TABLE,
             datasource_id=tbl.id,
             params=get_slice_json(
                 defaults,
@@ -328,7 +329,7 @@ def create_slices(tbl: BaseDatasource) -> List[Slice]:
         Slice(
             slice_name="Box plot",
             viz_type="box_plot",
-            datasource_type="table",
+            datasource_type=DatasourceType.TABLE,
             datasource_id=tbl.id,
             params=get_slice_json(
                 defaults,
@@ -344,7 +345,7 @@ def create_slices(tbl: BaseDatasource) -> List[Slice]:
         Slice(
             slice_name="Treemap",
             viz_type="treemap",
-            datasource_type="table",
+            datasource_type=DatasourceType.TABLE,
             datasource_id=tbl.id,
             params=get_slice_json(
                 defaults,
@@ -358,7 +359,7 @@ def create_slices(tbl: BaseDatasource) -> List[Slice]:
         Slice(
             slice_name="Parallel Coordinates",
             viz_type="para",
-            datasource_type="table",
+            datasource_type=DatasourceType.TABLE,
             datasource_id=tbl.id,
             params=get_slice_json(
                 defaults,
