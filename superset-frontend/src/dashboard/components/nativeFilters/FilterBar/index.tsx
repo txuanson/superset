@@ -113,6 +113,9 @@ const Bar = styled.div<{ width: number }>`
   &.open {
     display: flex;
   }
+  @media (max-width: 767px) {
+    width: 100vw;
+  }
 `;
 
 const CollapsedBar = styled.div<{ offset: number }>`
