@@ -36,6 +36,7 @@ import ErrorAlert from 'src/components/ErrorMessage/ErrorAlert';
 import WarningIconWithTooltip from 'src/components/WarningIconWithTooltip';
 import { URL_PARAMS } from 'src/constants';
 import { isUserAdmin } from 'src/dashboard/util/findPermission';
+import { DatasourceType } from 'superset-frontend/packages/superset-ui-core/src/query/types/Datasource';
 
 const propTypes = {
   actions: PropTypes.object.isRequired,
@@ -190,9 +191,10 @@ class DatasourceControl extends React.PureComponent {
     let isMissingParams = false;
     if (isMissingDatasource) {
       const datasourceId = getUrlParam(URL_PARAMS.datasourceId);
-      const datasourceType = getUrlParam(URL_PARAMS.datasourceType);
+      const datasourceType =
+        getUrlParam(URL_PARAMS.datasourceType) || DatasourceType.Table;
       const sliceId = getUrlParam(URL_PARAMS.sliceId);
-      if (!datasourceId && !sliceId && !datasourceType) {
+      if (!datasourceId && !sliceId) {
         isMissingParams = true;
       }
     }

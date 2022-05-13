@@ -37,6 +37,7 @@ from superset.views.utils import is_owner
 
 def check_datasource_access(datasource_id: int, datasource_type: str) -> Optional[bool]:
     if datasource_id:
+        # currently Table is the default, but we need to expand this to other types
         if datasource_type == DatasourceType.TABLE:
             return check_dataset_access(datasource_id)
     raise DatasourceNotFoundValidationError
